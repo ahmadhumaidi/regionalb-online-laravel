@@ -220,3 +220,9 @@ Yang sudah ditambahkan:
 
 - Ditambahkan `scripts/prepare-staging.sh` untuk normalisasi permission source/runtime dan rebuild cache Blade.
 - Script mengembalikan ownership compiled view ke `www-data` setelah `view:cache`.
+
+## Progress Profil Gamification (2026-08-05)
+
+- Profil Laravel kini menghitung XP dari laporan/leads/closing.
+- Ditambahkan level, progress level, league, skor performa, dan badge dasar.
+- Test suite tetap lulus 24 test / 42 assertion.
