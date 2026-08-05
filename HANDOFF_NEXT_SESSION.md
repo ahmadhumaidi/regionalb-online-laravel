@@ -52,6 +52,11 @@ Yang sudah ditambahkan:
 
 - Guest redirect coverage diperluas dari 6 menjadi seluruh halaman migrasi: 16 protected routes termasuk Closing Kampus, Rekap export, Target, User, seluruh jadwal, Collab/BDC, dan Role.
 - Test suite sekarang lulus 17 test / 33 assertion.
+
+## Progress Authorization Tests (2026-08-05)
+
+- Ditambahkan `tests/Feature/AuthorizationTest.php` untuk memastikan staff mendapat 403 pada Kelola User, Target, Jadwal Personalia, Sumber Collab, dan Jadwal Koordinator.
+- Test suite sekarang lulus 22 test / 38 assertion.
 - Production `https://regionalb.online` tetap memakai `/var/www/regionalb.online/public_html` native PHP.
 
 ## Langkah berikutnya
