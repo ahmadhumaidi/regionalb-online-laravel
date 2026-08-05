@@ -41,6 +41,12 @@ Yang sudah ditambahkan:
 - Permission `public/build` sempat menyebabkan 500 karena `manifest.json` mode 600; sudah diperbaiki ke permission baca publik.
 - Login staging sempat gagal dengan `SQLSTATE[42S22]`/kode UI `42522` karena Laravel mencoba menulis kolom `password`; `RsmUser::getAuthPasswordName()` sekarang mengembalikan `password_hash` dan login sudah terverifikasi 302 → dashboard 200.
 - Permission `bootstrap/cache` dan `storage/framework` juga dinormalkan agar PHP-FPM dapat membaca cache setelah Artisan dijalankan.
+
+## Progress Closing Kampus (2026-08-05)
+
+- Native page `closing-kampus` kini memiliki route Laravel `/closing-kampus` dan view khusus.
+- Filter tanggal, wilayah, unit, grouping per regional, total closing, dan progress bar sudah dipindahkan memakai `CollabMetricsService` yang sama dengan dashboard.
+- Guest smoke test staging berhasil redirect 302 ke login setelah permission compiled-view dinormalkan.
 - Production `https://regionalb.online` tetap memakai `/var/www/regionalb.online/public_html` native PHP.
 
 ## Langkah berikutnya

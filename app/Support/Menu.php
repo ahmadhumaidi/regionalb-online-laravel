@@ -104,6 +104,7 @@ class Menu
             'users' => 'Kelola User',
             'sumber-collab' => 'Sumber Data Collab',
             'jadwal-personalia' => 'Jadwal Personalia',
+            'closing-kampus' => 'Top 5 Pencapaian Kampus',
         ];
     }
 
@@ -142,6 +143,7 @@ class Menu
             'sumber-collab' => route('sumber-collab'),
             'bdc-users' => route('bdc-users'),
             'role' => route('role'),
+            'closing-kampus' => route('closing-kampus'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };
