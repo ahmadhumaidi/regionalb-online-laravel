@@ -47,6 +47,11 @@ Yang sudah ditambahkan:
 - Native page `closing-kampus` kini memiliki route Laravel `/closing-kampus` dan view khusus.
 - Filter tanggal, wilayah, unit, grouping per regional, total closing, dan progress bar sudah dipindahkan memakai `CollabMetricsService` yang sama dengan dashboard.
 - Guest smoke test staging berhasil redirect 302 ke login setelah permission compiled-view dinormalkan.
+
+## Progress Regression Tests (2026-08-05)
+
+- Guest redirect coverage diperluas dari 6 menjadi seluruh halaman migrasi: 16 protected routes termasuk Closing Kampus, Rekap export, Target, User, seluruh jadwal, Collab/BDC, dan Role.
+- Test suite sekarang lulus 17 test / 33 assertion.
 - Production `https://regionalb.online` tetap memakai `/var/www/regionalb.online/public_html` native PHP.
 
 ## Langkah berikutnya

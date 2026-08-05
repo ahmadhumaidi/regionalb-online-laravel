@@ -29,6 +29,16 @@ class ExampleTest extends TestCase
             'konten' => ['/konten'],
             'kegiatan' => ['/kegiatan'],
             'aktivitas' => ['/aktivitas'],
+            'rekap' => ['/rekap'],
+            'rekap-export' => ['/rekap/export'],
+            'targets' => ['/targets'],
+            'users' => ['/users'],
+            'jadwal-koordinator' => ['/jadwal-koordinator'],
+            'jadwal-personalia' => ['/jadwal-personalia'],
+            'sumber-collab' => ['/sumber-collab'],
+            'bdc-users' => ['/bdc-users'],
+            'role' => ['/role'],
+            'closing-kampus' => ['/closing-kampus'],
         ];
     }
 }
