@@ -198,3 +198,8 @@ Yang sudah ditambahkan:
 - Ditambahkan pendaftaran akun Instagram kampus di halaman Konten.
 - Ditambahkan pencatatan post manual (feed/reels/story/tidak posting), keyword PMB, URL, dan skor otomatis.
 - Scope post dibatasi ke area user; OAuth Meta tetap menunggu credential/config staging.
+
+## Progress Authorization Regression (2026-08-05)
+
+- Ditambahkan coverage authorization untuk generate jadwal bulanan dan laporan WhatsApp.
+- Guest redirect coverage mencakup halaman Profil.

@@ -31,5 +31,13 @@ class AuthorizationTest extends TestCase
         $staff = new RsmUser(['id' => 900002, 'name' => 'Test Staff', 'role' => 'staff', 'area' => 'Regional B', 'is_active' => true]);
 
         $this->actingAs($staff)->get('/jadwal-koordinator')->assertForbidden();
+        $this->actingAs($staff)->post('/jadwal-koordinator/generate', ['month' => '2026-08'])->assertForbidden();
+    }
+
+    public function test_only_super_user_can_generate_whatsapp_schedule_report(): void
+    {
+        $senior = new RsmUser(['id' => 900003, 'name' => 'Test Senior', 'role' => 'senior', 'area' => 'Regional B', 'is_active' => true]);
+
+        $this->actingAs($senior)->post('/jadwal-koordinator/whatsapp', ['month' => '2026-08'])->assertForbidden();
     }
 }
