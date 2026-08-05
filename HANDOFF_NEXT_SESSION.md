@@ -90,6 +90,12 @@ Yang sudah ditambahkan:
 - Smoke test staging berhasil: `/users` 200 dan create user 200. Akun/data smoke test sudah dibersihkan.
 - `php artisan test` tetap lulus 7 test / 13 assertion.
 
+## Progress Parity Jadwal Koordinator (2026-08-05)
+
+- Daftar Jadwal Koordinator kini memiliki form Edit inline yang terhubung ke route PATCH, mencakup unit, tipe, status, agenda, hasil, dan follow-up.
+- Cache/view berhasil dikompilasi dan test suite tetap lulus 7 test / 13 assertion.
+- Smoke update staging sempat terkena permission compiled-view (gejala yang sama setelah `view:cache` dijalankan root); permission `storage/framework` sudah dinormalkan dan data uji dibersihkan.
+
 ## Progress Role/Permission (2026-08-05)
 
 - Placeholder Role/Permission diganti `RoleController` dan view `resources/views/role/index.blade.php`.
