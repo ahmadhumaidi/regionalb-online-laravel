@@ -215,3 +215,8 @@ Yang sudah ditambahkan:
 
 - Cron server staging sudah ditambahkan: `* * * * * cd /var/www/regionalb-online-laravel && php artisan schedule:run >> /dev/null 2>&1`.
 - Sinkronisasi harian Laravel kini akan dieksekusi otomatis oleh cron.
+
+## Deployment Hardening (2026-08-05)
+
+- Ditambahkan `scripts/prepare-staging.sh` untuk normalisasi permission source/runtime dan rebuild cache Blade.
+- Script mengembalikan ownership compiled view ke `www-data` setelah `view:cache`.
