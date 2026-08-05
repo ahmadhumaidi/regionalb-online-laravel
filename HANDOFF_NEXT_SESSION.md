@@ -90,6 +90,14 @@ Yang sudah ditambahkan:
 - Smoke test staging berhasil: `/users` 200 dan create user 200. Akun/data smoke test sudah dibersihkan.
 - `php artisan test` tetap lulus 7 test / 13 assertion.
 
+## Progress BDC Marketing (2026-08-05)
+
+- Placeholder BDC Marketing diganti `BdcUsersController`, `BdcReportUsersService`, dan view `resources/views/bdc-users/index.blade.php`.
+- Menampilkan ringkasan staff/data/closing/FU dan tabel detail BDC Regional B dari cache API P2K.
+- Tombol segarkan tersedia untuk role manajemen; cache legacy tetap menjadi fallback.
+- Smoke test staging authenticated berhasil: halaman 200 dan data live API tampil. Akun smoke test sudah dihapus.
+- `php artisan test` tetap lulus 7 test / 13 assertion.
+
 ## Progress Sumber Data Collab (2026-08-05)
 
 - Placeholder Sumber Data Collab diganti `CollabSourceService`, `CollabSourceController`, dan view `resources/views/collab-source/index.blade.php`.
