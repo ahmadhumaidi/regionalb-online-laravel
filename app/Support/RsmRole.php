@@ -22,6 +22,17 @@ class RsmRole
         'staff' => ['staff'],
     ];
 
+    /** Mirrors dashboard.php's $roles[$key]['label'] (line 14-22). */
+    public const ROLE_LABELS = [
+        'super_user' => 'Super User',
+        'executive_director' => 'Executive Director',
+        'director' => 'Director',
+        'senior' => 'Senior Manager',
+        'mentor' => 'Mentor',
+        'koordinator' => 'Koordinator Wilayah',
+        'staff' => 'Staff Unit',
+    ];
+
     private const REPORT_ACTIONS = [
         'super_user' => ['detail', 'setujui', 'tolak', 'revisi', 'export'],
         'executive_director' => ['detail', 'setujui', 'tolak', 'revisi', 'export'],
@@ -78,5 +89,10 @@ class RsmRole
     public static function canImpersonate(?RsmUser $user): bool
     {
         return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior'], true);
+    }
+
+    public static function label(string $role): string
+    {
+        return self::ROLE_LABELS[$role] ?? ucwords(str_replace('_', ' ', $role));
     }
 }

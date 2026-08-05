@@ -7,9 +7,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function edit(): View
+    {
+        return view('profile.password', ['active' => 'password']);
+    }
+
     /**
      * Mirrors rsm_change_password()'s exact rules: min 6 chars, confirm
      * match, and old password re-verified against the current hash.

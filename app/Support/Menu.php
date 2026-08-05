@@ -1,0 +1,136 @@
+<?php
+
+namespace App\Support;
+
+use App\Models\RsmUser;
+
+/**
+ * Grouped, iconized replacement for legacy dashboard.php's flat $menus +
+ * $adminMenus arrays (lines 27-45). Visibility gates mirror the legacy
+ * per-item checks exactly (dashboard.php:562, 566-579), which key off the
+ * actually logged-in user's role, not the `?role=` preview — so callers
+ * must pass Auth::user(), not the effective/previewed role.
+ */
+class Menu
+{
+    /**
+     * @return list<array{title: string, items: list<array{key: string, label: string, icon: string}>}>
+     */
+    public static function sections(RsmUser $user): array
+    {
+        $sections = [
+            [
+                'title' => 'Utama',
+                'items' => [
+                    ['key' => 'dashboard', 'label' => 'Dashboard Utama', 'icon' => 'home'],
+                ],
+            ],
+            [
+                'title' => 'Kinerja & Tim',
+                'items' => array_values(array_filter([
+                    ['key' => 'pencapaian', 'label' => 'Pencapaian Staff', 'icon' => 'chart-bar'],
+                    RsmRole::canViewJadwalKoordinator($user)
+                        ? ['key' => 'jadwal-koordinator', 'label' => 'Jadwal Koordinator', 'icon' => 'calendar']
+                        : null,
+                    ['key' => 'bdc-users', 'label' => 'BDC Marketing', 'icon' => 'users'],
+                ])),
+            ],
+            [
+                'title' => 'Konten & Kegiatan',
+                'items' => [
+                    ['key' => 'konten', 'label' => 'Monitoring Konten Kampus', 'icon' => 'photo'],
+                    ['key' => 'kegiatan', 'label' => 'Kegiatan Marketing', 'icon' => 'briefcase'],
+                    ['key' => 'aktivitas', 'label' => 'Aktivitas Lain', 'icon' => 'bolt'],
+                ],
+            ],
+            [
+                'title' => 'Anggaran & Laporan',
+                'items' => [
+                    ['key' => 'anggaran', 'label' => 'Anggaran & Laporan Iklan', 'icon' => 'currency'],
+                    ['key' => 'rekap', 'label' => 'Laporan & Rekap', 'icon' => 'document'],
+                ],
+            ],
+            [
+                'title' => 'Administrasi',
+                'items' => array_values(array_filter([
+                    RsmRole::canManageTargets($user)
+                        ? ['key' => 'targets', 'label' => 'Target Bulanan', 'icon' => 'flag']
+                        : null,
+                    RsmRole::canViewUsersPage($user)
+                        ? ['key' => 'users', 'label' => 'Kelola User', 'icon' => 'user-group']
+                        : null,
+                    RsmRole::canSyncCollab($user)
+                        ? ['key' => 'sumber-collab', 'label' => 'Sumber Data Collab', 'icon' => 'cloud']
+                        : null,
+                    RsmRole::canManageTargets($user)
+                        ? ['key' => 'jadwal-personalia', 'label' => 'Jadwal Personalia', 'icon' => 'clipboard']
+                        : null,
+                ])),
+            ],
+            [
+                'title' => 'Akun',
+                'items' => [
+                    ['key' => 'role', 'label' => 'User & Role', 'icon' => 'shield'],
+                    ['key' => 'password', 'label' => 'Ganti Password', 'icon' => 'lock'],
+                ],
+            ],
+        ];
+
+        return array_values(array_filter($sections, fn (array $section) => $section['items'] !== []));
+    }
+
+    /** Page titles for every menu key, including ones not shown in the nav (mirrors $pageTitles, dashboard.php:46-47). */
+    public static function title(string $key): string
+    {
+        return self::titles()[$key] ?? 'Halaman';
+    }
+
+    /** @return array<string, string> */
+    public static function titles(): array
+    {
+        return [
+            'dashboard' => 'Dashboard Utama',
+            'pencapaian' => 'Pencapaian Staff',
+            'jadwal-koordinator' => 'Jadwal Koordinator',
+            'bdc-users' => 'BDC Marketing',
+            'konten' => 'Monitoring Konten Kampus',
+            'kegiatan' => 'Kegiatan Marketing',
+            'anggaran' => 'Anggaran & Laporan Iklan',
+            'aktivitas' => 'Aktivitas Lain',
+            'rekap' => 'Laporan & Rekap',
+            'role' => 'User & Role',
+            'password' => 'Ganti Password',
+            'targets' => 'Target Bulanan',
+            'users' => 'Kelola User',
+            'sumber-collab' => 'Sumber Data Collab',
+            'jadwal-personalia' => 'Jadwal Personalia',
+        ];
+    }
+
+    /** Keys gated to the same role list as Target Bulanan / Kelola User / Sumber Data Collab (dashboard.php:568-579). */
+    public static function isRestricted(string $key): bool
+    {
+        return in_array($key, ['targets', 'users', 'sumber-collab', 'jadwal-personalia'], true);
+    }
+
+    public static function isAllowed(string $key, RsmUser $user): bool
+    {
+        return match ($key) {
+            'jadwal-koordinator' => RsmRole::canViewJadwalKoordinator($user),
+            'targets', 'jadwal-personalia' => RsmRole::canManageTargets($user),
+            'users' => RsmRole::canViewUsersPage($user),
+            'sumber-collab' => RsmRole::canSyncCollab($user),
+            default => true,
+        };
+    }
+
+    /** Every menu key routes here except the ones with a real page built already. */
+    public static function routeFor(string $key): string
+    {
+        return match ($key) {
+            'dashboard' => route('dashboard'),
+            'password' => route('password.edit'),
+            default => route('placeholder', $key),
+        };
+    }
+}
