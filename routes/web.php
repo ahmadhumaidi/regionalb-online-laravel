@@ -12,6 +12,7 @@ use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\PlaceholderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportFormController;
+use App\Http\Controllers\ReportRecapController;
 use App\Http\Controllers\ReportStatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,8 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/pencapaian', [AchievementController::class, 'index'])->name('pencapaian');
     Route::get('/kegiatan', [KegiatanController::class, 'index'])->name('kegiatan');
     Route::get('/aktivitas', [AktivitasController::class, 'index'])->name('aktivitas');
+    Route::get('/rekap', [ReportRecapController::class, 'index'])->name('rekap');
+    Route::get('/rekap/export', [ReportRecapController::class, 'export'])->name('rekap.export');
     Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');
@@ -60,7 +63,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
 
     Route::get('/halaman/{key}', [PlaceholderController::class, 'show'])
         ->whereIn('key', [
-            'jadwal-koordinator', 'bdc-users', 'rekap', 'role', 'targets', 'users',
+            'jadwal-koordinator', 'bdc-users', 'role', 'targets', 'users',
             'sumber-collab', 'jadwal-personalia',
         ])
         ->name('placeholder');

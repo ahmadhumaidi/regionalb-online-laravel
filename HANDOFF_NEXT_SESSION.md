@@ -50,3 +50,11 @@ Yang sudah ditambahkan:
 3. Jalankan `php artisan test`, Blade/Vite build, dan HTTP smoke test dengan snapshot DB.
 4. Commit pass form.
 5. Jangan mengganti production legacy tanpa approval/cutover terpisah. Untuk rollback staging, pulihkan backup vhost lalu `nginx -t && systemctl reload nginx`.
+
+## Progress Rekap (2026-08-05)
+
+- Ditambahkan `ReportRecapService` dan `ReportRecapController`.
+- Route `/rekap` dan `/rekap/export` aktif; placeholder Rekap dihapus.
+- View Rekap menyediakan filter periode/wilayah/unit/jenis, ringkasan laporan/leads/closing/anggaran/realisasi, tabel, Detail, dan export CSV.
+- Smoke test staging berhasil: `/rekap` 200 dan `/rekap/export` 200 dengan 7 baris CSV.
+- Permission source (`app`, `resources`, `routes`, `config`) perlu dijaga readable oleh PHP-FPM setelah perubahan file.
