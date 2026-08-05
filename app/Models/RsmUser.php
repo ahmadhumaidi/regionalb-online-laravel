@@ -1,0 +1,71 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+/**
+ * The RSM dashboard's own auth model (table rsm_users). Distinct from
+ * LegacyUser (table `users`), an unrelated pre-existing app's accounts
+ * that happen to live in the same database.
+ */
+class RsmUser extends Authenticatable
+{
+    use Notifiable;
+
+    protected $table = 'rsm_users';
+
+    public const ROLE_SUPER_USER = 'super_user';
+    public const ROLE_EXECUTIVE_DIRECTOR = 'executive_director';
+    public const ROLE_DIRECTOR = 'director';
+    public const ROLE_SENIOR = 'senior';
+    public const ROLE_MENTOR = 'mentor';
+    public const ROLE_KOORDINATOR = 'koordinator';
+    public const ROLE_STAFF = 'staff';
+
+    public const ROLES = [
+        self::ROLE_SUPER_USER,
+        self::ROLE_EXECUTIVE_DIRECTOR,
+        self::ROLE_DIRECTOR,
+        self::ROLE_SENIOR,
+        self::ROLE_MENTOR,
+        self::ROLE_KOORDINATOR,
+        self::ROLE_STAFF,
+    ];
+
+    protected $fillable = [
+        'name',
+        'nik',
+        'username',
+        'password_hash',
+        'role',
+        'jabatan',
+        'regional',
+        'area',
+        'campus_name',
+        'phone_number',
+        'work_duration',
+        'bio_text',
+        'photo_path',
+        'must_change_password',
+        'is_active',
+    ];
+
+    protected $hidden = [
+        'password_hash',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'must_change_password' => 'boolean',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function getAuthPassword(): string
+    {
+        return $this->password_hash;
+    }
+}
