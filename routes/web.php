@@ -67,6 +67,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/users/{managedUser}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/jadwal-koordinator', [CoordinatorScheduleController::class, 'index'])->name('jadwal-koordinator');
     Route::post('/jadwal-koordinator', [CoordinatorScheduleController::class, 'store'])->name('jadwal-koordinator.store');
+    Route::post('/jadwal-koordinator/generate', [CoordinatorScheduleController::class, 'generate'])->name('jadwal-koordinator.generate');
     Route::patch('/jadwal-koordinator/{schedule}', [CoordinatorScheduleController::class, 'update'])->name('jadwal-koordinator.update');
     Route::get('/jadwal-koordinator/{schedule}/attachment', [CoordinatorScheduleController::class, 'attachment'])->name('jadwal-koordinator.attachment');
     Route::delete('/jadwal-koordinator/{schedule}', [CoordinatorScheduleController::class, 'destroy'])->name('jadwal-koordinator.destroy');

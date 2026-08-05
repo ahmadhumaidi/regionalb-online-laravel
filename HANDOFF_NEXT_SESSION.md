@@ -180,3 +180,9 @@ Yang sudah ditambahkan:
 - Mendukung subset `--only=personalia`, `--only=collab`, atau `--only=bdc`.
 - Scheduler Laravel menjalankan sinkronisasi semua sumber setiap hari pukul 02:15 dengan `withoutOverlapping()`.
 - Server perlu menjalankan cron Laravel: `* * * * * cd /var/www/regionalb-online-laravel && php artisan schedule:run >> /dev/null 2>&1`.
+
+## Progress Generate Jadwal Koordinator (2026-08-05)
+
+- Ditambahkan tombol dan route `POST /jadwal-koordinator/generate`.
+- Generate membuat agenda default untuk setiap hari dan koordinator pada bulan terpilih.
+- Agenda yang sudah ada tidak ditimpa; koordinator hanya dapat generate regionalnya sendiri.
