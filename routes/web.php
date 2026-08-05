@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdBudgetActionController;
 use App\Http\Controllers\AdBudgetController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -24,6 +25,10 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/anggaran', [AdBudgetController::class, 'index'])->name('anggaran');
+    Route::post('/anggaran/{report}/setujui', [AdBudgetActionController::class, 'approve'])->name('anggaran.setujui');
+    Route::post('/anggaran/{report}/tolak', [AdBudgetActionController::class, 'reject'])->name('anggaran.tolak');
+    Route::post('/anggaran/{report}/revisi', [AdBudgetActionController::class, 'revise'])->name('anggaran.revisi');
+    Route::post('/anggaran/{report}/selesai', [AdBudgetActionController::class, 'complete'])->name('anggaran.selesai');
 
     Route::get('/halaman/{key}', [PlaceholderController::class, 'show'])
         ->whereIn('key', [

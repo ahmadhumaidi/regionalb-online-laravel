@@ -74,6 +74,16 @@ class RsmRole
         return in_array($user?->role, ['super_user', 'senior'], true);
     }
 
+    /**
+     * Wider than canManageAdBudget() (which gates the plafon-setting form):
+     * these are the roles whose Setujui/Tolak/Revisi buttons appear on the
+     * ads report table itself (action_buttons(), dashboard.php:4186-4227).
+     */
+    public static function canReviewAdBudgetRequest(?RsmUser $user): bool
+    {
+        return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior'], true);
+    }
+
     public static function canViewJadwalKoordinator(?RsmUser $user): bool
     {
         return $user?->role !== 'staff';

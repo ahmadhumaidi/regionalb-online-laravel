@@ -6,6 +6,7 @@ use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\DashboardNumbers;
 use App\Services\Dashboard\ReportScope;
+use App\Support\RsmRole;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -33,9 +34,9 @@ class AdBudgetReportsService
         $names = DB::table('partner_campuses')->get(['id', 'name', 'display_name'])
             ->mapWithKeys(fn ($c) => [$c->id => $c->display_name ?: $c->name]);
 
-        $regionalGroups = $reports->groupBy('wilayah')->map(function (Collection $regionalRows, $wilayah) use ($names) {
+        $regionalGroups = $reports->groupBy('wilayah')->map(function (Collection $regionalRows, $wilayah) use ($names, $user) {
             $campusGroups = $regionalRows->groupBy(fn (RsmReport $r) => $r->partner_campus_id ? 'campus:'.$r->partner_campus_id : 'unit:'.$r->unit_name)
-                ->map(function (Collection $campusRows) use ($names) {
+                ->map(function (Collection $campusRows) use ($names, $user) {
                     $first = $campusRows->first();
                     $label = $first->partner_campus_id
                         ? ($names[$first->partner_campus_id] ?? $first->unit_name)
@@ -43,7 +44,7 @@ class AdBudgetReportsService
 
                     return [
                         'label' => $label,
-                        'rows' => $campusRows->map(fn (RsmReport $r) => self::rowShape($r))->values()->all(),
+                        'rows' => $campusRows->map(fn (RsmReport $r) => self::rowShape($r, $user))->values()->all(),
                         'subtotal' => self::subtotal($campusRows),
                     ];
                 })
@@ -70,8 +71,14 @@ class AdBudgetReportsService
         ];
     }
 
-    private static function rowShape(RsmReport $report): array
+    private static function rowShape(RsmReport $report, RsmUser $user): array
     {
+        $status = (string) $report->status;
+        $canReview = RsmRole::canReviewAdBudgetRequest($user) && in_array($status, ['Pengajuan', 'Revisi'], true);
+        $canComplete = $user->role === 'koordinator'
+            && $report->wilayah === $user->regional
+            && mb_strtolower(trim($status)) === 'dilaporkan unit';
+
         return [
             'id' => $report->id,
             'report_date' => optional($report->report_date)->format('d M Y') ?? '-',
@@ -85,6 +92,8 @@ class AdBudgetReportsService
             'cpl' => (float) $report->cpl,
             'status' => $report->status,
             'has_attachment' => filled($report->attachment_path),
+            'can_review' => $canReview,
+            'can_complete' => $canComplete,
         ];
     }
 
