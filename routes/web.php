@@ -50,6 +50,8 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/anggaran/{report}/selesai', [AdBudgetActionController::class, 'complete'])->name('anggaran.selesai');
 
     Route::get('/konten', [ContentController::class, 'index'])->name('konten');
+    Route::post('/konten/accounts', [ContentController::class, 'storeAccount'])->name('konten.accounts.store');
+    Route::post('/konten/posts', [ContentController::class, 'storePost'])->name('konten.posts.store');
     Route::get('/pencapaian', [AchievementController::class, 'index'])->name('pencapaian');
     Route::get('/kegiatan', [KegiatanController::class, 'index'])->name('kegiatan');
     Route::get('/aktivitas', [AktivitasController::class, 'index'])->name('aktivitas');

@@ -192,3 +192,9 @@ Yang sudah ditambahkan:
 - Super User dapat membuat rekap teks WhatsApp berdasarkan bulan terpilih.
 - Rekap memuat tanggal, regional, koordinator, unit, status, hasil, dan follow-up.
 - Hasil ditampilkan siap salin; tidak mengirim pesan otomatis.
+
+## Progress Konten Instagram Manual (2026-08-05)
+
+- Ditambahkan pendaftaran akun Instagram kampus di halaman Konten.
+- Ditambahkan pencatatan post manual (feed/reels/story/tidak posting), keyword PMB, URL, dan skor otomatis.
+- Scope post dibatasi ke area user; OAuth Meta tetap menunggu credential/config staging.
