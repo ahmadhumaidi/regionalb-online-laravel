@@ -15,6 +15,7 @@ use App\Http\Controllers\ReportFormController;
 use App\Http\Controllers\ReportRecapController;
 use App\Http\Controllers\ReportStatusController;
 use App\Http\Controllers\TargetController;
+use App\Http\Controllers\PersonnelScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -48,6 +49,8 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/rekap/export', [ReportRecapController::class, 'export'])->name('rekap.export');
     Route::get('/targets', [TargetController::class, 'index'])->name('targets');
     Route::post('/targets', [TargetController::class, 'store'])->name('targets.store');
+    Route::get('/jadwal-personalia', [PersonnelScheduleController::class, 'index'])->name('jadwal-personalia');
+    Route::post('/jadwal-personalia/sync', [PersonnelScheduleController::class, 'sync'])->name('jadwal-personalia.sync');
     Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');
@@ -67,7 +70,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/halaman/{key}', [PlaceholderController::class, 'show'])
         ->whereIn('key', [
             'jadwal-koordinator', 'bdc-users', 'role', 'users',
-            'sumber-collab', 'jadwal-personalia',
+            'sumber-collab',
         ])
         ->name('placeholder');
 });

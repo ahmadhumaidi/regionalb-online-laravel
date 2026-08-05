@@ -73,3 +73,11 @@ Yang sudah ditambahkan:
 1. Tambahkan feature test authenticated untuk Target Bulanan dan validasi scope/bulk.
 2. Migrasikan halaman administrasi berikutnya: Jadwal Personalia atau Kelola User.
 3. Pertahankan staging-only; production tetap native sampai ada approval cutover.
+
+## Progress Jadwal Personalia (2026-08-05)
+
+- Placeholder Jadwal Personalia diganti halaman Laravel dengan snapshot cache legacy sebagai fallback.
+- Ditambahkan `PersonnelScheduleService`, `PersonnelScheduleController`, route GET `/jadwal-personalia`, dan POST `/jadwal-personalia/sync`.
+- Sinkronisasi mengambil Zona 2 dari `cb.web.id`; jika sumber gagal, snapshot lama tetap ditampilkan dan error dicatat.
+- Smoke test staging authenticated berhasil: halaman 200 dan POST sinkronisasi 200. Sumber eksternal saat tes tidak mengembalikan tabel, tetapi cache lama tetap tampil tanpa kehilangan data.
+- Akun smoke test sudah dihapus. Production tetap native.

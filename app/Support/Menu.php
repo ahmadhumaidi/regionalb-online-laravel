@@ -136,6 +136,7 @@ class Menu
             'aktivitas' => route('aktivitas'),
             'rekap' => route('rekap'),
             'targets' => route('targets'),
+            'jadwal-personalia' => route('jadwal-personalia'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };
