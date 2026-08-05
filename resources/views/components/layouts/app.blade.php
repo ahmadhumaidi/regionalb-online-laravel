@@ -54,15 +54,15 @@
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
-            <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.03)] backdrop-blur-xl lg:px-8">
+            <header class="sticky top-0 z-20 border-b border-white/10 bg-slate-950/80 px-4 py-3 text-white shadow-[0_12px_40px_rgba(2,6,23,0.18)] backdrop-blur-2xl lg:px-8">
                 <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
-                    <button @click="sidebarOpen = true" type="button" class="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 lg:hidden">
+                    <button @click="sidebarOpen = true" type="button" class="rounded-xl border border-white/15 bg-white/10 p-2 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white lg:hidden">
                         <x-icon name="menu" class="h-6 w-6" />
                     </button>
                     <div>
-                        <div class="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-brand-600 uppercase"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.14)]"></span>{{ $eyebrow }}</div>
-                        <h1 class="mt-0.5 text-xl font-bold tracking-tight text-slate-900">{{ $title }}</h1>
+                        <div class="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-sky-300 uppercase"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.14)]"></span>{{ $eyebrow }}</div>
+                        <h1 class="mt-0.5 text-xl font-bold tracking-tight text-white">{{ $title }}</h1>
                     </div>
                 </div>
 
@@ -72,9 +72,9 @@
                             @foreach (request()->except('role') as $name => $value)
                                 <input type="hidden" name="{{ $name }}" value="{{ $value }}">
                             @endforeach
-                            <label class="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 shadow-sm">
+                            <label class="flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs text-slate-300 shadow-sm">
                                 <span class="hidden sm:inline">Tampilan sebagai</span>
-                                <select name="role" onchange="this.form.submit()" class="bg-transparent text-sm font-medium text-ink focus:outline-none">
+                                <select name="role" onchange="this.form.submit()" class="bg-transparent text-sm font-medium text-white focus:outline-none">
                                     @foreach ($allowedRoleKeys as $roleKey)
                                         <option value="{{ $roleKey }}" @selected(($effectiveRole ?? null) === $roleKey)>{{ \App\Support\RsmRole::label($roleKey) }}</option>
                                     @endforeach
@@ -86,9 +86,9 @@
                     @if ($impersonationUsers->isNotEmpty())
                         <form method="POST" action="{{ route('impersonation.store') }}">
                             @csrf
-                            <label class="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-ink-muted">
+                            <label class="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs text-slate-300">
                                 <x-icon name="switch" class="h-4 w-4" />
-                                <select name="user_id" onchange="this.form.submit()" class="bg-transparent text-sm font-medium text-ink focus:outline-none">
+                                <select name="user_id" onchange="this.form.submit()" class="bg-transparent text-sm font-medium text-white focus:outline-none">
                                     @foreach ($impersonationUsers as $candidate)
                                         <option value="{{ $candidate->id }}" @selected($candidate->id === $user->id)>{{ $candidate->name }} &mdash; {{ $candidate->jabatan ?: \App\Support\RsmRole::label($candidate->role) }}</option>
                                     @endforeach
@@ -97,18 +97,18 @@
                         </form>
                     @endif
 
-                    <div class="hidden items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-right shadow-sm sm:flex">
-                        <span class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-brand-500 to-indigo-600 text-xs font-bold text-white">{{ strtoupper(mb_substr($user->name ?: 'U', 0, 1)) }}</span>
-                        <span><p class="text-sm font-semibold leading-tight text-slate-900">{{ $user->name }}</p><p class="mt-0.5 text-[11px] text-slate-500">{{ $user->username }} · {{ $user->jabatan ?: \App\Support\RsmRole::label($user->role) }}</p></span>
+                    <div class="hidden items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-right shadow-sm sm:flex">
+                        <span class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-sky-400 to-indigo-500 text-xs font-bold text-white">{{ strtoupper(mb_substr($user->name ?: 'U', 0, 1)) }}</span>
+                        <span><p class="text-sm font-semibold leading-tight text-white">{{ $user->name }}</p><p class="mt-0.5 text-[11px] text-slate-300">{{ $user->username }} · {{ $user->jabatan ?: \App\Support\RsmRole::label($user->role) }}</p></span>
                     </div>
 
-                    <button type="button" class="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 shadow-sm transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700" title="Notifikasi">
+                    <button type="button" class="rounded-xl border border-white/15 bg-white/10 p-2.5 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white" title="Notifikasi">
                         <x-icon name="bell" class="h-5 w-5" />
                     </button>
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-600">
+                        <button type="submit" class="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-sm font-semibold text-slate-200 shadow-sm transition hover:border-red-300/40 hover:bg-red-500/15 hover:text-red-200">
                             <x-icon name="logout" class="h-4 w-4" />
                             <span class="hidden sm:inline">Keluar</span>
                         </button>
