@@ -15,6 +15,8 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    'legacy_public_root' => env('LEGACY_PUBLIC_ROOT', '/var/www/regionalb.online/public_html'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

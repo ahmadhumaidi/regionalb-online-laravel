@@ -35,6 +35,7 @@
                                 <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
                             </td>
                             <td class="py-2">
+                                <a href="{{ route('reports.show', $row['id']) }}" class="mr-2 text-xs font-medium text-brand-600 underline">Detail</a>
                                 @if ($row['can_koordinator_act'])
                                     <div class="flex flex-wrap items-center gap-1">
                                         <form method="POST" action="{{ route('reports.verifikasi', $row['id']) }}" onsubmit="return confirm('Verifikasi laporan ini?')">

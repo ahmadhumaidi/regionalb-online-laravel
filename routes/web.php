@@ -11,6 +11,7 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\PlaceholderController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportFormController;
 use App\Http\Controllers\ReportStatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +31,8 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/anggaran', [AdBudgetController::class, 'index'])->name('anggaran');
+    Route::get('/anggaran/create', fn () => app(ReportFormController::class)->create('ads'))->name('anggaran.create');
+    Route::post('/anggaran', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'ads'))->name('anggaran.store');
     Route::post('/anggaran/{report}/setujui', [AdBudgetActionController::class, 'approve'])->name('anggaran.setujui');
     Route::post('/anggaran/{report}/tolak', [AdBudgetActionController::class, 'reject'])->name('anggaran.tolak');
     Route::post('/anggaran/{report}/revisi', [AdBudgetActionController::class, 'revise'])->name('anggaran.revisi');
@@ -39,6 +42,16 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/pencapaian', [AchievementController::class, 'index'])->name('pencapaian');
     Route::get('/kegiatan', [KegiatanController::class, 'index'])->name('kegiatan');
     Route::get('/aktivitas', [AktivitasController::class, 'index'])->name('aktivitas');
+    Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
+    Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
+    Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');
+    Route::post('/aktivitas', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'other'))->name('aktivitas.store');
+
+    Route::get('/laporan/{report}', [ReportFormController::class, 'show'])->name('reports.show');
+    Route::get('/laporan/{report}/edit', [ReportFormController::class, 'edit'])->name('reports.edit');
+    Route::patch('/laporan/{report}', [ReportFormController::class, 'update'])->name('reports.update');
+    Route::delete('/laporan/{report}', [ReportFormController::class, 'destroy'])->name('reports.destroy');
+    Route::get('/laporan/{report}/lampiran', [ReportFormController::class, 'attachment'])->name('reports.attachment');
 
     Route::post('/laporan/{report}/verifikasi', [ReportStatusController::class, 'verify'])->name('reports.verifikasi');
     Route::post('/laporan/{report}/setujui', [ReportStatusController::class, 'approve'])->name('reports.setujui');
