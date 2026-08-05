@@ -68,6 +68,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/jadwal-koordinator', [CoordinatorScheduleController::class, 'index'])->name('jadwal-koordinator');
     Route::post('/jadwal-koordinator', [CoordinatorScheduleController::class, 'store'])->name('jadwal-koordinator.store');
     Route::patch('/jadwal-koordinator/{schedule}', [CoordinatorScheduleController::class, 'update'])->name('jadwal-koordinator.update');
+    Route::get('/jadwal-koordinator/{schedule}/attachment', [CoordinatorScheduleController::class, 'attachment'])->name('jadwal-koordinator.attachment');
     Route::delete('/jadwal-koordinator/{schedule}', [CoordinatorScheduleController::class, 'destroy'])->name('jadwal-koordinator.destroy');
     Route::get('/sumber-collab', [CollabSourceController::class, 'index'])->name('sumber-collab');
     Route::post('/sumber-collab/sync', [CollabSourceController::class, 'sync'])->name('sumber-collab.sync');

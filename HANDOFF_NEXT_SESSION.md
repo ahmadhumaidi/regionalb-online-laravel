@@ -166,3 +166,10 @@ Yang sudah ditambahkan:
 - Perubahan dan penghapusan dicatat ke `rsm_activity_logs`.
 - Route baru: `PATCH /users/{managedUser}` dan `DELETE /users/{managedUser}`.
 - Test regresi tetap lulus 22 test / 38 assertion.
+
+## Progress Jadwal Koordinator Parity (2026-08-05)
+
+- Edit agenda sekarang mendukung checklist jobdesk (`checklist_json`).
+- Upload dokumentasi JPG/PNG/WEBP/PDF maksimal 5 MB ke Laravel public storage.
+- Ditambahkan route unduh dokumentasi dengan scope area/regional.
+- Test regresi tetap lulus 22 test / 38 assertion.
