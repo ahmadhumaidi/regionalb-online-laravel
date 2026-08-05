@@ -130,6 +130,10 @@ class Menu
         return match ($key) {
             'dashboard' => route('dashboard'),
             'anggaran' => route('anggaran'),
+            'konten' => route('konten'),
+            'pencapaian' => route('pencapaian'),
+            'kegiatan' => route('kegiatan'),
+            'aktivitas' => route('aktivitas'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };
