@@ -58,3 +58,18 @@ Yang sudah ditambahkan:
 - View Rekap menyediakan filter periode/wilayah/unit/jenis, ringkasan laporan/leads/closing/anggaran/realisasi, tabel, Detail, dan export CSV.
 - Smoke test staging berhasil: `/rekap` 200 dan `/rekap/export` 200 dengan 7 baris CSV.
 - Permission source (`app`, `resources`, `routes`, `config`) perlu dijaga readable oleh PHP-FPM setelah perubahan file.
+
+## Progress Target Bulanan (2026-08-05)
+
+- Placeholder Target Bulanan sudah diganti `TargetController` + view `resources/views/targets/index.blade.php`.
+- Route `GET /targets` dan `POST /targets` aktif; akses dibatasi role yang sama dengan legacy (`super_user`, executive/director, senior, mentor).
+- Form mendukung scope regional/wilayah/unit/staff, opsi terapkan ke semua, target leads/follow-up/registrasi/herregistrasi/anggaran, catatan, dan upsert memakai `scope_key` legacy.
+- Daftar target staff terbaru ditampilkan dan data mengikuti area user.
+- Smoke test staging authenticated berhasil: `/targets` 200, POST target staff 200 dengan pesan berhasil dan row tampil. Akun/data smoke test sudah dihapus.
+- `php artisan test` tetap lulus 7 test / 13 assertion; Blade cache berhasil setelah permission `storage/framework` dinormalkan.
+
+## Langkah berikutnya
+
+1. Tambahkan feature test authenticated untuk Target Bulanan dan validasi scope/bulk.
+2. Migrasikan halaman administrasi berikutnya: Jadwal Personalia atau Kelola User.
+3. Pertahankan staging-only; production tetap native sampai ada approval cutover.

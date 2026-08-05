@@ -135,6 +135,7 @@ class Menu
             'kegiatan' => route('kegiatan'),
             'aktivitas' => route('aktivitas'),
             'rekap' => route('rekap'),
+            'targets' => route('targets'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };
