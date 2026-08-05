@@ -141,6 +141,7 @@ class Menu
             'jadwal-koordinator' => route('jadwal-koordinator'),
             'sumber-collab' => route('sumber-collab'),
             'bdc-users' => route('bdc-users'),
+            'role' => route('role'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };

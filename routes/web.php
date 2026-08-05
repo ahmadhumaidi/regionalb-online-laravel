@@ -20,6 +20,7 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\CoordinatorScheduleController;
 use App\Http\Controllers\CollabSourceController;
 use App\Http\Controllers\BdcUsersController;
+use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -67,6 +68,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/sumber-collab/sync', [CollabSourceController::class, 'sync'])->name('sumber-collab.sync');
     Route::get('/bdc-users', [BdcUsersController::class, 'index'])->name('bdc-users');
     Route::post('/bdc-users/refresh', [BdcUsersController::class, 'refresh'])->name('bdc-users.refresh');
+    Route::get('/role', [RoleController::class, 'index'])->name('role');
     Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');

@@ -90,6 +90,13 @@ Yang sudah ditambahkan:
 - Smoke test staging berhasil: `/users` 200 dan create user 200. Akun/data smoke test sudah dibersihkan.
 - `php artisan test` tetap lulus 7 test / 13 assertion.
 
+## Progress Role/Permission (2026-08-05)
+
+- Placeholder Role/Permission diganti `RoleController` dan view `resources/views/role/index.blade.php`.
+- Menampilkan matriks akses seluruh role dan 40 log aktivitas terbaru dari `rsm_activity_logs`.
+- Smoke test staging authenticated berhasil: halaman 200 dan matriks/log tampil. Akun smoke test sudah dihapus.
+- `php artisan test` tetap lulus 7 test / 13 assertion.
+
 ## Progress BDC Marketing (2026-08-05)
 
 - Placeholder BDC Marketing diganti `BdcUsersController`, `BdcReportUsersService`, dan view `resources/views/bdc-users/index.blade.php`.
