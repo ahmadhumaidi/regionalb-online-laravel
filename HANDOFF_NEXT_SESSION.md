@@ -203,3 +203,9 @@ Yang sudah ditambahkan:
 
 - Ditambahkan coverage authorization untuk generate jadwal bulanan dan laporan WhatsApp.
 - Guest redirect coverage mencakup halaman Profil.
+
+## Progress Collab Live Sync (2026-08-05)
+
+- `CollabSourceService::sync()` sekarang mencoba mengambil enam endpoint cb.web.id secara langsung.
+- HTML tabel diparsing menjadi snapshot Laravel; jika seluruh endpoint gagal, cache legacy tetap digunakan.
+- Mode sumber pada snapshot membedakan data live dan fallback.
