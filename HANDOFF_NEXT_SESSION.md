@@ -186,3 +186,9 @@ Yang sudah ditambahkan:
 - Ditambahkan tombol dan route `POST /jadwal-koordinator/generate`.
 - Generate membuat agenda default untuk setiap hari dan koordinator pada bulan terpilih.
 - Agenda yang sudah ada tidak ditimpa; koordinator hanya dapat generate regionalnya sendiri.
+
+## Progress Laporan WhatsApp Koordinator (2026-08-05)
+
+- Super User dapat membuat rekap teks WhatsApp berdasarkan bulan terpilih.
+- Rekap memuat tanggal, regional, koordinator, unit, status, hasil, dan follow-up.
+- Hasil ditampilkan siap salin; tidak mengirim pesan otomatis.
