@@ -158,3 +158,11 @@ Yang sudah ditambahkan:
 - Jadwal Koordinator belum memiliki checklist, dokumentasi, generate bulanan, dan laporan WhatsApp.
 - Sinkronisasi Collab/BDC/Personalia belum seluruhnya menjadi job API Laravel otomatis.
 - Integrasi Instagram/social post native belum memiliki halaman Laravel.
+
+## Progress Kelola User Lanjutan (2026-08-05)
+
+- Ditambahkan edit user (nama, role, area, regional, unit, kontak, bio).
+- Ditambahkan hapus user dengan proteksi agar akun sendiri tidak dapat dihapus.
+- Perubahan dan penghapusan dicatat ke `rsm_activity_logs`.
+- Route baru: `PATCH /users/{managedUser}` dan `DELETE /users/{managedUser}`.
+- Test regresi tetap lulus 22 test / 38 assertion.

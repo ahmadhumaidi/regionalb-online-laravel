@@ -61,6 +61,8 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/jadwal-personalia/sync', [PersonnelScheduleController::class, 'sync'])->name('jadwal-personalia.sync');
     Route::get('/users', [UserManagementController::class, 'index'])->name('users');
     Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
+    Route::patch('/users/{managedUser}', [UserManagementController::class, 'update'])->name('users.update');
+    Route::delete('/users/{managedUser}', [UserManagementController::class, 'destroy'])->name('users.destroy');
     Route::post('/users/{managedUser}/toggle', [UserManagementController::class, 'toggle'])->name('users.toggle');
     Route::post('/users/{managedUser}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/jadwal-koordinator', [CoordinatorScheduleController::class, 'index'])->name('jadwal-koordinator');
