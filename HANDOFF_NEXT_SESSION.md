@@ -173,3 +173,10 @@ Yang sudah ditambahkan:
 - Upload dokumentasi JPG/PNG/WEBP/PDF maksimal 5 MB ke Laravel public storage.
 - Ditambahkan route unduh dokumentasi dengan scope area/regional.
 - Test regresi tetap lulus 22 test / 38 assertion.
+
+## Progress Sinkronisasi Otomatis (2026-08-05)
+
+- Ditambahkan command `php artisan rsm:sync-sources` untuk refresh Personalia, Collab, dan BDC.
+- Mendukung subset `--only=personalia`, `--only=collab`, atau `--only=bdc`.
+- Scheduler Laravel menjalankan sinkronisasi semua sumber setiap hari pukul 02:15 dengan `withoutOverlapping()`.
+- Server perlu menjalankan cron Laravel: `* * * * * cd /var/www/regionalb-online-laravel && php artisan schedule:run >> /dev/null 2>&1`.
