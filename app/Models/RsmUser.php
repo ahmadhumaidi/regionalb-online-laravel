@@ -68,4 +68,10 @@ class RsmUser extends Authenticatable
     {
         return $this->password_hash;
     }
+
+    /** Keep Laravel's optional password rehash on the legacy column name. */
+    public function getAuthPasswordName(): string
+    {
+        return 'password_hash';
+    }
 }

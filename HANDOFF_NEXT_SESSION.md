@@ -39,6 +39,8 @@ Yang sudah ditambahkan:
 - Checkpoint pass ini akan menjadi commit terpisah dari implementasi sebelumnya.
 - `https://staging.regionalb.online/login` sekarang merespons Laravel (HTTP 200); guest `/` redirect ke `/login` (302).
 - Permission `public/build` sempat menyebabkan 500 karena `manifest.json` mode 600; sudah diperbaiki ke permission baca publik.
+- Login staging sempat gagal dengan `SQLSTATE[42S22]`/kode UI `42522` karena Laravel mencoba menulis kolom `password`; `RsmUser::getAuthPasswordName()` sekarang mengembalikan `password_hash` dan login sudah terverifikasi 302 → dashboard 200.
+- Permission `bootstrap/cache` dan `storage/framework` juga dinormalkan agar PHP-FPM dapat membaca cache setelah Artisan dijalankan.
 - Production `https://regionalb.online` tetap memakai `/var/www/regionalb.online/public_html` native PHP.
 
 ## Langkah berikutnya
