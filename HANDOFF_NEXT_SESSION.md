@@ -90,6 +90,14 @@ Yang sudah ditambahkan:
 - Smoke test staging berhasil: `/users` 200 dan create user 200. Akun/data smoke test sudah dibersihkan.
 - `php artisan test` tetap lulus 7 test / 13 assertion.
 
+## Progress Sumber Data Collab (2026-08-05)
+
+- Placeholder Sumber Data Collab diganti `CollabSourceService`, `CollabSourceController`, dan view `resources/views/collab-source/index.blade.php`.
+- Menampilkan tab report Collab, metadata cache, sumber asli, dan tabel snapshot legacy.
+- Aksi segarkan menyalin cache legacy terbaru ke storage Laravel; jika sumber eksternal gagal, snapshot tetap tersedia.
+- Smoke test staging authenticated berhasil: halaman 200 dan refresh 200. Akun smoke test sudah dihapus.
+- `php artisan test` tetap lulus 7 test / 13 assertion.
+
 ## Progress Jadwal Koordinator (2026-08-05)
 
 - Placeholder Jadwal Koordinator diganti `CoordinatorScheduleController` dan view `resources/views/coordinator-schedule/index.blade.php`.
