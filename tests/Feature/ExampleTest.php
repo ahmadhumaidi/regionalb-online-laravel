@@ -2,18 +2,33 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_guest_is_redirected_to_login_from_dashboard(): void
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertRedirect('/login');
+    }
+
+    #[DataProvider('protectedPagesProvider')]
+    public function test_guest_is_redirected_from_migrated_pages(string $path): void
+    {
+        $this->get($path)->assertRedirect('/login');
+    }
+
+    /** @return array<string, array{string}> */
+    public static function protectedPagesProvider(): array
+    {
+        return [
+            'anggaran' => ['/anggaran'],
+            'pencapaian' => ['/pencapaian'],
+            'konten' => ['/konten'],
+            'kegiatan' => ['/kegiatan'],
+            'aktivitas' => ['/aktivitas'],
+        ];
     }
 }
