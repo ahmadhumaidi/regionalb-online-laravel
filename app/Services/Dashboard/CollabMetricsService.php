@@ -4,6 +4,7 @@ namespace App\Services\Dashboard;
 
 use App\Models\RsmCollabDailyMetric;
 use App\Models\RsmUser;
+use App\Support\AreaRegionals;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -125,21 +126,13 @@ class CollabMetricsService
     /** @return list<string> */
     private static function allowedRegionals(string $area, array $filters, RsmUser $user): array
     {
-        $regionals = $filters['wilayah'] !== '' ? [$filters['wilayah']] : self::areaRegionals($area);
+        $regionals = $filters['wilayah'] !== '' ? [$filters['wilayah']] : AreaRegionals::forArea($area);
 
         if (in_array($user->role, ['koordinator', 'staff'], true) && trim((string) $user->regional) !== '') {
             $regionals = [$user->regional];
         }
 
         return $regionals;
-    }
-
-    /** @return list<string> */
-    private static function areaRegionals(string $area): array
-    {
-        return str_contains($area, 'B')
-            ? ['Regional 4', 'Regional 5', 'Regional 6', 'Regional 7']
-            : ['Regional 1', 'Regional 2', 'Regional 3'];
     }
 
     private static function staffKey(object $row): string

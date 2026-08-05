@@ -129,6 +129,7 @@ class Menu
     {
         return match ($key) {
             'dashboard' => route('dashboard'),
+            'anggaran' => route('anggaran'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };

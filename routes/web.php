@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdBudgetController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImpersonationController;
@@ -22,11 +23,12 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::delete('/impersonation', [ImpersonationController::class, 'destroy'])->name('impersonation.destroy');
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/anggaran', [AdBudgetController::class, 'index'])->name('anggaran');
 
     Route::get('/halaman/{key}', [PlaceholderController::class, 'show'])
         ->whereIn('key', [
             'pencapaian', 'jadwal-koordinator', 'bdc-users', 'konten', 'kegiatan',
-            'aktivitas', 'anggaran', 'rekap', 'role', 'targets', 'users',
+            'aktivitas', 'rekap', 'role', 'targets', 'users',
             'sumber-collab', 'jadwal-personalia',
         ])
         ->name('placeholder');
