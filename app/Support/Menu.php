@@ -137,6 +137,7 @@ class Menu
             'rekap' => route('rekap'),
             'targets' => route('targets'),
             'jadwal-personalia' => route('jadwal-personalia'),
+            'users' => route('users'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };

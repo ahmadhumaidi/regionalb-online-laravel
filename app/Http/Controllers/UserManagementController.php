@@ -1,0 +1,15 @@
+<?php
+namespace App\Http\Controllers;
+use App\Models\RsmUser;
+use App\Support\AreaRegionals;
+use App\Support\RsmRole;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+class UserManagementController extends Controller
+{
+    public function index(Request $request) { abort_unless(RsmRole::canViewUsersPage($request->user()), 403); $area=$request->user()->area ?: 'Regional'; $users=RsmUser::query()->when($area!=='Regional',fn($q)=>$q->where(fn($x)=>$x->where('area',$area)->orWhereNull('area')->orWhereIn('role',['super_user','executive_director','director','senior'])))->orderByDesc('is_active')->orderBy('role')->orderBy('regional')->orderBy('name')->get(); return view('users.index',['users'=>$users,'area'=>$area,'regionals'=>AreaRegionals::forArea($area)]); }
+    public function store(Request $request) { abort_unless(RsmRole::canViewUsersPage($request->user()),403); $data=$request->validate(['name'=>'required|string|max:160','nik'=>'nullable|string|max:80','username'=>'required|string|max:100|unique:rsm_users,username','user_role'=>['required',Rule::in(RsmUser::ROLES)],'area'=>['required',Rule::in(['Regional A','Regional B'])],'regional'=>'nullable|string|max:80','campus_name'=>'nullable|string|max:200','new_user_password'=>'required|string|min:6']); $role=$data['user_role']; RsmUser::create(['name'=>$data['name'],'nik'=>$data['nik']??null,'username'=>$data['username'],'password_hash'=>Hash::make($data['new_user_password']),'role'=>$role,'jabatan'=>RsmRole::label($role),'area'=>$data['area'],'regional'=>$data['regional']??null,'campus_name'=>$data['campus_name']??null,'must_change_password'=>true,'is_active'=>true]); return redirect()->route('users')->with('status','User berhasil ditambahkan.'); }
+    public function toggle(Request $request,RsmUser $managedUser) { abort_unless(RsmRole::canViewUsersPage($request->user()),403); abort_if($managedUser->id===$request->user()->id,422,'Akun aktif tidak bisa dinonaktifkan.'); $managedUser->update(['is_active'=>!$managedUser->is_active]); return back()->with('status','Status user diperbarui.'); }
+    public function resetPassword(Request $request,RsmUser $managedUser) { abort_unless(RsmRole::canViewUsersPage($request->user()),403); $data=$request->validate(['new_password'=>'required|string|min:6']); $managedUser->update(['password_hash'=>Hash::make($data['new_password']),'must_change_password'=>true]); return back()->with('status','Password user berhasil direset.'); }
+}

@@ -16,6 +16,7 @@ use App\Http\Controllers\ReportRecapController;
 use App\Http\Controllers\ReportStatusController;
 use App\Http\Controllers\TargetController;
 use App\Http\Controllers\PersonnelScheduleController;
+use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -51,6 +52,10 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/targets', [TargetController::class, 'store'])->name('targets.store');
     Route::get('/jadwal-personalia', [PersonnelScheduleController::class, 'index'])->name('jadwal-personalia');
     Route::post('/jadwal-personalia/sync', [PersonnelScheduleController::class, 'sync'])->name('jadwal-personalia.sync');
+    Route::get('/users', [UserManagementController::class, 'index'])->name('users');
+    Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
+    Route::post('/users/{managedUser}/toggle', [UserManagementController::class, 'toggle'])->name('users.toggle');
+    Route::post('/users/{managedUser}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');

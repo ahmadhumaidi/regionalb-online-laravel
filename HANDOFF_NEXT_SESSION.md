@@ -81,3 +81,11 @@ Yang sudah ditambahkan:
 - Sinkronisasi mengambil Zona 2 dari `cb.web.id`; jika sumber gagal, snapshot lama tetap ditampilkan dan error dicatat.
 - Smoke test staging authenticated berhasil: halaman 200 dan POST sinkronisasi 200. Sumber eksternal saat tes tidak mengembalikan tabel, tetapi cache lama tetap tampil tanpa kehilangan data.
 - Akun smoke test sudah dihapus. Production tetap native.
+
+## Progress Kelola User (2026-08-05)
+
+- Placeholder Kelola User diganti `UserManagementController` dan view `resources/views/users/index.blade.php`.
+- Ditambahkan daftar user per area, tambah user baru dengan role/area/regional, aktivasi/nonaktifkan, dan reset password dengan `must_change_password`.
+- Akses dibatasi sama dengan legacy: hanya `super_user` dan `senior`.
+- Smoke test staging berhasil: `/users` 200 dan create user 200. Akun/data smoke test sudah dibersihkan.
+- `php artisan test` tetap lulus 7 test / 13 assertion.
