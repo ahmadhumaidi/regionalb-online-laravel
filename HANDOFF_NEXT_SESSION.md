@@ -210,3 +210,8 @@ Yang sudah ditambahkan:
 - HTML tabel diparsing menjadi snapshot Laravel; jika seluruh endpoint gagal, cache legacy tetap digunakan.
 - Mode sumber pada snapshot membedakan data live dan fallback.
 - Uji live sync berjalan; sebagian besar report berhasil, satu endpoint `Herreg Kampus Regional` masih mengembalikan error dan fallback digunakan.
+
+## Deployment Scheduler (2026-08-05)
+
+- Cron server staging sudah ditambahkan: `* * * * * cd /var/www/regionalb-online-laravel && php artisan schedule:run >> /dev/null 2>&1`.
+- Sinkronisasi harian Laravel kini akan dieksekusi otomatis oleh cron.
