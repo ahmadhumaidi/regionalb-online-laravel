@@ -142,3 +142,19 @@ Yang sudah ditambahkan:
 - Scope role mengikuti native: staff tidak melihat halaman; koordinator terbatas regionalnya; role manajemen dapat mengelola.
 - Smoke test staging authenticated berhasil: halaman 200 dan tambah agenda 200. Data/account smoke test sudah dibersihkan.
 - `php artisan test` tetap lulus 7 test / 13 assertion.
+
+## Progress Profil Pengguna (2026-08-05)
+
+- Placeholder navigasi avatar kini menuju halaman Laravel `/profile`.
+- Ditambahkan ringkasan profil, total kegiatan/leads/closing/hari aktif, aktivitas terbaru, edit biodata, dan upload foto profil.
+- Scope laporan mengikuti role staff/koordinator dan area user.
+- Ganti password tetap tersedia di `/profile/password`.
+- Checkpoint commit: `e4d92e7`.
+- Test regresi tetap lulus 22 test / 38 assertion.
+
+## Gap Berikutnya
+
+- Kelola User belum memiliki edit/hapus dan pengelolaan seluruh field profil.
+- Jadwal Koordinator belum memiliki checklist, dokumentasi, generate bulanan, dan laporan WhatsApp.
+- Sinkronisasi Collab/BDC/Personalia belum seluruhnya menjadi job API Laravel otomatis.
+- Integrasi Instagram/social post native belum memiliki halaman Laravel.
