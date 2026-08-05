@@ -209,3 +209,4 @@ Yang sudah ditambahkan:
 - `CollabSourceService::sync()` sekarang mencoba mengambil enam endpoint cb.web.id secara langsung.
 - HTML tabel diparsing menjadi snapshot Laravel; jika seluruh endpoint gagal, cache legacy tetap digunakan.
 - Mode sumber pada snapshot membedakan data live dan fallback.
+- Uji live sync berjalan; sebagian besar report berhasil, satu endpoint `Herreg Kampus Regional` masih mengembalikan error dan fallback digunakan.

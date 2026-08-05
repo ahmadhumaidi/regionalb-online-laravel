@@ -22,7 +22,7 @@ class SyncLegacySources extends Command
         }
         if ($run('collab')) {
             $data = CollabSourceService::sync();
-            $this->line('Collab: '.(!empty($data['errors']) ? 'fallback/error' : 'ok'));
+            $this->line('Collab: '.count($data['reports'] ?? []).' report, '.count($data['errors'] ?? []).' error');
         }
         if ($run('bdc')) {
             $data = BdcReportUsersService::refresh();
