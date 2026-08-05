@@ -89,3 +89,11 @@ Yang sudah ditambahkan:
 - Akses dibatasi sama dengan legacy: hanya `super_user` dan `senior`.
 - Smoke test staging berhasil: `/users` 200 dan create user 200. Akun/data smoke test sudah dibersihkan.
 - `php artisan test` tetap lulus 7 test / 13 assertion.
+
+## Progress Jadwal Koordinator (2026-08-05)
+
+- Placeholder Jadwal Koordinator diganti `CoordinatorScheduleController` dan view `resources/views/coordinator-schedule/index.blade.php`.
+- Ditambahkan filter bulan/wilayah/koordinator/status, tambah agenda, update, dan hapus.
+- Scope role mengikuti native: staff tidak melihat halaman; koordinator terbatas regionalnya; role manajemen dapat mengelola.
+- Smoke test staging authenticated berhasil: halaman 200 dan tambah agenda 200. Data/account smoke test sudah dibersihkan.
+- `php artisan test` tetap lulus 7 test / 13 assertion.

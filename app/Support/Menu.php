@@ -138,6 +138,7 @@ class Menu
             'targets' => route('targets'),
             'jadwal-personalia' => route('jadwal-personalia'),
             'users' => route('users'),
+            'jadwal-koordinator' => route('jadwal-koordinator'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };

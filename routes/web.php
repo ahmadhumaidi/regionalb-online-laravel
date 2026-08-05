@@ -17,6 +17,7 @@ use App\Http\Controllers\ReportStatusController;
 use App\Http\Controllers\TargetController;
 use App\Http\Controllers\PersonnelScheduleController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\CoordinatorScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -56,6 +57,10 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
     Route::post('/users/{managedUser}/toggle', [UserManagementController::class, 'toggle'])->name('users.toggle');
     Route::post('/users/{managedUser}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
+    Route::get('/jadwal-koordinator', [CoordinatorScheduleController::class, 'index'])->name('jadwal-koordinator');
+    Route::post('/jadwal-koordinator', [CoordinatorScheduleController::class, 'store'])->name('jadwal-koordinator.store');
+    Route::patch('/jadwal-koordinator/{schedule}', [CoordinatorScheduleController::class, 'update'])->name('jadwal-koordinator.update');
+    Route::delete('/jadwal-koordinator/{schedule}', [CoordinatorScheduleController::class, 'destroy'])->name('jadwal-koordinator.destroy');
     Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');
