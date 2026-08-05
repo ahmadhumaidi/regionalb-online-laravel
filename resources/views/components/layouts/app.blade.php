@@ -17,7 +17,7 @@
             class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full transform flex-col border-r border-border bg-surface-sidebar transition-transform duration-200 lg:static lg:translate-x-0"
             :class="sidebarOpen && '!translate-x-0'"
         >
-            <a href="{{ route('password.edit') }}" class="flex items-center gap-3 border-b border-border px-5 py-5 hover:bg-brand-50/60">
+            <a href="{{ route('profile') }}" class="flex items-center gap-3 border-b border-border px-5 py-5 hover:bg-brand-50/60">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-600 text-sm font-semibold text-white">
                     @if ($user->photo_path)
                         <img src="{{ $user->photo_path }}" alt="{{ $user->name }}" class="h-full w-full object-cover">
