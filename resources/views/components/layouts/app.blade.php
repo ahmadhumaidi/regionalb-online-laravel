@@ -54,7 +54,7 @@
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
-            <header class="sticky top-0 z-20 border-b border-white/10 bg-slate-950/95 px-4 py-3 text-white shadow-[0_12px_40px_rgba(2,6,23,0.24)] backdrop-blur-2xl lg:px-8">
+            <header class="sticky top-0 z-20 border-b border-white/10 bg-black/50 px-4 py-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.24)] backdrop-blur-2xl lg:px-8">
                 <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <button @click="sidebarOpen = true" type="button" class="rounded-xl border border-white/15 bg-white/10 p-2 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white lg:hidden">
