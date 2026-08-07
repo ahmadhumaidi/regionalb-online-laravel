@@ -86,14 +86,14 @@ class ReportFormController extends Controller
         abort_unless(filled($report->attachment_path), 404);
 
         if (Storage::disk('public')->exists($report->attachment_path)) {
-            return Storage::disk('public')->download($report->attachment_path);
+            return Storage::disk('public')->response($report->attachment_path);
         }
 
         $legacyRoot = config('filesystems.legacy_public_root');
         $legacyPath = $legacyRoot ? realpath($legacyRoot.'/'.$report->attachment_path) : false;
         abort_unless($legacyPath && str_starts_with($legacyPath, realpath($legacyRoot)), 404);
 
-        return response()->download($legacyPath);
+        return response()->file($legacyPath);
     }
 
     private function formView(string $type, RsmReport $report, bool $editing, RsmUser $user): View
