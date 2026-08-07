@@ -14,36 +14,37 @@
         <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"></div>
 
         <aside
-            class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full transform flex-col border-r border-border bg-surface-sidebar transition-transform duration-200 lg:static lg:translate-x-0"
+            class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full transform flex-col border-r border-border transition-transform duration-200 lg:static lg:translate-x-0"
+            style="background: linear-gradient(180deg, rgba(33, 36, 70, 0.95), rgba(22, 24, 52, 0.96)); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);"
             :class="sidebarOpen && '!translate-x-0'"
         >
-            <a href="{{ route('profile') }}" class="flex items-center gap-3 border-b border-border px-5 py-5 hover:bg-brand-50/60">
+            <a href="{{ route('profile') }}" class="flex items-center gap-3 border-b border-white/20 px-5 py-5 hover:bg-white/10">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-600 text-sm font-semibold text-white">
                     @if ($user->photo_path)
-                        <img src="{{ $user->photo_path }}" alt="{{ $user->name }}" class="h-full w-full object-cover">
+                        <img src="{{ str_starts_with($user->photo_path, 'profiles/') ? Storage::url($user->photo_path) : $user->photo_path }}" alt="{{ $user->name }}" class="h-full w-full object-cover">
                     @else
                         {{ strtoupper(mb_substr($user->name ?: 'U', 0, 1)) }}
                     @endif
                 </span>
                 <span class="min-w-0">
-                    <span class="block truncate text-sm font-semibold text-ink">{{ $user->name }}</span>
-                    <span class="block truncate text-xs text-ink-muted">{{ $user->campus_name ?: 'Kampus belum diatur' }}</span>
-                    <span class="block truncate text-xs text-ink-muted">{{ $user->jabatan ?: \App\Support\RsmRole::label($user->role) }}</span>
+                    <span class="block truncate text-sm font-semibold text-white">{{ $user->name }}</span>
+                    <span class="block truncate text-xs text-white/70">{{ $user->campus_name ?: 'Kampus belum diatur' }}</span>
+                    <span class="block truncate text-xs text-white/70">{{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) ($user->jabatan ?: \App\Support\RsmRole::label($user->role))) }}</span>
                 </span>
             </a>
 
             <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-4">
                 @foreach ($menuSections as $section)
                     <div>
-                        <p class="px-2 text-xs font-semibold tracking-wide text-ink-muted uppercase">{{ $section['title'] }}</p>
+                        <p class="px-2 text-xs font-semibold tracking-wide text-white/70 uppercase">{{ $section['title'] }}</p>
                         <div class="mt-2 space-y-0.5">
                             @foreach ($section['items'] as $item)
                                 @php $isActive = $active === $item['key']; @endphp
                                 <a
                                     href="{{ \App\Support\Menu::routeFor($item['key']) }}"
-                                    class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ $isActive ? 'bg-brand-600 text-white shadow-sm' : 'text-ink hover:bg-brand-50 hover:text-brand-700' }}"
+                                    class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ $isActive ? 'bg-white/20 text-white shadow-sm' : 'text-white/85 hover:bg-white/10 hover:text-white' }}"
                                 >
-                                    <x-icon :name="$item['icon']" class="h-5 w-5 shrink-0 {{ $isActive ? 'text-white' : 'text-ink-muted' }}" />
+                                    <x-icon :name="$item['icon']" class="h-5 w-5 shrink-0 text-white/80" />
                                     <span class="truncate">{{ $item['label'] }}</span>
                                 </a>
                             @endforeach
@@ -54,8 +55,8 @@
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
-            <header class="sticky top-0 z-20 border-b border-white/10 bg-black px-4 py-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.24)] lg:px-8">
-                <div class="flex flex-wrap items-center justify-between gap-4">
+            <header class="sticky top-0 z-20 border-b border-white/10 px-3 py-2 text-white shadow-[0_12px_40px_rgba(0,0,0,0.24)] lg:px-8 lg:py-3" style="background-color: rgba(16, 18, 39, 0.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);">
+                <div class="flex flex-wrap items-center justify-between gap-2 lg:gap-4">
                 <div class="flex items-center gap-3">
                     <button @click="sidebarOpen = true" type="button" class="rounded-xl border border-white/15 bg-white/10 p-2 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white lg:hidden">
                         <x-icon name="menu" class="h-6 w-6" />
@@ -66,7 +67,7 @@
                     </div>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2.5">
+                <div class="flex flex-nowrap items-center gap-2.5 overflow-x-auto">
                     @if (count($allowedRoleKeys ?? []) > 1)
                         <form method="GET" action="{{ url()->current() }}">
                             @foreach (request()->except('role') as $name => $value)
@@ -74,9 +75,9 @@
                             @endforeach
                             <label class="flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs text-slate-300 shadow-sm">
                                 <span class="hidden sm:inline">Tampilan sebagai</span>
-                                <select name="role" onchange="this.form.submit()" class="bg-transparent text-sm font-medium text-white focus:outline-none">
+                                <select name="role" onchange="this.form.submit()" class="max-w-[130px] bg-transparent text-sm font-medium text-white focus:outline-none">
                                     @foreach ($allowedRoleKeys as $roleKey)
-                                        <option value="{{ $roleKey }}" @selected(($effectiveRole ?? null) === $roleKey)>{{ \App\Support\RsmRole::label($roleKey) }}</option>
+                                        <option value="{{ $roleKey }}" @selected(($effectiveRole ?? null) === $roleKey)>{{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) \App\Support\RsmRole::label($roleKey)) }}</option>
                                     @endforeach
                                 </select>
                             </label>
@@ -88,9 +89,9 @@
                             @csrf
                             <label class="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs text-slate-300">
                                 <x-icon name="switch" class="h-4 w-4" />
-                                <select name="user_id" onchange="this.form.submit()" class="bg-transparent text-sm font-medium text-white focus:outline-none">
+                                <select name="user_id" onchange="this.form.submit()" class="max-w-[180px] truncate bg-transparent text-sm font-medium text-white focus:outline-none">
                                     @foreach ($impersonationUsers as $candidate)
-                                        <option value="{{ $candidate->id }}" @selected($candidate->id === $user->id)>{{ $candidate->name }} &mdash; {{ $candidate->jabatan ?: \App\Support\RsmRole::label($candidate->role) }}</option>
+                                        <option value="{{ $candidate->id }}" @selected($candidate->id === $user->id)>{{ $candidate->name }} &mdash; {{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) ($candidate->jabatan ?: \App\Support\RsmRole::label($candidate->role))) }}</option>
                                     @endforeach
                                 </select>
                             </label>
@@ -99,7 +100,7 @@
 
                     <div class="hidden items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-right shadow-sm sm:flex">
                         <span class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-sky-400 to-indigo-500 text-xs font-bold text-white">{{ strtoupper(mb_substr($user->name ?: 'U', 0, 1)) }}</span>
-                        <span><p class="text-sm font-semibold leading-tight text-white">{{ $user->name }}</p><p class="mt-0.5 text-[11px] text-slate-300">{{ $user->username }} · {{ $user->jabatan ?: \App\Support\RsmRole::label($user->role) }}</p></span>
+                        <span><p class="text-sm font-semibold leading-tight text-white">{{ $user->name }}</p><p class="mt-0.5 text-[11px] text-slate-300">{{ $user->username }} · {{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) ($user->jabatan ?: \App\Support\RsmRole::label($user->role))) }}</p></span>
                     </div>
 
                     <button type="button" class="rounded-xl border border-white/15 bg-white/10 p-2.5 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white" title="Notifikasi">

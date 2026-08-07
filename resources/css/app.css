@@ -22,8 +22,8 @@
     --color-brand-900: #1e3a8a;
 
     /* Surfaces & text, ported from the legacy :root palette (assets/style.css). */
-    --color-surface: #ffffff;
-    --color-surface-muted: #f4f7fb;
+    --color-surface: #e8ecff;
+    --color-surface-muted: #dfe5fb;
     --color-surface-sidebar: #f8fafc;
     --color-border: #dbe3ef;
     --color-ink: #111827;
