@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Exports\AdsRekapExport;
+use App\Exports\RekapExport;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\AchievementWhatsappService;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\ReferenceOptionsService;
 use App\Services\Reports\ReportRecapService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -60,10 +62,33 @@ class ReportRecapController extends Controller
         $filters = DashboardFilters::fromRequest($request, 'rekap');
         $recap = ReportRecapService::build($area, $filters, $type, $user);
 
-        if ($type === RsmReport::TYPE_ADS) {
-            $filename = 'rekap-laporan-iklan-'.Str::slug($area).'-'.now()->format('Ymd-His').'.xlsx';
+        $format = (string) $request->query('format', $type === RsmReport::TYPE_ADS ? 'excel' : 'csv');
+        if (! in_array($format, ['csv', 'excel', 'pdf'], true)) {
+            $format = 'csv';
+        }
 
-            return Excel::download(new AdsRekapExport($area, $filters['date_from'], $filters['date_to'], $recap['rows']), $filename);
+        if ($format === 'pdf') {
+            $filename = 'rekap-'.Str::slug($area).'-'.now()->format('Ymd-His').'.pdf';
+
+            return Pdf::loadView('exports.rekap-pdf', [
+                'area' => $area,
+                'dateFrom' => $filters['date_from'],
+                'dateTo' => $filters['date_to'],
+                'type' => $type,
+                'rows' => $recap['rows'],
+            ])->download($filename);
+        }
+
+        if ($format === 'excel') {
+            if ($type === RsmReport::TYPE_ADS) {
+                $filename = 'rekap-laporan-iklan-'.Str::slug($area).'-'.now()->format('Ymd-His').'.xlsx';
+
+                return Excel::download(new AdsRekapExport($area, $filters['date_from'], $filters['date_to'], $recap['rows']), $filename);
+            }
+
+            $filename = 'rekap-'.Str::slug($area).'-'.now()->format('Ymd-His').'.xlsx';
+
+            return Excel::download(new RekapExport($area, $filters['date_from'], $filters['date_to'], $type, $recap['rows']), $filename);
         }
 
         $filename = 'rekap-'.Str::slug($area).'-'.now()->format('Ymd-His').'.csv';
