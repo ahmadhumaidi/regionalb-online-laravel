@@ -121,6 +121,8 @@ class DashboardOverviewService
             $herregistrasi = (float) $groupRows->sum('herregistrasi');
             $adsRows = $groupRows->filter(fn ($row) => $row['report_type'] === RsmReport::TYPE_ADS);
             $spend = (float) $adsRows->sum('realization_amount');
+            $adsLeads = (float) $adsRows->sum('leads');
+            $adsRegistrasi = (float) $adsRows->sum('registrasi');
 
             return [
                 'unit_label' => $label,
@@ -129,8 +131,8 @@ class DashboardOverviewService
                 'herregistrasi' => $herregistrasi,
                 'conversion_rate' => DashboardNumbers::percent($registrasi, $leads),
                 'spend' => $spend,
-                'cpl' => DashboardNumbers::divide($spend, $leads),
-                'cost_per_registrasi' => DashboardNumbers::divide($spend, $registrasi),
+                'cpl' => DashboardNumbers::divide($spend, $adsLeads),
+                'cost_per_registrasi' => DashboardNumbers::divide($spend, $adsRegistrasi),
             ];
         })->values();
 

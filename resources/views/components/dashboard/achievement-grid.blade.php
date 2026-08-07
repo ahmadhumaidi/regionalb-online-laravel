@@ -2,9 +2,12 @@
 
 <section class="mb-6 grid gap-4 lg:grid-cols-2">
     <article class="rounded-2xl border border-border bg-surface p-5">
-        <div class="mb-3">
-            <h2 class="text-base font-semibold text-ink">Top 5 Pencapaian Kampus</h2>
-            <span class="text-xs text-ink-muted">Kampus tertinggi, acuan: Closing Kampus Regional</span>
+        <div class="mb-3 flex items-start justify-between gap-2">
+            <div>
+                <h2 class="text-base font-semibold text-ink">Top 5 Pencapaian Kampus</h2>
+                <span class="text-xs text-ink-muted">Kampus tertinggi, acuan: Closing Kampus Regional</span>
+            </div>
+            <a href="{{ route('closing-kampus') }}" class="shrink-0 text-xs font-semibold text-brand-600 underline">Lihat semua</a>
         </div>
         @php $topCampus = array_slice($campusClosing['rows'], 0, 5); @endphp
         @if (empty($topCampus))

@@ -29,6 +29,7 @@ class Menu
                 'title' => 'Kinerja & Tim',
                 'items' => array_values(array_filter([
                     ['key' => 'pencapaian', 'label' => 'Pencapaian Staff', 'icon' => 'chart-bar'],
+                    ['key' => 'closing-kampus', 'label' => 'Pencapaian Kampus', 'icon' => 'chart-bar'],
                     RsmRole::canViewJadwalKoordinator($user)
                         ? ['key' => 'jadwal-koordinator', 'label' => 'Jadwal Koordinator', 'icon' => 'calendar']
                         : null,
@@ -70,7 +71,7 @@ class Menu
             [
                 'title' => 'Akun',
                 'items' => [
-                    ['key' => 'role', 'label' => 'User & Role', 'icon' => 'shield'],
+                    ['key' => 'role', 'label' => 'Peran & Log Aktivitas', 'icon' => 'shield'],
                     ['key' => 'password', 'label' => 'Ganti Password', 'icon' => 'lock'],
                 ],
             ],
@@ -98,13 +99,13 @@ class Menu
             'anggaran' => 'Anggaran & Laporan Iklan',
             'aktivitas' => 'Aktivitas Lain',
             'rekap' => 'Laporan & Rekap',
-            'role' => 'User & Role',
+            'role' => 'Peran & Log Aktivitas',
             'password' => 'Ganti Password',
             'targets' => 'Target Bulanan',
             'users' => 'Kelola User',
             'sumber-collab' => 'Sumber Data Collab',
             'jadwal-personalia' => 'Jadwal Personalia',
-            'closing-kampus' => 'Top 5 Pencapaian Kampus',
+            'closing-kampus' => 'Pencapaian Kampus',
         ];
     }
 
