@@ -45,9 +45,13 @@ class ReferenceOptionsService
             ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
             ->all();
 
-        $campuses = DB::table('partner_campuses')
+        $campusesQuery = DB::table('partner_campuses')
             ->select('id')
-            ->selectRaw('COALESCE(display_name, name) as label')
+            ->selectRaw('COALESCE(display_name, name) as label');
+        if ($user->role === 'koordinator' && trim((string) $user->regional) !== '') {
+            $campusesQuery->where(fn ($q) => $q->where('wilayah', $user->regional)->orWhereNull('wilayah'));
+        }
+        $campuses = $campusesQuery
             ->orderByRaw('COALESCE(display_name, name)')
             ->get()
             ->unique('label')

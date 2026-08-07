@@ -138,6 +138,10 @@ class ReportFormService
         $staffRow = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('name', $staff)->when($wilayah !== '', fn ($q) => $q->where('regional', $wilayah))->first();
         $campus = DB::table('partner_campuses')->where('display_name', $unit)->orWhere('name', $unit)->first();
 
+        if ($user->role === RsmUser::ROLE_KOORDINATOR && $campus && $campus->wilayah && $campus->wilayah !== $user->regional) {
+            throw ValidationException::withMessages(['unit_name' => 'Kampus tersebut bukan bagian dari wilayah Anda.']);
+        }
+
         $status = $type === RsmReport::TYPE_ADS ? 'Pengajuan' : ((string) ($data['status'] ?? 'Draft'));
         if ($existing && $user->role !== RsmUser::ROLE_STAFF) {
             $status = in_array($status, ['Draft', 'Revisi', 'Dikirim'], true) ? $status : $existing->status;
