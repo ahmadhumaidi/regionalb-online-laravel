@@ -15,7 +15,7 @@ class TargetController extends Controller
     {
         $user = $request->user();
         abort_unless(RsmRole::canManageTargets($user), 403);
-        $area = $user->area ?: 'Regional';
+        $area = $user->area ?: 'Regional B';
         $references = $this->references($area);
         $targets = RsmMonthlyTarget::query()->where('area', $area)->where('scope_type', 'staff')->orderByDesc('target_month')->orderBy('wilayah')->orderBy('unit_name')->orderBy('staff_name')->limit(80)->get();
         return view('targets.index', compact('area', 'references', 'targets'));
@@ -31,7 +31,7 @@ class TargetController extends Controller
             'wilayah' => ['nullable', 'string', 'max:120'], 'unit_name' => ['nullable', 'string', 'max:160'], 'staff_name' => ['nullable', 'string', 'max:160'],
             'target_leads' => ['nullable', 'integer', 'min:0'], 'target_follow_up' => ['nullable', 'integer', 'min:0'], 'target_registrasi' => ['nullable', 'integer', 'min:0'], 'target_herregistrasi' => ['nullable', 'integer', 'min:0'], 'target_anggaran' => ['nullable', 'numeric', 'min:0'], 'notes' => ['nullable', 'string', 'max:1000'],
         ]);
-        $all = $request->boolean('apply_all_scope'); $area = $user->area ?: 'Regional'; $scope = $data['scope_type'];
+        $all = $request->boolean('apply_all_scope'); $area = $user->area ?: 'Regional B'; $scope = $data['scope_type'];
         $wilayah = $scope === 'regional' ? '' : trim((string) ($data['wilayah'] ?? '')); $unit = in_array($scope, ['unit', 'staff'], true) ? trim((string) ($data['unit_name'] ?? '')) : ''; $staff = $scope === 'staff' ? trim((string) ($data['staff_name'] ?? '')) : '';
         if (! $all && $scope === 'wilayah' && $wilayah === '') return back()->withErrors(['wilayah' => 'Wilayah wajib dipilih.'])->withInput();
         if (! $all && $scope === 'unit' && $unit === '') return back()->withErrors(['unit_name' => 'Unit/Kampus wajib dipilih.'])->withInput();

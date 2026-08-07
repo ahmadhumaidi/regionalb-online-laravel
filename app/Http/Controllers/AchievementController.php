@@ -25,7 +25,7 @@ class AchievementController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        $area = $user->area ?: 'Regional';
+        $area = $user->area ?: 'Regional B';
 
         $filters = DashboardFilters::fromRequest($request, 'pencapaian');
         $performance = CollabMetricsService::staffPerformance($area, $filters, $user);

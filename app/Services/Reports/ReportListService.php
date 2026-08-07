@@ -5,6 +5,7 @@ namespace App\Services\Reports;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\ReportScope;
+use App\Services\Reports\ReportFormService;
 use App\Support\RsmRole;
 
 /**
@@ -65,6 +66,8 @@ class ReportListService
             'has_attachment' => filled($report->attachment_path),
             'can_koordinator_act' => $canKoordinatorAct,
             'can_senior_act' => $canSeniorAct,
+            'can_edit' => ReportFormService::canEdit($report, $user),
+            'can_delete' => ReportFormService::canDelete($report, $user),
         ];
     }
 }

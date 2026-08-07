@@ -36,7 +36,7 @@ class DashboardController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        $area = $user->area ?: 'Regional';
+        $area = $user->area ?: 'Regional B';
 
         $filters = DashboardFilters::fromRequest($request, 'dashboard');
 

@@ -35,9 +35,19 @@
                                 <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
                             </td>
                             <td class="py-2">
-                                <a href="{{ route('reports.show', $row['id']) }}" class="mr-2 text-xs font-medium text-brand-600 underline">Detail</a>
-                                @if ($row['can_koordinator_act'])
-                                    <div class="flex flex-wrap items-center gap-1">
+                                <div class="flex flex-wrap items-center gap-1">
+                                    <a href="{{ route('reports.show', $row['id']) }}" title="Lihat" aria-label="Lihat" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="eye" class="h-3.5 w-3.5" /></a>
+                                    @if ($row['can_edit'])
+                                        <a href="{{ route('reports.edit', $row['id']) }}" title="Edit" aria-label="Edit" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="edit" class="h-3.5 w-3.5" /></a>
+                                    @endif
+                                    @if ($row['can_delete'])
+                                        <form method="POST" action="{{ route('reports.destroy', $row['id']) }}" onsubmit="return confirm('Hapus laporan ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" title="Hapus" aria-label="Hapus" class="rounded-md border border-tone-red p-1 text-tone-red"><x-icon name="trash" class="h-3.5 w-3.5" /></button>
+                                        </form>
+                                    @endif
+                                    @if ($row['can_koordinator_act'])
                                         <form method="POST" action="{{ route('reports.verifikasi', $row['id']) }}" onsubmit="return confirm('Verifikasi laporan ini?')">
                                             @csrf
                                             <button type="submit" class="rounded-md bg-tone-green px-2 py-1 text-[11px] font-semibold text-white">Verifikasi</button>
@@ -47,9 +57,7 @@
                                             <input type="hidden" name="note" value="">
                                             <button type="submit" class="rounded-md border border-tone-amber px-2 py-1 text-[11px] font-semibold text-tone-amber">Revisi</button>
                                         </form>
-                                    </div>
-                                @elseif ($row['can_senior_act'])
-                                    <div class="flex flex-wrap items-center gap-1">
+                                    @elseif ($row['can_senior_act'])
                                         <form method="POST" action="{{ route('reports.setujui', $row['id']) }}" onsubmit="return confirm('Setujui laporan ini?')">
                                             @csrf
                                             <button type="submit" class="rounded-md bg-tone-green px-2 py-1 text-[11px] font-semibold text-white">Setujui</button>
@@ -63,8 +71,8 @@
                                             <input type="hidden" name="note" value="">
                                             <button type="submit" class="rounded-md border border-tone-amber px-2 py-1 text-[11px] font-semibold text-tone-amber">Revisi</button>
                                         </form>
-                                    </div>
-                                @endif
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach

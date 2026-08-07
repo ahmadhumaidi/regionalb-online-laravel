@@ -28,7 +28,7 @@ class App extends Component
         $user = Auth::user();
 
         $this->user = $user;
-        $this->eyebrow = str_replace('Regional B', 'RSM B', $eyebrow !== '' ? $eyebrow : ($user->area ?: 'Regional'));
+        $this->eyebrow = str_replace('Regional B', 'RSM B', $eyebrow !== '' ? $eyebrow : ($user->area ?: 'Regional B'));
         $this->menuSections = Menu::sections($user);
         $this->impersonationUsers = RsmRole::canImpersonate($user)
             ? RsmUser::where('is_active', true)->where('area', $user->area)->orderBy('regional')->orderBy('name')->get()

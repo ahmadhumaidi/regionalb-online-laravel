@@ -23,7 +23,7 @@ class ContentController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        $area = $user->area ?: 'Regional';
+        $area = $user->area ?: 'Regional B';
 
         $filters = DashboardFilters::fromRequest($request, 'konten');
         $summary = ContentSummaryService::build($area, $filters, $user);
@@ -51,7 +51,7 @@ class ContentController extends Controller
     {
         $user = $request->user();
         $data = $request->validate(['wilayah'=>'required|string|max:120','unit_name'=>'required|string|max:180','instagram_username'=>'required|string|max:180','pic_name'=>'nullable|string|max:180','pic_phone'=>'nullable|string|max:80']);
-        RsmSocialAccount::updateOrCreate(['area'=>$user->area ?: 'Regional','unit_name'=>$data['unit_name'],'instagram_username'=>ltrim($data['instagram_username'],'@')], $data + ['created_by_user_id'=>$user->id,'created_by_name'=>$user->name,'is_active'=>true,'connection_status'=>'Manual']);
+        RsmSocialAccount::updateOrCreate(['area'=>$user->area ?: 'Regional B','unit_name'=>$data['unit_name'],'instagram_username'=>ltrim($data['instagram_username'],'@')], $data + ['created_by_user_id'=>$user->id,'created_by_name'=>$user->name,'is_active'=>true,'connection_status'=>'Manual']);
         return back()->with('status','Akun Instagram berhasil disimpan.');
     }
 
@@ -59,9 +59,9 @@ class ContentController extends Controller
     {
         $user = $request->user();
         $data = $request->validate(['account_id'=>'required|integer|exists:rsm_social_accounts,id','post_date'=>'required|date','media_type'=>['required',\Illuminate\Validation\Rule::in(['no_post','feed','reels','story'])],'caption'=>'nullable|string|max:5000','post_url'=>'nullable|url|max:500','keyword_match'=>'nullable|boolean','reach_count'=>'nullable|integer|min:0','like_count'=>'nullable|integer|min:0','comment_count'=>'nullable|integer|min:0']);
-        $account = RsmSocialAccount::where('id',$data['account_id'])->where('area',$user->area ?: 'Regional')->firstOrFail();
+        $account = RsmSocialAccount::where('id',$data['account_id'])->where('area',$user->area ?: 'Regional B')->firstOrFail();
         $score = ['feed'=>10,'reels'=>15,'story'=>5,'no_post'=>0][$data['media_type']] + (!empty($data['keyword_match']) ? 5 : 0);
-        RsmSocialPost::create($data + ['area'=>$user->area ?: 'Regional','score'=>$score,'source_name'=>'Manual','created_by_user_id'=>$user->id,'created_by_name'=>$user->name]);
+        RsmSocialPost::create($data + ['area'=>$user->area ?: 'Regional B','score'=>$score,'source_name'=>'Manual','created_by_user_id'=>$user->id,'created_by_name'=>$user->name]);
         return back()->with('status','Post konten berhasil dicatat.');
     }
 }

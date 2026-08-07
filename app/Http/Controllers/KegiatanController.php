@@ -23,7 +23,7 @@ class KegiatanController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        $area = $user->area ?: 'Regional';
+        $area = $user->area ?: 'Regional B';
 
         return view('kegiatan.index', [
             'active' => 'kegiatan',
