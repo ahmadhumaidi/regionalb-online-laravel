@@ -226,3 +226,84 @@ Yang sudah ditambahkan:
 - Profil Laravel kini menghitung XP dari laporan/leads/closing.
 - Ditambahkan level, progress level, league, skor performa, dan badge dasar.
 - Test suite tetap lulus 24 test / 42 assertion.
+
+## Setup Environment Lokal (2026-08-08)
+
+- Environment dev lokal (Windows) berhasil dijalankan: PHP 8.3.30 (Laragon,
+  bukan XAMPP yang 8.2 — composer.lock butuh `^8.3` karena zipstream-php),
+  php.ini dibuat manual (belum ada sebelumnya) dengan ekstensi curl,
+  fileinfo, gd, intl, mbstring, openssl, pdo_mysql, pdo_sqlite, sqlite3,
+  zip, dan `curl.cainfo`/`openssl.cafile` diarahkan ke cacert bundle XAMPP
+  (perlu untuk HTTPS request PHP ke `cb.web.id`, awalnya gagal SSL).
+- SQLite tidak dipakai — migration `add_wilayah_to_partner_campuses_table`
+  pakai raw MySQL `UPDATE ... JOIN`. Database dev lokal: MySQL
+  (`regionalb_online_dev`), data ditarik dari dump `staging_regionalb_db`
+  di VPS (bukan dari `regionalb_db` production yang berisi PII asli 86
+  staff — sengaja dihindari untuk dev lokal).
+- Workflow yang disepakati: edit langsung di VPS (staging) via SSH, commit
+  & push dari sana ke GitHub, verifikasi jalan (biasanya lewat
+  `php artisan tinker` dengan skenario nyata) SEBELUM push, baru
+  `git pull` ke lokal untuk sinkron. Jangan buru-buru push sebelum
+  terverifikasi.
+
+## Bug Fix: Dropdown Unit/Kampus Menimpa Data Report (2026-08-07/08)
+
+- Ditemukan laporan iklan UNIGRES (`id=60` production, staff Alif
+  Triwisno) `unit_name`/`partner_campus_id`-nya ketuker jadi "IKIP Widya
+  Darma" setelah diedit koordinator Moh Nor Abidin.
+- Akar masalah: select "Unit/Kampus" di form edit (production
+  `render_edit_input()` dan Laravel `reports/form.blade.php`) mencocokkan
+  opsi dengan strict string match ke `report->unit_name` (nama panjang,
+  `partner_campuses.name`); daftar referensi kampus kadang cuma
+  menyediakan nama pendek (`display_name`/`rsm_users.campus_name`), jadi
+  tidak ada opsi ter-`selected` dan browser default ke opsi pertama —
+  submit form menimpa campus dengan nilai yang salah.
+- Data laporan id=60 sudah dikembalikan ke Universitas Gresik (UNIGRES).
+  Fix kode sudah di kedua tempat: production `dashboard.php` (commit lokal
+  `6e183ee`, **belum di-push** karena branch `regionalb.git` di VPS sudah
+  diverged 16 vs 15 commit dari `origin` — perlu direconcile manual) dan
+  Laravel `reports/form.blade.php` (commit `a94d7cf`, sudah di-push).
+- Scan laporan lain dengan pola sama: cuma id=60 yang benar-benar korup
+  (5 kandidat lain cuma beda gaya penamaan teks, `partner_campus_id`
+  tetap konsisten benar).
+
+## Audit Parity Staging vs Production (2026-08-08)
+
+Dibandingkan langsung lewat kode (bukan cuma cek per-halaman ada/tidak):
+gap yang ditemukan dan sudah dikerjakan:
+
+- **Plafon Anggaran Iklan**: Senior Manager sekarang bisa simpan plafon
+  per regional/periode (`AdBudgetLimitService::save()`, route
+  `POST /anggaran/limit`). Infrastruktur permission
+  (`RsmRole::canManageAdBudget`, Gate `manage-ad-budget`) sudah ada
+  sebelumnya tapi tidak pernah dipakai.
+- **Bahan WhatsApp Otomatis** di halaman Rekap (super_user only):
+  `AchievementWhatsappService`, route `POST /rekap/whatsapp`. Versi teks
+  saja — gambar PNG legacy (headless browser screenshot + fallback GD)
+  sengaja tidak diporting, ikut pola "Laporan WhatsApp Koordinator" yang
+  sudah ada.
+- **Bug lama ikut kefix**: panel "Laporan WhatsApp Koordinator" generate
+  teksnya benar tapi blade-nya cek `session('whatsapp_report')` yang
+  tidak pernah di-set controller — hasilnya tidak pernah tampil. Sekarang
+  pakai `$whatsappArtifact` yang memang sudah dikirim controller.
+- **Export Rekap**: tambah PDF (`barryvdh/laravel-dompdf` sudah
+  ter-install tapi belum pernah dipakai) dan Excel untuk semua jenis
+  rekap (sebelumnya Excel cuma untuk tipe ads). Controller terima
+  `?format=csv|excel|pdf`.
+- **Panel sync-health** (Collab + BDC) ditambahkan ke halaman BDC
+  Marketing, menyusul yang sudah ada di Sumber Data Collab.
+- **Chore**: `public/build` di-stop-track dari git (sudah gitignored
+  tapi kepentok ke-commit lama, bikin gesekan tiap `npm run build`).
+
+Belum dikerjakan (perlu keputusan/koordinasi eksternal lebih lanjut):
+
+- **Instagram/Meta OAuth auto-sync**: dikonfirmasi ini fitur yang
+  BENERAN jalan di production — `source_activity/meta.php` berisi
+  app_id/app_secret Meta App asli, ada `instagram-connect.php` +
+  `instagram-callback.php`. Bukan cuma menunggu kredensial (asumsi
+  sebelumnya salah). Untuk porting ke staging perlu: redirect URI baru
+  terdaftar di Meta App Dashboard (staging.regionalb.online), pemindahan
+  kredensial sensitif ke `.env`, dan port OAuth flow + Graph API sync job.
+  User memilih untuk laporan dulu, belum eksekusi.
+- Test suite tetap lulus 24 test / 42 assertion setelah semua perubahan
+  di atas.
