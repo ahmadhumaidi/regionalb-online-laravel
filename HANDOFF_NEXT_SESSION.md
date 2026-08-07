@@ -260,9 +260,40 @@ Yang sudah ditambahkan:
   submit form menimpa campus dengan nilai yang salah.
 - Data laporan id=60 sudah dikembalikan ke Universitas Gresik (UNIGRES).
   Fix kode sudah di kedua tempat: production `dashboard.php` (commit lokal
-  `6e183ee`, **belum di-push** karena branch `regionalb.git` di VPS sudah
-  diverged 16 vs 15 commit dari `origin` — perlu direconcile manual) dan
-  Laravel `reports/form.blade.php` (commit `a94d7cf`, sudah di-push).
+  `6e183ee`, **belum di-push** — lihat "Divergensi Repo Production" di
+  bawah) dan Laravel `reports/form.blade.php` (commit `a94d7cf`, sudah
+  di-push).
+
+## Divergensi Repo Production `regionalb.git` — BELUM Direconcile (2026-08-08)
+
+Repo git production di VPS (`/var/www/regionalb.online`, branch
+`feature/rsm-dashboard-phase-1`) sudah lama diverged dari `origin`
+(GitHub `ahmadhumaidi/regionalb`): **17 commit lokal-only vs 15
+commit origin-only** (per 2026-08-08). Sengaja **ditunda**, jangan
+disentuh tanpa waktu khusus — ringkasan investigasi:
+
+- HEAD lokal = kode yang **live sekarang** di production. Origin punya
+  kerjaan yang sudah di-push ke GitHub tapi **belum pernah di-deploy**
+  ke server ini (rentang tanggal 2026-07-16 s/d 2026-08-01): perbaikan
+  bug `"Fix duplicate KORWIL cards and wrong WhatsApp achievement text"`,
+  `"Enforce ad report approval workflow"`, beberapa polish UX form
+  pengajuan iklan (pre-fill anggaran, popup sukses, dll).
+- Ada jejak commit lokal `d1a51b7` "Snapshot VPS working tree before
+  realigning with origin" (2026-08-01) — sepertinya ada usaha reconcile
+  sebelumnya yang **mangkrak di tengah jalan**: bukannya menyelesaikan
+  penggabungan, malah lanjut nambah commit baru (Sumber Data Collab,
+  Jadwal Personalia, dst.) di atas snapshot itu tanpa pernah pull origin.
+- File `instagram-connect.php`/`instagram-callback.php` **identik** di
+  kedua sisi (bukan sumber konflik).
+- Percobaan trial-merge (di branch sementara, sudah di-abort &
+  dibersihkan, tidak menyentuh branch asli) menghasilkan **76 titik
+  konflik** di 4 file: `dashboard.php` (35), `rsm_db.php` (33),
+  `assets/app.js` (2), `assets/style.css` (6). Perlu waktu khusus untuk
+  resolve manual per konflik, jangan buru-buru/otomatis di production.
+- ~289 file "berubah" versi lokal mayoritas cuma noise (`runtime/.../
+  sessions/sess_*` — file session PHP yang ke-commit tidak sengaja,
+  sudah ditangani parsial oleh commit `d7bf7e6` "Stop tracking runtime
+  uploads and source_activity in git" tapi historinya tetap ada).
 - Scan laporan lain dengan pola sama: cuma id=60 yang benar-benar korup
   (5 kandidat lain cuma beda gaya penamaan teks, `partner_campus_id`
   tetap konsisten benar).
