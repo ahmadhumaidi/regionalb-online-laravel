@@ -74,6 +74,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/jadwal-koordinator/generate', [CoordinatorScheduleController::class, 'generate'])->name('jadwal-koordinator.generate');
     Route::post('/jadwal-koordinator/whatsapp', [CoordinatorScheduleController::class, 'whatsapp'])->name('jadwal-koordinator.whatsapp');
     Route::patch('/jadwal-koordinator/{schedule}', [CoordinatorScheduleController::class, 'update'])->name('jadwal-koordinator.update');
+    Route::patch('/jadwal-koordinator/{schedule}/laporan', [CoordinatorScheduleController::class, 'report'])->name('jadwal-koordinator.report');
     Route::get('/jadwal-koordinator/{schedule}/attachment', [CoordinatorScheduleController::class, 'attachment'])->name('jadwal-koordinator.attachment');
     Route::delete('/jadwal-koordinator/{schedule}', [CoordinatorScheduleController::class, 'destroy'])->name('jadwal-koordinator.destroy');
     Route::get('/sumber-collab', [CollabSourceController::class, 'index'])->name('sumber-collab');

@@ -306,7 +306,8 @@ class CollabSourceService
         ];
     }
 
-    private static function credentials(): ?array
+    /** Public so other Collab-sourced sync services (e.g. PersonnelScheduleService) can reuse it. */
+    public static function credentials(): ?array
     {
         $username = trim((string) config('services.collab.username'));
         $password = trim((string) config('services.collab.password'));
@@ -317,7 +318,8 @@ class CollabSourceService
         return ['username' => $username, 'password' => $password];
     }
 
-    private static function authenticatedHtml(string $url): string
+    /** Public so other Collab-sourced sync services (e.g. PersonnelScheduleService) can reuse it. */
+    public static function authenticatedHtml(string $url): string
     {
         $credentials = self::credentials();
         if ($credentials === null) {
