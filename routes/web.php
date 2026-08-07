@@ -48,6 +48,8 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/anggaran/{report}/tolak', [AdBudgetActionController::class, 'reject'])->name('anggaran.tolak');
     Route::post('/anggaran/{report}/revisi', [AdBudgetActionController::class, 'revise'])->name('anggaran.revisi');
     Route::post('/anggaran/{report}/selesai', [AdBudgetActionController::class, 'complete'])->name('anggaran.selesai');
+    Route::get('/anggaran/{report}/realisasi', [AdBudgetActionController::class, 'realisasiForm'])->name('anggaran.realisasi.form');
+    Route::post('/anggaran/{report}/realisasi', [AdBudgetActionController::class, 'realisasi'])->name('anggaran.realisasi.store');
 
     Route::get('/konten', [ContentController::class, 'index'])->name('konten');
     Route::post('/konten/accounts', [ContentController::class, 'storeAccount'])->name('konten.accounts.store');

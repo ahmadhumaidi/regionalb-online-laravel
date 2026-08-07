@@ -20,16 +20,21 @@ use Illuminate\Support\Facades\DB;
  */
 class AdBudgetReportsService
 {
-    /** @return array{groups: list<array>, totals: array} */
+    private const MAX_ROWS = 500;
+
+    /** @return array{groups: list<array>, totals: array, total_count: int, shown_count: int} */
     public static function build(string $area, string $period, RsmUser $user): array
     {
-        $reports = ReportScope::apply(
+        $scoped = ReportScope::apply(
             RsmReport::query()
                 ->where('area', $area)
                 ->where('report_type', RsmReport::TYPE_ADS)
                 ->where('ad_period', $period),
             $user
-        )->orderByDesc('report_date')->limit(500)->get();
+        );
+
+        $totalCount = (clone $scoped)->count();
+        $reports = $scoped->orderByDesc('report_date')->limit(self::MAX_ROWS)->get();
 
         $names = DB::table('partner_campuses')->get(['id', 'name', 'display_name'])
             ->mapWithKeys(fn ($c) => [$c->id => $c->display_name ?: $c->name]);
@@ -68,16 +73,22 @@ class AdBudgetReportsService
         return [
             'groups' => $groups,
             'totals' => self::subtotal($reports),
+            'total_count' => $totalCount,
+            'shown_count' => $reports->count(),
         ];
     }
 
     private static function rowShape(RsmReport $report, RsmUser $user): array
     {
         $status = (string) $report->status;
+        $statusLower = mb_strtolower(trim($status));
         $canReview = RsmRole::canReviewAdBudgetRequest($user) && in_array($status, ['Pengajuan', 'Revisi'], true);
         $canComplete = $user->role === 'koordinator'
             && $report->wilayah === $user->regional
-            && mb_strtolower(trim($status)) === 'dilaporkan unit';
+            && $statusLower === 'dilaporkan unit';
+        $canReportRealization = in_array($user->role, ['staff', 'koordinator'], true)
+            && $report->wilayah === $user->regional
+            && in_array($statusLower, ['disetujui', 'dilaporkan unit'], true);
 
         return [
             'id' => $report->id,
@@ -89,11 +100,12 @@ class AdBudgetReportsService
             'realization_amount' => (float) $report->realization_amount,
             'leads_count' => (int) $report->leads_count,
             'closing_count' => (int) $report->closing_count,
-            'cpl' => (float) $report->cpl,
+            'cpl' => DashboardNumbers::divide((float) $report->realization_amount, (float) $report->leads_count),
             'status' => $report->status,
             'has_attachment' => filled($report->attachment_path),
             'can_review' => $canReview,
             'can_complete' => $canComplete,
+            'can_report_realization' => $canReportRealization,
         ];
     }
 

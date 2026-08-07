@@ -14,6 +14,8 @@ use App\Services\Dashboard\ReportScope;
  */
 class PendingAdReportsService
 {
+    private const MAX_ROWS = 300;
+
     /** @return array{belum_dilaporkan: list<array>, belum_tuntas: list<array>} */
     public static function build(string $area, RsmUser $user): array
     {
@@ -22,7 +24,7 @@ class PendingAdReportsService
                 ->where('area', $area)
                 ->where('report_type', RsmReport::TYPE_ADS),
             $user
-        )->orderByDesc('report_date')->get();
+        )->orderByDesc('report_date')->limit(self::MAX_ROWS)->get();
 
         $belumDilaporkan = [];
         $belumTuntas = [];
@@ -31,21 +33,25 @@ class PendingAdReportsService
             $status = mb_strtolower(trim((string) $report->status));
 
             if (! in_array($status, ['dilaporkan unit', 'ditolak'], true)) {
-                $belumDilaporkan[] = self::rowShape($report);
+                $belumDilaporkan[] = self::rowShape($report, $user, $status);
 
                 continue;
             }
 
             if ($status === 'dilaporkan unit' && ((float) $report->realization_amount <= 0 || blank($report->attachment_path))) {
-                $belumTuntas[] = self::rowShape($report);
+                $belumTuntas[] = self::rowShape($report, $user, $status);
             }
         }
 
         return ['belum_dilaporkan' => $belumDilaporkan, 'belum_tuntas' => $belumTuntas];
     }
 
-    private static function rowShape(RsmReport $report): array
+    private static function rowShape(RsmReport $report, RsmUser $user, string $statusLower): array
     {
+        $canReportRealization = in_array($user->role, ['staff', 'koordinator'], true)
+            && $report->wilayah === $user->regional
+            && in_array($statusLower, ['disetujui', 'dilaporkan unit'], true);
+
         return [
             'id' => $report->id,
             'report_date' => optional($report->report_date)->format('d M Y') ?? '-',
@@ -54,6 +60,7 @@ class PendingAdReportsService
             'unit_name' => $report->unit_name,
             'campaign_name' => $report->campaign_name,
             'status' => $report->status,
+            'can_report_realization' => $canReportRealization,
         ];
     }
 }

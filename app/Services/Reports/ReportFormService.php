@@ -193,7 +193,7 @@ class ReportFormService
         }
     }
 
-    private static function storeAttachment(RsmReport $report, ?UploadedFile $attachment): void
+    public static function storeAttachment(RsmReport $report, ?UploadedFile $attachment): void
     {
         if (! $attachment) {
             return;

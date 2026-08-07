@@ -11,7 +11,12 @@
                     @foreach ($pending['belum_dilaporkan'] as $row)
                         <div class="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
                             <div><strong class="font-medium text-ink">{{ $row['unit_name'] ?: '-' }}</strong> <span class="text-xs text-ink-muted">{{ $row['ad_period'] }}</span></div>
-                            <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
+                                @if ($row['can_report_realization'])
+                                    <a href="{{ route('anggaran.realisasi.form', $row['id']) }}" class="text-[11px] font-semibold text-brand-700 underline">Lapor</a>
+                                @endif
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -27,7 +32,12 @@
                     @foreach ($pending['belum_tuntas'] as $row)
                         <div class="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
                             <div><strong class="font-medium text-ink">{{ $row['unit_name'] ?: '-' }}</strong> <span class="text-xs text-ink-muted">{{ $row['ad_period'] }}</span></div>
-                            <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
+                                @if ($row['can_report_realization'])
+                                    <a href="{{ route('anggaran.realisasi.form', $row['id']) }}" class="text-[11px] font-semibold text-brand-700 underline">Lapor</a>
+                                @endif
+                            </div>
                         </div>
                     @endforeach
                 </div>

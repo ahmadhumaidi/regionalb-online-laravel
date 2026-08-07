@@ -63,11 +63,11 @@
                                         @endif
                                     </td>
                                     <td class="py-2">
-                                        @if ($row['can_review'])
-                                            <div class="flex flex-wrap items-center gap-1">
+                                        <div class="flex flex-wrap items-center gap-1">
+                                            @if ($row['can_review'])
                                                 <form method="POST" action="{{ route('anggaran.setujui', $row['id']) }}" class="flex items-center gap-1" onsubmit="return confirm('Setujui pengajuan ini?')">
                                                     @csrf
-                                                    <input type="number" name="budget_approved" value="{{ (int) $row['budget_requested'] }}" min="0" step="1" class="w-24 rounded-md border border-border px-1.5 py-1 text-xs text-ink">
+                                                    <input type="number" name="budget_approved" value="{{ number_format($row['budget_requested'], 2, '.', '') }}" min="0" step="0.01" class="w-24 rounded-md border border-border px-1.5 py-1 text-xs text-ink">
                                                     <button type="submit" class="rounded-md bg-tone-green px-2 py-1 text-[11px] font-semibold text-white">Setujui</button>
                                                 </form>
                                                 <form method="POST" action="{{ route('anggaran.tolak', $row['id']) }}" onsubmit="return confirm('Tolak pengajuan ini?')">
@@ -79,13 +79,18 @@
                                                     <input type="hidden" name="note" value="">
                                                     <button type="submit" class="rounded-md border border-tone-amber px-2 py-1 text-[11px] font-semibold text-tone-amber">Revisi</button>
                                                 </form>
-                                            </div>
-                                        @elseif ($row['can_complete'])
-                                            <form method="POST" action="{{ route('anggaran.selesai', $row['id']) }}" onsubmit="return confirm('Tandai laporan ini selesai?')">
-                                                @csrf
-                                                <button type="submit" class="rounded-md bg-brand-600 px-2 py-1 text-[11px] font-semibold text-white">Selesai</button>
-                                            </form>
-                                        @endif
+                                            @endif
+                                            {{-- Staff sudah punya tombol ini di panel "Belum Dilaporkan"/"Belum Tuntas" di atas; hindari dobel CTA untuk laporan yang sama. Koordinator tidak punya panel itu, jadi tetap tampil di sini. --}}
+                                            @if ($row['can_report_realization'] && auth()->user()->role !== 'staff')
+                                                <a href="{{ route('anggaran.realisasi.form', $row['id']) }}" class="rounded-md border border-brand-600 px-2 py-1 text-[11px] font-semibold text-brand-700">Lapor Realisasi</a>
+                                            @endif
+                                            @if ($row['can_complete'])
+                                                <form method="POST" action="{{ route('anggaran.selesai', $row['id']) }}" onsubmit="return confirm('Tandai laporan ini selesai?')">
+                                                    @csrf
+                                                    <button type="submit" class="rounded-md bg-brand-600 px-2 py-1 text-[11px] font-semibold text-white">Selesai</button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

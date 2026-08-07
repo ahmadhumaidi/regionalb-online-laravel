@@ -13,9 +13,9 @@ use Illuminate\View\View;
 
 /**
  * Read-only pass of "Anggaran & Laporan Iklan" (dashboard.php:1182-1221).
- * Approve/reject/revise, the koordinator create form, realization upload,
- * and the Excel lead import are out of scope here — see the plan this was
- * built from for why.
+ * Approve/reject/revise, the koordinator create form, and realization
+ * reporting live in AdBudgetActionController. The Excel lead import into
+ * rsm_ad_leads is still out of scope here.
  */
 class AdBudgetController extends Controller
 {
@@ -51,6 +51,8 @@ class AdBudgetController extends Controller
             'limits' => $limits,
             'pending' => $pending,
             'groups' => $reports['groups'],
+            'totalCount' => $reports['total_count'],
+            'shownCount' => $reports['shown_count'],
         ]);
     }
 }
