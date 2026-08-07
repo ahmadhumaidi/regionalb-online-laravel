@@ -61,4 +61,25 @@ class AdBudgetLimitService
             ];
         })->values()->all();
     }
+
+    /** Port of rsm_save_ad_budget_limit() (rsm_db.php:2000-2032). */
+    public static function save(string $area, string $period, string $wilayah, float $budgetLimit, ?string $notes, RsmUser $actor): void
+    {
+        if ($period === '' || $wilayah === '') {
+            throw new \InvalidArgumentException('Periode dan regional wajib diisi.');
+        }
+        if ($budgetLimit <= 0) {
+            throw new \InvalidArgumentException('Besaran anggaran regional harus lebih dari 0.');
+        }
+
+        RsmAdBudgetLimit::updateOrCreate(
+            ['area' => $area, 'ad_period' => $period, 'wilayah' => $wilayah],
+            [
+                'budget_limit' => $budgetLimit,
+                'notes' => $notes,
+                'created_by_user_id' => $actor->id,
+                'created_by_name' => $actor->name,
+            ]
+        );
+    }
 }

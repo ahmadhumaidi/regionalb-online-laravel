@@ -7,6 +7,9 @@ use App\Services\AdBudget\AdBudgetLimitService;
 use App\Services\AdBudget\AdBudgetPeriods;
 use App\Services\AdBudget\AdBudgetReportsService;
 use App\Services\AdBudget\PendingAdReportsService;
+use App\Services\Dashboard\ReferenceOptionsService;
+use App\Support\RsmRole;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -56,6 +59,33 @@ class AdBudgetController extends Controller
             'groups' => $reports['groups'],
             'totalCount' => $reports['total_count'],
             'shownCount' => $reports['shown_count'],
+            'canManageBudget' => RsmRole::canManageAdBudget($user),
+            'referenceOptions' => ReferenceOptionsService::build($area, $user),
         ]);
+    }
+
+    public function storeLimit(Request $request): RedirectResponse
+    {
+        /** @var RsmUser $user */
+        $user = Auth::user();
+        abort_unless(RsmRole::canManageAdBudget($user), 403);
+
+        $data = $request->validate([
+            'ad_period' => ['required', 'string', 'max:40'],
+            'wilayah' => ['required', 'string', 'max:120'],
+            'budget_limit' => ['required', 'numeric', 'min:0.01'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        AdBudgetLimitService::save(
+            $user->area ?: 'Regional B',
+            $data['ad_period'],
+            $data['wilayah'],
+            (float) $data['budget_limit'],
+            $data['notes'] ?? null,
+            $user
+        );
+
+        return back()->with('status', 'Plafon anggaran berhasil disimpan.');
     }
 }

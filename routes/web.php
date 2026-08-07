@@ -43,6 +43,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/anggaran', [AdBudgetController::class, 'index'])->name('anggaran');
+    Route::post('/anggaran/limit', [AdBudgetController::class, 'storeLimit'])->name('anggaran.limit.store');
     Route::get('/anggaran/create', fn () => app(ReportFormController::class)->create('ads'))->name('anggaran.create');
     Route::post('/anggaran', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'ads'))->name('anggaran.store');
     Route::post('/anggaran/{report}/setujui', [AdBudgetActionController::class, 'approve'])->name('anggaran.setujui');

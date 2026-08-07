@@ -1,10 +1,21 @@
-@props(['limits'])
+@props(['limits', 'canManageBudget' => false, 'period' => '', 'referenceOptions' => ['regionals' => []]])
 
 <section class="mb-6 rounded-2xl border border-border bg-surface p-5">
     <div class="mb-4">
         <h2 class="text-base font-semibold text-ink">Plafon Anggaran Regional</h2>
         <span class="text-xs text-ink-muted">Batas anggaran iklan per wilayah untuk periode ini</span>
     </div>
+
+    @if ($canManageBudget)
+        <form method="POST" action="{{ route('anggaran.limit.store') }}" class="mb-4 grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-4">
+            @csrf
+            <label class="grid gap-1 text-xs text-ink-muted">Periode anggaran<input name="ad_period" value="{{ old('ad_period', $period) }}" placeholder="Juli 2026" required class="rounded-lg border-border bg-surface-muted text-sm text-ink"></label>
+            <label class="grid gap-1 text-xs text-ink-muted">Regional<select name="wilayah" required class="rounded-lg border-border bg-surface-muted text-sm text-ink"><option value="">Pilih regional</option>@foreach ($referenceOptions['regionals'] as $regionalOption)<option value="{{ $regionalOption }}" @selected(old('wilayah') === $regionalOption)>{{ $regionalOption }}</option>@endforeach</select></label>
+            <label class="grid gap-1 text-xs text-ink-muted">Besaran anggaran<input name="budget_limit" type="number" min="0.01" step="0.01" inputmode="numeric" placeholder="Contoh: 5000000" required class="rounded-lg border-border bg-surface-muted text-sm text-ink"></label>
+            <label class="grid gap-1 text-xs text-ink-muted">Catatan (opsional)<input name="notes" value="{{ old('notes') }}" class="rounded-lg border-border bg-surface-muted text-sm text-ink"></label>
+            <div class="sm:col-span-4"><button class="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white">Simpan Plafon</button></div>
+        </form>
+    @endif
 
     @if (empty($limits))
         <p class="py-6 text-center text-sm text-ink-muted">Belum ada data wilayah untuk periode ini.</p>
