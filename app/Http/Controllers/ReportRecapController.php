@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\AdsRekapExport;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\DashboardFilters;
@@ -11,13 +12,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportRecapController extends Controller
 {
     public function index(Request $request): View
     {
         $user = Auth::user();
-        $area = $user->area ?: 'Regional';
+        $area = $user->area ?: 'Regional B';
         $type = (string) $request->query('rekap_type', 'all');
         if (! in_array($type, ['all', RsmReport::TYPE_MARKETING, RsmReport::TYPE_ADS, RsmReport::TYPE_OTHER], true)) {
             $type = 'all';
@@ -37,13 +39,20 @@ class ReportRecapController extends Controller
     public function export(Request $request)
     {
         $user = Auth::user();
-        $area = $user->area ?: 'Regional';
+        $area = $user->area ?: 'Regional B';
         $type = (string) $request->query('rekap_type', 'all');
         if (! in_array($type, ['all', RsmReport::TYPE_MARKETING, RsmReport::TYPE_ADS, RsmReport::TYPE_OTHER], true)) {
             $type = 'all';
         }
         $filters = DashboardFilters::fromRequest($request, 'rekap');
         $recap = ReportRecapService::build($area, $filters, $type, $user);
+
+        if ($type === RsmReport::TYPE_ADS) {
+            $filename = 'rekap-laporan-iklan-'.Str::slug($area).'-'.now()->format('Ymd-His').'.xlsx';
+
+            return Excel::download(new AdsRekapExport($area, $filters['date_from'], $filters['date_to'], $recap['rows']), $filename);
+        }
+
         $filename = 'rekap-'.Str::slug($area).'-'.now()->format('Ymd-His').'.csv';
 
         return response()->streamDownload(function () use ($recap, $area, $filters, $type) {

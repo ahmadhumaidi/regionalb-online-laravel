@@ -64,6 +64,17 @@
                                     </td>
                                     <td class="py-2">
                                         <div class="flex flex-wrap items-center gap-1">
+                                            <a href="{{ route('reports.show', $row['id']) }}" title="Lihat" aria-label="Lihat" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="eye" class="h-3.5 w-3.5" /></a>
+                                            @if ($row['can_edit'])
+                                                <a href="{{ route('reports.edit', $row['id']) }}" title="Edit" aria-label="Edit" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="edit" class="h-3.5 w-3.5" /></a>
+                                            @endif
+                                            @if ($row['can_delete'])
+                                                <form method="POST" action="{{ route('reports.destroy', $row['id']) }}" onsubmit="return confirm('Hapus laporan ini?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" title="Hapus" aria-label="Hapus" class="rounded-md border border-tone-red p-1 text-tone-red"><x-icon name="trash" class="h-3.5 w-3.5" /></button>
+                                                </form>
+                                            @endif
                                             @if ($row['can_review'])
                                                 <form method="POST" action="{{ route('anggaran.setujui', $row['id']) }}" class="flex items-center gap-1" onsubmit="return confirm('Setujui pengajuan ini?')">
                                                     @csrf
@@ -78,16 +89,6 @@
                                                     @csrf
                                                     <input type="hidden" name="note" value="">
                                                     <button type="submit" class="rounded-md border border-tone-amber px-2 py-1 text-[11px] font-semibold text-tone-amber">Revisi</button>
-                                                </form>
-                                            @endif
-                                            {{-- Staff sudah punya tombol ini di panel "Belum Dilaporkan"/"Belum Tuntas" di atas; hindari dobel CTA untuk laporan yang sama. Koordinator tidak punya panel itu, jadi tetap tampil di sini. --}}
-                                            @if ($row['can_report_realization'] && auth()->user()->role !== 'staff')
-                                                <a href="{{ route('anggaran.realisasi.form', $row['id']) }}" class="rounded-md border border-brand-600 px-2 py-1 text-[11px] font-semibold text-brand-700">Lapor Realisasi</a>
-                                            @endif
-                                            @if ($row['can_complete'])
-                                                <form method="POST" action="{{ route('anggaran.selesai', $row['id']) }}" onsubmit="return confirm('Tandai laporan ini selesai?')">
-                                                    @csrf
-                                                    <button type="submit" class="rounded-md bg-brand-600 px-2 py-1 text-[11px] font-semibold text-white">Selesai</button>
                                                 </form>
                                             @endif
                                         </div>

@@ -5,21 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\RsmActivityLog;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
-use App\Services\Dashboard\DashboardNumbers;
-use App\Services\Reports\ReportFormService;
 use App\Support\RsmRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
 
 /**
  * Ports the ads-specific branch of action_buttons()/rsm_update_status()
- * (dashboard.php:4186-4227): Setujui/Tolak/Revisi for super_user/
- * executive_director/director/senior on a report still in Pengajuan/Revisi,
- * staff/koordinator reporting realization once budget is Disetujui, and
- * koordinator's single Selesai button once realization has been reported
- * (status Dilaporkan Unit).
+ * (dashboard.php:3730-3736, action_buttons()'s ads branch): Setujui/Tolak/
+ * Revisi for super_user/executive_director/director/senior on a report
+ * still in Pengajuan/Revisi. Realization reporting and the Disetujui→
+ * Transfer/Invoice attachment trigger go through the generic
+ * ReportFormController/ReportFormService edit flow instead — see
+ * report_fields_for_type()/rsm_update_report() in the legacy source.
  */
 class AdBudgetActionController extends Controller
 {
@@ -62,60 +60,6 @@ class AdBudgetActionController extends Controller
         });
 
         return back()->with('notice', 'Pengajuan dikembalikan untuk revisi.');
-    }
-
-    public function realisasiForm(RsmReport $report): View
-    {
-        $this->authorizeRealization($report);
-
-        return view('anggaran.realisasi', ['report' => $report]);
-    }
-
-    public function realisasi(Request $request, RsmReport $report): RedirectResponse
-    {
-        $this->authorizeRealization($report);
-
-        $data = $request->validate([
-            'realization_amount' => ['required', 'numeric', 'min:0.01'],
-            'leads_count' => ['required', 'integer', 'min:0'],
-            'closing_count' => ['required', 'integer', 'min:0', 'lte:leads_count'],
-            'attachment_path' => [$report->attachment_path ? 'nullable' : 'required', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
-        ]);
-
-        $this->transition($request, $report, 'Dilaporkan Unit', 'lapor_realisasi', null, function () use ($report, $data) {
-            $report->realization_amount = $data['realization_amount'];
-            $report->leads_count = $data['leads_count'];
-            $report->closing_count = $data['closing_count'];
-            $report->cpl = DashboardNumbers::divide((float) $data['realization_amount'], (float) $data['leads_count']);
-        });
-
-        ReportFormService::storeAttachment($report, $request->file('attachment_path'));
-
-        return back()->with('notice', 'Realisasi iklan berhasil dilaporkan.');
-    }
-
-    public function complete(Request $request, RsmReport $report): RedirectResponse
-    {
-        /** @var RsmUser $user */
-        $user = Auth::user();
-
-        abort_unless($report->report_type === RsmReport::TYPE_ADS, 404);
-        abort_unless($user->role === 'koordinator' && $report->wilayah === $user->regional, 403);
-        abort_unless(mb_strtolower(trim((string) $report->status)) === 'dilaporkan unit', 422, 'Laporan belum siap ditutup.');
-
-        $this->transition($request, $report, 'Selesai', 'selesai');
-
-        return back()->with('notice', 'Laporan realisasi ditandai selesai.');
-    }
-
-    private function authorizeRealization(RsmReport $report): void
-    {
-        /** @var RsmUser $user */
-        $user = Auth::user();
-
-        abort_unless($report->report_type === RsmReport::TYPE_ADS, 404);
-        abort_unless(in_array($user->role, ['staff', 'koordinator'], true) && $report->wilayah === $user->regional, 403);
-        abort_unless(in_array(mb_strtolower(trim((string) $report->status)), ['disetujui', 'dilaporkan unit'], true), 422, 'Laporan belum disetujui atau sudah selesai.');
     }
 
     private function authorizeReview(RsmReport $report): void

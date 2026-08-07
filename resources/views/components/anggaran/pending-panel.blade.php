@@ -1,47 +1,72 @@
 @props(['pending'])
 
 @if ($pending)
-    <section class="mb-6 grid gap-4 lg:grid-cols-2">
-        <article class="rounded-2xl border border-border bg-surface p-5">
-            <h2 class="mb-3 text-base font-semibold text-ink">Belum Dilaporkan</h2>
-            @if (empty($pending['belum_dilaporkan']))
-                <p class="py-4 text-center text-sm text-ink-muted">Tidak ada laporan tertunda.</p>
-            @else
-                <div class="space-y-2">
-                    @foreach ($pending['belum_dilaporkan'] as $row)
-                        <div class="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
-                            <div><strong class="font-medium text-ink">{{ $row['unit_name'] ?: '-' }}</strong> <span class="text-xs text-ink-muted">{{ $row['ad_period'] }}</span></div>
-                            <div class="flex items-center gap-2">
-                                <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
-                                @if ($row['can_report_realization'])
-                                    <a href="{{ route('anggaran.realisasi.form', $row['id']) }}" class="text-[11px] font-semibold text-brand-700 underline">Lapor</a>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-        </article>
+    <section class="mb-6 rounded-2xl border border-border bg-surface p-5">
+        <h2 class="text-base font-semibold text-ink">Anggaran Perlu Dilaporkan</h2>
+        <p class="mt-1 text-sm text-ink-muted">Otomatis muncul untuk anggaran kampus Anda yang belum atau belum tuntas dilaporkan</p>
 
-        <article class="rounded-2xl border border-border bg-surface p-5">
-            <h2 class="mb-3 text-base font-semibold text-ink">Belum Tuntas Dilaporkan</h2>
-            @if (empty($pending['belum_tuntas']))
-                <p class="py-4 text-center text-sm text-ink-muted">Tidak ada laporan yang perlu dilengkapi.</p>
-            @else
-                <div class="space-y-2">
-                    @foreach ($pending['belum_tuntas'] as $row)
-                        <div class="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
-                            <div><strong class="font-medium text-ink">{{ $row['unit_name'] ?: '-' }}</strong> <span class="text-xs text-ink-muted">{{ $row['ad_period'] }}</span></div>
-                            <div class="flex items-center gap-2">
-                                <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
-                                @if ($row['can_report_realization'])
-                                    <a href="{{ route('anggaran.realisasi.form', $row['id']) }}" class="text-[11px] font-semibold text-brand-700 underline">Lapor</a>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-        </article>
+        @if (! empty($pending['belum_dilaporkan']))
+            <h3 class="mb-2 mt-4 text-sm font-semibold text-ink">Belum Dilaporkan ({{ count($pending['belum_dilaporkan']) }})</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-border text-xs text-ink-muted">
+                            <th class="py-2 pr-3 font-medium">Tanggal</th>
+                            <th class="py-2 pr-3 font-medium">Platform/Campaign</th>
+                            <th class="py-2 pr-3 text-right font-medium">Anggaran Disetujui</th>
+                            <th class="py-2 font-medium">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($pending['belum_dilaporkan'] as $row)
+                            <tr class="border-b border-border/60 last:border-0">
+                                <td class="py-2 pr-3 text-ink-muted">{{ $row['report_date'] }}<br><span class="text-xs">{{ $row['ad_period'] }}</span></td>
+                                <td class="py-2 pr-3 text-ink">{{ $row['platform'] ?: '-' }}<br><span class="text-xs text-ink-muted">{{ $row['campaign_name'] ?: '-' }}</span></td>
+                                <td class="py-2 pr-3 text-right text-ink">Rp {{ number_format($row['budget_approved'], 0, ',', '.') }}</td>
+                                <td class="py-2"><span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
+        @if (! empty($pending['belum_tuntas']))
+            <h3 class="mb-2 mt-5 text-sm font-semibold text-ink">Belum Tuntas Dilaporkan ({{ count($pending['belum_tuntas']) }})</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-border text-xs text-ink-muted">
+                            <th class="py-2 pr-3 font-medium">Tanggal</th>
+                            <th class="py-2 pr-3 font-medium">Platform/Campaign</th>
+                            <th class="py-2 pr-3 text-right font-medium">Realisasi</th>
+                            <th class="py-2 pr-3 font-medium">Bukti</th>
+                            <th class="py-2 font-medium">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($pending['belum_tuntas'] as $row)
+                            <tr class="border-b border-border/60 last:border-0">
+                                <td class="py-2 pr-3 text-ink-muted">{{ $row['report_date'] }}</td>
+                                <td class="py-2 pr-3 text-ink">{{ $row['platform'] ?: '-' }}<br><span class="text-xs text-ink-muted">{{ $row['campaign_name'] ?: '-' }}</span></td>
+                                <td class="py-2 pr-3 text-right text-ink">Rp {{ number_format($row['realization_amount'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3">
+                                    @if ($row['has_attachment'])
+                                        <span class="rounded-full bg-tone-green/10 px-2 py-0.5 text-[11px] font-medium text-tone-green">Ada</span>
+                                    @else
+                                        <span class="rounded-full bg-tone-red/10 px-2 py-0.5 text-[11px] font-medium text-tone-red">Belum ada</span>
+                                    @endif
+                                </td>
+                                <td class="py-2"><span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
+        @if (empty($pending['belum_dilaporkan']) && empty($pending['belum_tuntas']))
+            <p class="py-4 text-center text-sm text-ink-muted">Tidak ada anggaran yang perlu dilaporkan.</p>
+        @endif
     </section>
 @endif

@@ -13,9 +13,12 @@ use Illuminate\View\View;
 
 /**
  * Read-only pass of "Anggaran & Laporan Iklan" (dashboard.php:1182-1221).
- * Approve/reject/revise, the koordinator create form, and realization
- * reporting live in AdBudgetActionController. The Excel lead import into
- * rsm_ad_leads is still out of scope here.
+ * Approve/reject/revise live in AdBudgetActionController. Ads report
+ * creation/editing (including realization reporting) goes through the
+ * generic ReportFormController/ReportFormService, role-aware per
+ * report_fields_for_type(). Ad-leads Excel import lives in AdLeadController.
+ * "Anggaran Perlu Dilaporkan" (staff-only) ports rsm_ads_pending_reports()
+ * / render_ads_pending_report_panel() — read-only, no action links.
  */
 class AdBudgetController extends Controller
 {
@@ -23,7 +26,7 @@ class AdBudgetController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        $area = $user->area ?: 'Regional';
+        $area = $user->area ?: 'Regional B';
 
         $period = (string) $request->query('ad_period', '');
         if (! in_array($period, array_column(AdBudgetPeriods::options(), 'value'), true)) {

@@ -13,5 +13,68 @@
         ]);
     }
 @endphp
-<dl class="mt-5 grid gap-4 text-sm md:grid-cols-3">@foreach ($fields as [$label,$value])<div><dt class="text-xs text-ink-muted">{{ $label }}</dt><dd class="mt-1 text-ink">{{ $value ?: '-' }}</dd></div>@endforeach</dl>@if ($report->attachment_path)<a class="mt-5 inline-block text-sm font-medium text-brand-600 underline" href="{{ route('reports.attachment', $report) }}">Lihat lampiran</a>@endif</section><section class="rounded-2xl border border-border bg-surface p-5"><h2 class="text-base font-semibold text-ink">Riwayat</h2><div class="mt-3 space-y-3">@forelse ($logs as $log)<div class="border-l-2 border-brand-200 pl-3 text-sm"><p class="font-medium text-ink">{{ $log->action_name }} @if ($log->old_status) · {{ $log->old_status }} → {{ $log->new_status }}@endif</p><p class="text-xs text-ink-muted">{{ $log->actor_name }} · {{ optional($log->created_at)->format('d M Y H:i') }}</p></div>@empty<p class="text-sm text-ink-muted">Belum ada riwayat.</p>@endforelse</div></section></div>
+<dl class="mt-5 grid gap-4 text-sm md:grid-cols-3">@foreach ($fields as [$label,$value])<div><dt class="text-xs text-ink-muted">{{ $label }}</dt><dd class="mt-1 text-ink">{{ $value ?: '-' }}</dd></div>@endforeach</dl>@if ($report->attachment_path)<a class="mt-5 inline-block text-sm font-medium text-brand-600 underline" href="{{ route('reports.attachment', $report) }}" target="_blank" rel="noopener">Lihat lampiran</a>@endif</section>
+@if ($report->report_type === 'ads')
+    <section class="rounded-2xl border border-border bg-surface p-5">
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div><h2 class="text-base font-semibold text-ink">Data Hasil Iklan</h2><p class="mt-1 text-sm text-ink-muted">Isi dari file XLS yang diupload pada laporan iklan</p></div>
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" form="ad-leads-update-form" class="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white">Simpan Perubahan</button>
+                <a href="{{ route('anggaran.leads.template') }}" class="rounded-lg border border-border px-3 py-2 text-sm">Download Template .xlsx</a>
+            </div>
+        </div>
+        <form method="POST" enctype="multipart/form-data" action="{{ route('anggaran.leads.upload', $report) }}" class="mb-4 flex flex-wrap items-center gap-2">
+            @csrf
+            <input type="file" name="ad_leads_file" accept=".xls,.xlsx" required class="rounded-lg border-border bg-surface-muted text-sm">
+            <button type="submit" class="rounded-lg border border-border px-3 py-2 text-sm">Upload / Ganti Data</button>
+        </form>
+        <form id="ad-leads-update-form" method="POST" action="{{ route('anggaran.leads.update', $report) }}">
+            @csrf
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[1080px] text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-border text-xs text-ink-muted">
+                            <th class="py-2 pr-3 font-medium">Nama Lead</th>
+                            <th class="py-2 pr-3 font-medium">No. HP/WA</th>
+                            <th class="py-2 pr-3 font-medium">Email</th>
+                            <th class="py-2 pr-3 font-medium">Kampus</th>
+                            <th class="py-2 pr-3 font-medium">Jurusan</th>
+                            <th class="py-2 pr-3 font-medium">Kota Asal</th>
+                            <th class="py-2 pr-3 font-medium">Follow Up</th>
+                            <th class="py-2 pr-3 font-medium">Status Closing</th>
+                            <th class="py-2 font-medium">Catatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($adLeads as $lead)
+                            @php $isClosing = mb_strtolower(trim((string) $lead->closing_status)) === 'closing'; @endphp
+                            <tr class="border-b border-border/60">
+                                <td class="py-2 pr-3 text-ink">{{ $lead->lead_name ?: '-' }}</td>
+                                <td class="py-2 pr-3 text-ink-muted">{{ $lead->whatsapp ?: '-' }}</td>
+                                <td class="py-2 pr-3 text-ink-muted">{{ $lead->email ?: '-' }}</td>
+                                <td class="py-2 pr-3 text-ink-muted">{{ $lead->campus_name ?: '-' }}</td>
+                                <td class="py-2 pr-3 text-ink-muted">{{ $lead->major_name ?: '-' }}</td>
+                                <td class="py-2 pr-3 text-ink-muted">{{ $lead->origin_city ?: '-' }}</td>
+                                <td class="py-2 pr-3 text-ink-muted">{{ $lead->follow_up_result ?: '-' }}</td>
+                                <td class="py-2 pr-3">
+                                    <select name="lead_status[{{ $lead->id }}]" class="rounded-md border px-1.5 py-1 text-xs {{ $isClosing ? 'border-tone-green bg-tone-green/10 font-semibold text-tone-green' : 'border-border text-ink' }}">
+                                        @foreach (['Belum closing', 'Potensi closing', 'Closing', 'Herregistrasi', 'Tidak closing'] as $option)
+                                            <option @selected(mb_strtolower((string) $lead->closing_status) === mb_strtolower($option))>{{ $option }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td class="py-2">
+                                    <textarea name="lead_notes[{{ $lead->id }}]" rows="2" class="w-full rounded-md border border-border px-1.5 py-1 text-xs text-ink">{{ $lead->notes }}</textarea>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="9" class="py-6 text-center text-sm text-ink-muted">Belum ada data hasil iklan yang diupload untuk laporan ini.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </section>
+@endif
+<section class="rounded-2xl border border-border bg-surface p-5"><h2 class="text-base font-semibold text-ink">Riwayat</h2><div class="mt-3 space-y-3">@forelse ($logs as $log)<div class="border-l-2 border-brand-200 pl-3 text-sm"><p class="font-medium text-ink">{{ $log->action_name }} @if ($log->old_status) · {{ $log->old_status }} → {{ $log->new_status }}@endif</p><p class="text-xs text-ink-muted">{{ $log->actor_name }} · {{ optional($log->created_at)->format('d M Y H:i') }}</p></div>@empty<p class="text-sm text-ink-muted">Belum ada riwayat.</p>@endforelse</div></section></div>
 </x-layouts.app>

@@ -4,33 +4,85 @@
         <form method="POST" enctype="multipart/form-data" action="{{ $editing ? route('reports.update', $report) : route($storeRoute) }}" class="grid gap-4 md:grid-cols-2">
             @csrf @if ($editing) @method('PATCH') @endif
             @if ($errors->any())<div class="md:col-span-2 rounded-lg border border-tone-red/30 bg-tone-red/10 p-3 text-sm text-red-800"><ul class="list-disc pl-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
-            <label class="grid gap-1 text-sm">Tanggal laporan<input type="date" name="report_date" required value="{{ old('report_date', optional($report->report_date)->format('Y-m-d') ?: now()->toDateString()) }}" class="rounded-lg border-border bg-surface-muted"></label>
-            @if ($config['label'] === 'anggaran')
-                @php $adPeriodValue = old('ad_period', $report->ad_period ?: \App\Services\AdBudget\AdBudgetPeriods::default()); @endphp
-                <label class="grid gap-1 text-sm">Periode iklan<select name="ad_period" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih periode</option>@foreach (\App\Services\AdBudget\AdBudgetPeriods::options() as $option)<option value="{{ $option['value'] }}" @selected($adPeriodValue === $option['value'])>{{ $option['label'] }}</option>@endforeach</select></label>
-            @endif
-            @foreach (['wilayah' => 'Wilayah', 'unit_name' => 'Unit/Kampus', 'staff_name' => 'Nama staff'] as $field => $label)
-                @php $locked = $user->role === 'staff'; $options = $field === 'wilayah' ? $references['regionals'] : ($field === 'unit_name' ? collect($references['campuses'])->pluck('label')->all() : collect($references['staff'])->pluck('name')->all()); $value = old($field, $report->{$field}); if ($locked) { $value = old($field, $field === 'wilayah' ? $user->regional : ($field === 'unit_name' ? $user->campus_name : $user->name)); } @endphp
-                <label class="grid gap-1 text-sm">{{ $label }} @if ($locked)<input readonly value="{{ $value }}" class="rounded-lg border-border bg-surface-muted"><input type="hidden" name="{{ $field }}" value="{{ $value }}">@else<select name="{{ $field }}" class="rounded-lg border-border bg-surface-muted"><option value="">Pilih {{ strtolower($label) }}</option>@foreach ($options as $option)<option value="{{ $option }}" @selected($value === $option)>{{ $option }}</option>@endforeach</select>@endif</label>
-            @endforeach
-            @if ($config['label'] === 'anggaran')
-                <label class="grid gap-1 text-sm">Platform<select name="platform" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih platform</option>@foreach ($config['options'] as $option)<option @selected(old('platform', $report->platform) === $option)>{{ $option }}</option>@endforeach</select></label>
-                <label class="grid gap-1 text-sm">Nama campaign<input name="campaign_name" required value="{{ old('campaign_name', $report->campaign_name) }}" class="rounded-lg border-border bg-surface-muted"></label>
-                <label class="grid gap-1 text-sm">Tujuan iklan<select name="ad_goal" class="rounded-lg border-border bg-surface-muted">@foreach (['Leads','Awareness','Traffic','Conversion'] as $option)<option @selected(old('ad_goal', $report->ad_goal ?: 'Leads') === $option)>{{ $option }}</option>@endforeach</select></label>
-                <label class="grid gap-1 text-sm">Anggaran<input type="number" min="0.01" step="0.01" name="budget_requested" required value="{{ old('budget_requested', $report->budget_requested) }}" class="rounded-lg border-border bg-surface-muted"></label>
-            @elseif ($config['label'] === 'kegiatan')
-                <label class="grid gap-1 text-sm">Jenis kegiatan<select name="activity_kind" class="rounded-lg border-border bg-surface-muted">@foreach ($config['options'] as $option)<option @selected(old('activity_kind', $report->activity_kind) === $option)>{{ $option }}</option>@endforeach</select></label>
-                <label class="grid gap-1 text-sm">Nama kegiatan<input name="title" required value="{{ old('title', $report->title) }}" class="rounded-lg border-border bg-surface-muted"></label>
-                <label class="grid gap-1 text-sm">Lokasi<input name="location_name" value="{{ old('location_name', $report->location_name) }}" class="rounded-lg border-border bg-surface-muted"></label><label class="grid gap-1 text-sm">Leads<input type="number" min="0" name="leads_count" value="{{ old('leads_count', $report->leads_count ?: 0) }}" class="rounded-lg border-border bg-surface-muted"></label>
-                <label class="grid gap-1 text-sm md:col-span-2">Target<textarea name="target_text" rows="2" class="rounded-lg border-border bg-surface-muted">{{ old('target_text', $report->target_text) }}</textarea></label><label class="grid gap-1 text-sm md:col-span-2">Hasil<textarea name="result_text" rows="3" class="rounded-lg border-border bg-surface-muted">{{ old('result_text', $report->result_text) }}</textarea></label><label class="grid gap-1 text-sm md:col-span-2">Catatan<textarea name="notes" rows="2" class="rounded-lg border-border bg-surface-muted">{{ old('notes', $report->notes) }}</textarea></label>
+            @if ($config['label'] === 'anggaran' && $editing)
+                @php $adsFields = \App\Services\Reports\ReportFormService::adsEditFieldsForRole($user->role); @endphp
+                @if (in_array('report_date', $adsFields))
+                    <label class="grid gap-1 text-sm">Tanggal laporan<input type="date" name="report_date" required value="{{ old('report_date', optional($report->report_date)->format('Y-m-d') ?: now()->toDateString()) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                @endif
+                @if (in_array('ad_period', $adsFields))
+                    @php $adPeriodValue = old('ad_period', $report->ad_period ?: \App\Services\AdBudget\AdBudgetPeriods::default()); @endphp
+                    <label class="grid gap-1 text-sm">Periode iklan<select name="ad_period" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih periode</option>@foreach (\App\Services\AdBudget\AdBudgetPeriods::options() as $option)<option value="{{ $option['value'] }}" @selected($adPeriodValue === $option['value'])>{{ $option['label'] }}</option>@endforeach</select></label>
+                @endif
+                @if (in_array('wilayah', $adsFields))
+                    <label class="grid gap-1 text-sm">Wilayah<select name="wilayah" class="rounded-lg border-border bg-surface-muted"><option value="">Pilih wilayah</option>@foreach ($references['regionals'] as $option)<option value="{{ $option }}" @selected(old('wilayah', $report->wilayah) === $option)>{{ $option }}</option>@endforeach</select></label>
+                @endif
+                @if (in_array('unit_name', $adsFields))
+                    <label class="grid gap-1 text-sm">Unit/Kampus<select name="unit_name" class="rounded-lg border-border bg-surface-muted"><option value="">Pilih unit/kampus</option>@foreach (collect($references['campuses'])->pluck('label') as $option)<option value="{{ $option }}" @selected(old('unit_name', $report->unit_name) === $option)>{{ $option }}</option>@endforeach</select></label>
+                @endif
+                @if (in_array('platform', $adsFields))
+                    <label class="grid gap-1 text-sm">Platform<select name="platform" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih platform</option>@foreach ($config['options'] as $option)<option @selected(old('platform', $report->platform) === $option)>{{ $option }}</option>@endforeach</select></label>
+                @endif
+                @if (in_array('campaign_name', $adsFields))
+                    <label class="grid gap-1 text-sm">Nama campaign<input name="campaign_name" required value="{{ old('campaign_name', $report->campaign_name) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                @endif
+                @if (in_array('ad_goal', $adsFields))
+                    <label class="grid gap-1 text-sm">Tujuan iklan<select name="ad_goal" class="rounded-lg border-border bg-surface-muted">@foreach (['Leads','Awareness','Traffic','Conversion'] as $option)<option @selected(old('ad_goal', $report->ad_goal ?: 'Leads') === $option)>{{ $option }}</option>@endforeach</select></label>
+                @endif
+                @if (in_array('budget_requested', $adsFields))
+                    <label class="grid gap-1 text-sm">Anggaran diajukan<input type="number" min="0.01" step="0.01" name="budget_requested" required value="{{ old('budget_requested', $report->budget_requested) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                @endif
+                @if (in_array('budget_approved', $adsFields))
+                    <label class="grid gap-1 text-sm">Anggaran disetujui<input type="number" min="0" step="0.01" name="budget_approved" value="{{ old('budget_approved', $report->budget_approved) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                @endif
+                @if (in_array('realization_amount', $adsFields))
+                    <label class="grid gap-1 text-sm">Realisasi pemakaian<input type="number" min="0" step="0.01" name="realization_amount" value="{{ old('realization_amount', $report->realization_amount) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                @endif
+                @if (in_array('cpl', $adsFields))
+                    <label class="grid gap-1 text-sm">CPL / Cost per Lead<input type="number" min="0" step="0.01" name="cpl" value="{{ old('cpl', $report->cpl) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                @endif
+                @if (in_array('campaign_link', $adsFields))
+                    <label class="grid gap-1 text-sm">Link campaign<input name="campaign_link" value="{{ old('campaign_link', $report->campaign_link) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                @endif
+                @if (in_array('attachment_path', $adsFields))
+                    <label class="grid gap-1 text-sm md:col-span-2">Upload bukti invoice/screenshot<input type="file" name="attachment_path" accept="image/jpeg,image/png,image/webp,application/pdf" class="rounded-lg border-border bg-surface-muted"><span class="text-xs text-ink-muted">JPG, PNG, WEBP, atau PDF; maksimal 5 MB.</span></label>
+                    @if ($report->attachment_path)<p class="text-xs text-ink-muted md:col-span-2"><a class="underline" href="{{ route('reports.attachment', $report) }}" target="_blank" rel="noopener">Lihat bukti saat ini</a>. Kosongkan jika tidak ingin mengganti.</p>@endif
+                @endif
+                @if (in_array('ad_leads_file', $adsFields))
+                    <label class="grid gap-1 text-sm md:col-span-2">Upload data hasil iklan (.xls/.xlsx)<div class="flex items-center gap-2"><input type="file" name="ad_leads_file" accept=".xls,.xlsx" class="rounded-lg border-border bg-surface-muted"><a href="{{ route('anggaran.leads.template') }}" class="whitespace-nowrap rounded-lg border border-border px-3 py-2 text-sm">Download Template</a></div><span class="text-xs text-ink-muted">Kosongkan jika tidak ingin menambah data hasil iklan.</span></label>
+                @endif
+                @if (in_array('notes', $adsFields))
+                    <label class="grid gap-1 text-sm md:col-span-2">Catatan performa iklan<textarea name="notes" rows="2" class="rounded-lg border-border bg-surface-muted">{{ old('notes', $report->notes) }}</textarea></label>
+                @endif
+                <div class="md:col-span-2"><button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Simpan Perubahan</button></div>
             @else
-                <label class="grid gap-1 text-sm">Kategori<select name="category" class="rounded-lg border-border bg-surface-muted">@foreach ($config['options'] as $option)<option @selected(old('category', $report->category) === $option)>{{ $option }}</option>@endforeach</select></label><label class="grid gap-1 text-sm">Deskripsi<input name="title" required value="{{ old('title', $report->title) }}" class="rounded-lg border-border bg-surface-muted"></label>
-                <label class="grid gap-1 text-sm md:col-span-2">Hasil<textarea name="result_text" rows="3" class="rounded-lg border-border bg-surface-muted">{{ old('result_text', $report->result_text) }}</textarea></label><label class="grid gap-1 text-sm">Kendala<textarea name="obstacle_text" rows="3" class="rounded-lg border-border bg-surface-muted">{{ old('obstacle_text', $report->obstacle_text) }}</textarea></label><label class="grid gap-1 text-sm">Tindak lanjut<textarea name="follow_up_text" rows="3" class="rounded-lg border-border bg-surface-muted">{{ old('follow_up_text', $report->follow_up_text) }}</textarea></label>
+                <label class="grid gap-1 text-sm">Tanggal laporan<input type="date" name="report_date" required value="{{ old('report_date', optional($report->report_date)->format('Y-m-d') ?: now()->toDateString()) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                @if ($config['label'] === 'anggaran')
+                    @php $adPeriodValue = old('ad_period', $report->ad_period ?: \App\Services\AdBudget\AdBudgetPeriods::default()); @endphp
+                    <label class="grid gap-1 text-sm">Periode iklan<select name="ad_period" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih periode</option>@foreach (\App\Services\AdBudget\AdBudgetPeriods::options() as $option)<option value="{{ $option['value'] }}" @selected($adPeriodValue === $option['value'])>{{ $option['label'] }}</option>@endforeach</select></label>
+                @endif
+                @foreach (['wilayah' => 'Wilayah', 'unit_name' => 'Unit/Kampus', 'staff_name' => 'Nama staff'] as $field => $label)
+                    @php $locked = $user->role === 'staff'; $options = $field === 'wilayah' ? $references['regionals'] : ($field === 'unit_name' ? collect($references['campuses'])->pluck('label')->all() : collect($references['staff'])->pluck('name')->all()); $value = old($field, $report->{$field}); if ($locked) { $value = old($field, $field === 'wilayah' ? $user->regional : ($field === 'unit_name' ? $user->campus_name : $user->name)); } @endphp
+                    <label class="grid gap-1 text-sm">{{ $label }} @if ($locked)<input readonly value="{{ $value }}" class="rounded-lg border-border bg-surface-muted"><input type="hidden" name="{{ $field }}" value="{{ $value }}">@else<select name="{{ $field }}" class="rounded-lg border-border bg-surface-muted"><option value="">Pilih {{ strtolower($label) }}</option>@foreach ($options as $option)<option value="{{ $option }}" @selected($value === $option)>{{ $option }}</option>@endforeach</select>@endif</label>
+                @endforeach
+                @if ($config['label'] === 'anggaran')
+                    <label class="grid gap-1 text-sm">Platform<select name="platform" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih platform</option>@foreach ($config['options'] as $option)<option @selected(old('platform', $report->platform) === $option)>{{ $option }}</option>@endforeach</select></label>
+                    <label class="grid gap-1 text-sm">Nama campaign<input name="campaign_name" required value="{{ old('campaign_name', $report->campaign_name) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                    <label class="grid gap-1 text-sm">Tujuan iklan<select name="ad_goal" class="rounded-lg border-border bg-surface-muted">@foreach (['Leads','Awareness','Traffic','Conversion'] as $option)<option @selected(old('ad_goal', $report->ad_goal ?: 'Leads') === $option)>{{ $option }}</option>@endforeach</select></label>
+                    <label class="grid gap-1 text-sm">Anggaran<input type="number" min="0.01" step="0.01" name="budget_requested" required value="{{ old('budget_requested', $report->budget_requested) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                @elseif ($config['label'] === 'kegiatan')
+                    <label class="grid gap-1 text-sm">Jenis kegiatan<select name="activity_kind" class="rounded-lg border-border bg-surface-muted">@foreach ($config['options'] as $option)<option @selected(old('activity_kind', $report->activity_kind) === $option)>{{ $option }}</option>@endforeach</select></label>
+                    <label class="grid gap-1 text-sm">Nama kegiatan<input name="title" required value="{{ old('title', $report->title) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                    <label class="grid gap-1 text-sm">Lokasi<input name="location_name" value="{{ old('location_name', $report->location_name) }}" class="rounded-lg border-border bg-surface-muted"></label><label class="grid gap-1 text-sm">Leads<input type="number" min="0" name="leads_count" value="{{ old('leads_count', $report->leads_count ?: 0) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                    <label class="grid gap-1 text-sm md:col-span-2">Target<textarea name="target_text" rows="2" class="rounded-lg border-border bg-surface-muted">{{ old('target_text', $report->target_text) }}</textarea></label><label class="grid gap-1 text-sm md:col-span-2">Hasil<textarea name="result_text" rows="3" class="rounded-lg border-border bg-surface-muted">{{ old('result_text', $report->result_text) }}</textarea></label><label class="grid gap-1 text-sm md:col-span-2">Catatan<textarea name="notes" rows="2" class="rounded-lg border-border bg-surface-muted">{{ old('notes', $report->notes) }}</textarea></label>
+                @else
+                    <label class="grid gap-1 text-sm">Kategori<select name="category" class="rounded-lg border-border bg-surface-muted">@foreach ($config['options'] as $option)<option @selected(old('category', $report->category) === $option)>{{ $option }}</option>@endforeach</select></label><label class="grid gap-1 text-sm">Deskripsi<input name="title" required value="{{ old('title', $report->title) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                    <label class="grid gap-1 text-sm md:col-span-2">Hasil<textarea name="result_text" rows="3" class="rounded-lg border-border bg-surface-muted">{{ old('result_text', $report->result_text) }}</textarea></label><label class="grid gap-1 text-sm">Kendala<textarea name="obstacle_text" rows="3" class="rounded-lg border-border bg-surface-muted">{{ old('obstacle_text', $report->obstacle_text) }}</textarea></label><label class="grid gap-1 text-sm">Tindak lanjut<textarea name="follow_up_text" rows="3" class="rounded-lg border-border bg-surface-muted">{{ old('follow_up_text', $report->follow_up_text) }}</textarea></label>
+                @endif
+                <label class="grid gap-1 text-sm md:col-span-2">Lampiran<input type="file" name="attachment_path" accept="image/jpeg,image/png,image/webp,application/pdf" class="rounded-lg border-border bg-surface-muted"><span class="text-xs text-ink-muted">JPG, PNG, WEBP, atau PDF; maksimal 5 MB.</span></label>
+                @if ($editing && $report->attachment_path)<p class="text-xs text-ink-muted md:col-span-2"><a class="underline" href="{{ route('reports.attachment', $report) }}" target="_blank" rel="noopener">Lihat lampiran saat ini</a></p>@endif
+                @if ($config['label'] !== 'anggaran')<label class="grid gap-1 text-sm">Status<select name="status" class="rounded-lg border-border bg-surface-muted">@foreach ($config['statuses'] as $status)<option @selected(old('status', $report->status ?: 'Draft') === $status)>{{ $status }}</option>@endforeach</select></label>@endif
+                <div class="md:col-span-2"><button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">{{ $config['label'] === 'anggaran' ? 'Ajukan Iklan' : ($editing ? 'Simpan Perubahan' : 'Simpan Laporan') }}</button></div>
             @endif
-            <label class="grid gap-1 text-sm md:col-span-2">Lampiran<input type="file" name="attachment_path" accept="image/jpeg,image/png,image/webp,application/pdf" class="rounded-lg border-border bg-surface-muted"><span class="text-xs text-ink-muted">JPG, PNG, WEBP, atau PDF; maksimal 5 MB.</span></label>
-            @if ($editing && $report->attachment_path)<p class="text-xs text-ink-muted md:col-span-2"><a class="underline" href="{{ route('reports.attachment', $report) }}">Lihat lampiran saat ini</a></p>@endif
-            @if ($config['label'] !== 'anggaran')<label class="grid gap-1 text-sm">Status<select name="status" class="rounded-lg border-border bg-surface-muted">@foreach ($config['statuses'] as $status)<option @selected(old('status', $report->status ?: 'Draft') === $status)>{{ $status }}</option>@endforeach</select></label>@endif
-            <div class="md:col-span-2"><button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">{{ $config['label'] === 'anggaran' ? 'Ajukan Iklan' : ($editing ? 'Simpan Perubahan' : 'Simpan Laporan') }}</button></div>
         </form>
     </section>
 </x-layouts.app>

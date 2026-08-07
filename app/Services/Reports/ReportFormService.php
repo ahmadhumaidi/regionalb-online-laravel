@@ -52,7 +52,7 @@ class ReportFormService
 
     public static function canEdit(RsmReport $report, RsmUser $user): bool
     {
-        if ($report->area !== ($user->area ?: 'Regional')) {
+        if ($report->area !== ($user->area ?: 'Regional B')) {
             return false;
         }
         if (in_array($user->role, self::SENIOR_ROLES, true)) {
@@ -75,11 +75,28 @@ class ReportFormService
 
     public static function visible(RsmReport $report, RsmUser $user): bool
     {
-        if ($report->area !== ($user->area ?: 'Regional')) {
+        if ($report->area !== ($user->area ?: 'Regional B')) {
             return false;
         }
 
         return ReportScope::apply(RsmReport::query()->whereKey($report->id), $user)->exists();
+    }
+
+    /**
+     * Field sets shown on the ads edit form per role, mirroring
+     * report_fields_for_type('ads', $role) (dashboard.php:1986-2001).
+     * Keyed by internal column name, not the Indonesian label (labels
+     * belong to the view).
+     */
+    public static function adsEditFieldsForRole(string $role): array
+    {
+        return match ($role) {
+            RsmUser::ROLE_STAFF => ['campaign_name', 'ad_goal', 'realization_amount', 'cpl', 'campaign_link', 'ad_leads_file', 'notes'],
+            RsmUser::ROLE_KOORDINATOR => ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'attachment_path', 'notes'],
+            default => in_array($role, self::SENIOR_ROLES, true)
+                ? ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'budget_approved', 'attachment_path', 'notes']
+                : [],
+        };
     }
 
     public static function create(string $type, array $data, ?UploadedFile $attachment, RsmUser $user): RsmReport
@@ -108,8 +125,12 @@ class ReportFormService
 
         return DB::transaction(function () use ($report, $data, $attachment, $user) {
             $oldStatus = $report->status;
-            $normalized = self::normalize($report->report_type, $data, $user, $report);
-            self::validateBudget($report->report_type, $normalized, $report);
+            $normalized = $report->report_type === RsmReport::TYPE_ADS
+                ? self::normalizeAds($data, $user, $report, $attachment !== null)
+                : self::normalize($report->report_type, $data, $user, $report);
+            if ($report->report_type !== RsmReport::TYPE_ADS || (float) $normalized['budget_requested'] !== (float) $report->budget_requested) {
+                self::validateBudget($report->report_type, $normalized, $report);
+            }
             $report->fill($normalized);
             $report->save();
             self::storeAttachment($report, $attachment);
@@ -148,7 +169,7 @@ class ReportFormService
         }
 
         return [
-            'area' => $user->area ?: 'Regional',
+            'area' => $user->area ?: 'Regional B',
             'report_type' => $type,
             'report_date' => $data['report_date'] ?? now()->toDateString(),
             'user_id' => $staffRow?->id,
@@ -179,6 +200,86 @@ class ReportFormService
             'obstacle_text' => $data['obstacle_text'] ?? null,
             'follow_up_text' => $data['follow_up_text'] ?? null,
         ];
+    }
+
+    /**
+     * Ports the ads branch of rsm_update_report() (rsm_db.php:2489-2565).
+     * Unlike normalize(), every column defaults to the *existing* report's
+     * value when not present in $data — matching legacy's per-field
+     * $postedValue()/$postedNumber() fallback — since the edit form only
+     * posts the subset of fields report_fields_for_type() shows for the
+     * current role (adsEditFieldsForRole()).
+     */
+    private static function normalizeAds(array $data, RsmUser $user, RsmReport $existing, bool $attachmentUploaded): array
+    {
+        $posted = static fn (string $key, mixed $fallback) => array_key_exists($key, $data) ? $data[$key] : $fallback;
+
+        $wilayah = trim((string) $posted('wilayah', $existing->wilayah));
+        $unit = trim((string) $posted('unit_name', $existing->unit_name));
+        $staff = trim((string) $posted('staff_name', $existing->staff_name));
+        $staffRow = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('name', $staff)->when($wilayah !== '', fn ($q) => $q->where('regional', $wilayah))->first();
+        $campus = DB::table('partner_campuses')->where('display_name', $unit)->orWhere('name', $unit)->first();
+
+        if ($user->role === RsmUser::ROLE_KOORDINATOR && $campus && $campus->wilayah && $campus->wilayah !== $user->regional) {
+            throw ValidationException::withMessages(['unit_name' => 'Kampus tersebut bukan bagian dari wilayah Anda.']);
+        }
+
+        $base = [
+            'area' => $user->area ?: 'Regional B',
+            'report_type' => RsmReport::TYPE_ADS,
+            'report_date' => $posted('report_date', optional($existing->report_date)->toDateString()),
+            'user_id' => $staffRow?->id ?? $existing->user_id,
+            'partner_campus_id' => $campus?->id ?? $staffRow?->partner_campus_id ?? $existing->partner_campus_id,
+            'wilayah' => $wilayah ?: 'Belum diisi',
+            'unit_name' => $unit ?: 'Belum diisi',
+            'staff_name' => $staff ?: $existing->staff_name,
+            'created_by_name' => $existing->created_by_name ?: $user->name,
+            'created_by_role' => $existing->created_by_role ?: $user->role,
+            'status' => $existing->status,
+            'title' => trim((string) $posted('campaign_name', $existing->campaign_name)) ?: '-',
+            'platform' => $posted('platform', $existing->platform),
+            'ad_period' => trim((string) $posted('ad_period', $existing->ad_period)) ?: AdBudgetPeriods::default(),
+            'campaign_name' => $posted('campaign_name', $existing->campaign_name),
+            'ad_goal' => $posted('ad_goal', $existing->ad_goal),
+            'budget_requested' => (float) $posted('budget_requested', $existing->budget_requested),
+            'budget_approved' => (float) $posted('budget_approved', $existing->budget_approved),
+            'realization_amount' => (float) $posted('realization_amount', $existing->realization_amount),
+            'leads_count' => (int) $existing->leads_count,
+            'closing_count' => (int) $existing->closing_count,
+            'cpl' => (float) $posted('cpl', $existing->cpl),
+            'campaign_link' => $posted('campaign_link', $existing->campaign_link),
+            'notes' => $posted('notes', $existing->notes),
+        ];
+
+        $wasDisetujui = mb_strtolower(trim((string) $existing->status)) === 'disetujui';
+
+        return match (true) {
+            $user->role === RsmUser::ROLE_STAFF => array_merge($base, [
+                'report_date' => optional($existing->report_date)->toDateString(),
+                'user_id' => $existing->user_id,
+                'partner_campus_id' => $existing->partner_campus_id,
+                'wilayah' => $existing->wilayah,
+                'unit_name' => $existing->unit_name,
+                'staff_name' => $user->name,
+                'platform' => $existing->platform,
+                'ad_period' => $existing->ad_period,
+                'budget_requested' => (float) $existing->budget_requested,
+                'budget_approved' => (float) $existing->budget_approved,
+                'status' => 'Dilaporkan Unit',
+            ]),
+            $user->role === RsmUser::ROLE_KOORDINATOR => array_merge($base, [
+                'budget_approved' => (float) $existing->budget_approved,
+                'realization_amount' => (float) $existing->realization_amount,
+                'cpl' => (float) $existing->cpl,
+                'status' => $attachmentUploaded && $wasDisetujui ? 'Transfer / Invoice' : $existing->status,
+            ]),
+            in_array($user->role, self::SENIOR_ROLES, true) => array_merge($base, [
+                'realization_amount' => (float) $existing->realization_amount,
+                'cpl' => (float) $existing->cpl,
+                'status' => $attachmentUploaded && $wasDisetujui ? 'Transfer / Invoice' : $existing->status,
+            ]),
+            default => $base,
+        };
     }
 
     private static function validateBudget(string $type, array $data, ?RsmReport $existing = null): void

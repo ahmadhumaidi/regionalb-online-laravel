@@ -6,6 +6,7 @@ use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\DashboardNumbers;
 use App\Services\Dashboard\ReportScope;
+use App\Services\Reports\ReportFormService;
 use App\Support\RsmRole;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -81,14 +82,7 @@ class AdBudgetReportsService
     private static function rowShape(RsmReport $report, RsmUser $user): array
     {
         $status = (string) $report->status;
-        $statusLower = mb_strtolower(trim($status));
         $canReview = RsmRole::canReviewAdBudgetRequest($user) && in_array($status, ['Pengajuan', 'Revisi'], true);
-        $canComplete = $user->role === 'koordinator'
-            && $report->wilayah === $user->regional
-            && $statusLower === 'dilaporkan unit';
-        $canReportRealization = in_array($user->role, ['staff', 'koordinator'], true)
-            && $report->wilayah === $user->regional
-            && in_array($statusLower, ['disetujui', 'dilaporkan unit'], true);
 
         return [
             'id' => $report->id,
@@ -104,8 +98,8 @@ class AdBudgetReportsService
             'status' => $report->status,
             'has_attachment' => filled($report->attachment_path),
             'can_review' => $canReview,
-            'can_complete' => $canComplete,
-            'can_report_realization' => $canReportRealization,
+            'can_edit' => ReportFormService::canEdit($report, $user),
+            'can_delete' => ReportFormService::canDelete($report, $user),
         ];
     }
 

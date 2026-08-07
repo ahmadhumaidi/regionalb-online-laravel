@@ -33,34 +33,32 @@ class PendingAdReportsService
             $status = mb_strtolower(trim((string) $report->status));
 
             if (! in_array($status, ['dilaporkan unit', 'ditolak'], true)) {
-                $belumDilaporkan[] = self::rowShape($report, $user, $status);
+                $belumDilaporkan[] = self::rowShape($report);
 
                 continue;
             }
 
             if ($status === 'dilaporkan unit' && ((float) $report->realization_amount <= 0 || blank($report->attachment_path))) {
-                $belumTuntas[] = self::rowShape($report, $user, $status);
+                $belumTuntas[] = self::rowShape($report);
             }
         }
 
         return ['belum_dilaporkan' => $belumDilaporkan, 'belum_tuntas' => $belumTuntas];
     }
 
-    private static function rowShape(RsmReport $report, RsmUser $user, string $statusLower): array
+    /** Matches the columns render_ads_pending_report_panel() actually shows (dashboard.php:2279-2321). */
+    private static function rowShape(RsmReport $report): array
     {
-        $canReportRealization = in_array($user->role, ['staff', 'koordinator'], true)
-            && $report->wilayah === $user->regional
-            && in_array($statusLower, ['disetujui', 'dilaporkan unit'], true);
-
         return [
             'id' => $report->id,
             'report_date' => optional($report->report_date)->format('d M Y') ?? '-',
             'ad_period' => $report->ad_period,
-            'wilayah' => $report->wilayah,
-            'unit_name' => $report->unit_name,
-            'campaign_name' => $report->campaign_name,
+            'platform' => $report->platform,
+            'campaign_name' => $report->campaign_name ?: $report->title,
+            'budget_approved' => (float) ($report->budget_approved ?: $report->budget_requested),
+            'realization_amount' => (float) $report->realization_amount,
+            'has_attachment' => filled($report->attachment_path),
             'status' => $report->status,
-            'can_report_realization' => $canReportRealization,
         ];
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\AdBudgetActionController;
 use App\Http\Controllers\AdBudgetController;
+use App\Http\Controllers\AdLeadController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AktivitasController;
 use App\Http\Controllers\ContentController;
@@ -47,9 +48,9 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/anggaran/{report}/setujui', [AdBudgetActionController::class, 'approve'])->name('anggaran.setujui');
     Route::post('/anggaran/{report}/tolak', [AdBudgetActionController::class, 'reject'])->name('anggaran.tolak');
     Route::post('/anggaran/{report}/revisi', [AdBudgetActionController::class, 'revise'])->name('anggaran.revisi');
-    Route::post('/anggaran/{report}/selesai', [AdBudgetActionController::class, 'complete'])->name('anggaran.selesai');
-    Route::get('/anggaran/{report}/realisasi', [AdBudgetActionController::class, 'realisasiForm'])->name('anggaran.realisasi.form');
-    Route::post('/anggaran/{report}/realisasi', [AdBudgetActionController::class, 'realisasi'])->name('anggaran.realisasi.store');
+    Route::post('/anggaran/{report}/leads/upload', [AdLeadController::class, 'upload'])->name('anggaran.leads.upload');
+    Route::post('/anggaran/{report}/leads', [AdLeadController::class, 'update'])->name('anggaran.leads.update');
+    Route::get('/anggaran/leads/template', [AdLeadController::class, 'template'])->name('anggaran.leads.template');
 
     Route::get('/konten', [ContentController::class, 'index'])->name('konten');
     Route::post('/konten/accounts', [ContentController::class, 'storeAccount'])->name('konten.accounts.store');

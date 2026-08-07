@@ -6,6 +6,7 @@ use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\ReferenceOptionsService;
 use App\Services\Dashboard\ReportScope;
+use App\Services\Reports\AdLeadImportService;
 use App\Services\Reports\ReportFormService;
 use App\Services\Reports\ReportListService;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +32,7 @@ class ReportFormController extends Controller
         $user = Auth::user();
         $this->assertType($type);
         abort_unless(ReportFormService::canCreate($type, $user), 403);
-        $data = $this->validated($request, $type);
+        $data = $this->validated($request, $type, false, $user);
         ReportFormService::create($type, $data, $request->file('attachment_path'), $user);
 
         return redirect()->route($this->pageRoute($type))->with('notice', 'Laporan disimpan.');
@@ -48,6 +49,7 @@ class ReportFormController extends Controller
             'canEdit' => ReportFormService::canEdit($report, $user),
             'canDelete' => ReportFormService::canDelete($report, $user),
             'logs' => $report->logs()->latest('id')->get(),
+            'adLeads' => $report->report_type === RsmReport::TYPE_ADS ? $report->adLeads()->orderBy('id')->get() : collect(),
         ]);
     }
 
@@ -65,8 +67,12 @@ class ReportFormController extends Controller
         $user = Auth::user();
         abort_unless(ReportFormService::canEdit($report, $user), 403);
         abort_unless(ReportFormService::visible($report, $user), 404);
-        $data = $this->validated($request, $report->report_type, true);
+        $data = $this->validated($request, $report->report_type, true, $user);
         ReportFormService::update($report, $data, $request->file('attachment_path'), $user);
+
+        if ($report->report_type === RsmReport::TYPE_ADS && $request->hasFile('ad_leads_file')) {
+            AdLeadImportService::import($report->fresh(), $request->file('ad_leads_file'), replaceExisting: false);
+        }
 
         return redirect()->route('reports.show', $report)->with('notice', 'Laporan diperbarui.');
     }
@@ -107,12 +113,16 @@ class ReportFormController extends Controller
             'editing' => $editing,
             'user' => $user,
             'storeRoute' => $this->pageRoute($type).'.store',
-            'references' => ReferenceOptionsService::build($user->area ?: 'Regional', $user),
+            'references' => ReferenceOptionsService::build($user->area ?: 'Regional B', $user),
         ]);
     }
 
-    private function validated(Request $request, string $type, bool $editing = false): array
+    private function validated(Request $request, string $type, bool $editing, RsmUser $user): array
     {
+        if ($type === RsmReport::TYPE_ADS && $editing) {
+            return $request->validate($this->adsEditRules($user));
+        }
+
         $common = [
             'report_date' => ['required', 'date'],
             'wilayah' => ['nullable', 'string', 'max:120'],
@@ -140,6 +150,39 @@ class ReportFormController extends Controller
         };
 
         return $request->validate($rules);
+    }
+
+    /** Role-specific rules for editing an ads report, matching report_fields_for_type('ads', $role). */
+    private function adsEditRules(RsmUser $user): array
+    {
+        if ($user->role === RsmUser::ROLE_STAFF) {
+            return [
+                'campaign_name' => ['required', 'string', 'max:220'],
+                'ad_goal' => ['nullable', 'string', 'max:80'],
+                'realization_amount' => ['nullable', 'numeric', 'min:0'],
+                'cpl' => ['nullable', 'numeric', 'min:0'],
+                'campaign_link' => ['nullable', 'string', 'max:255'],
+                'ad_leads_file' => ['nullable', 'file', 'max:5120', 'mimes:xls,xlsx'],
+                'notes' => ['nullable', 'string'],
+            ];
+        }
+
+        $rules = [
+            'report_date' => ['required', 'date'],
+            'ad_period' => ['required', 'string', 'max:40'],
+            'wilayah' => ['nullable', 'string', 'max:120'],
+            'unit_name' => ['nullable', 'string', 'max:180'],
+            'platform' => ['required', 'string', 'max:120'],
+            'budget_requested' => ['required', 'numeric', 'min:0.01'],
+            'attachment_path' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
+            'notes' => ['nullable', 'string'],
+        ];
+
+        if (in_array($user->role, ['super_user', 'executive_director', 'director', 'senior'], true)) {
+            $rules['budget_approved'] = ['nullable', 'numeric', 'min:0'];
+        }
+
+        return $rules;
     }
 
     private function assertType(string $type): void
