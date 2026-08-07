@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'collab' => [
+        'username' => env('COLLAB_USERNAME'),
+        'password' => env('COLLAB_PASSWORD'),
+    ],
+
 ];

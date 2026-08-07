@@ -49,3 +49,71 @@
         display: none !important;
     }
 }
+
+@layer components {
+    /* Raw Collab table (resources/views/collab-source/index.blade.php): sticky
+       header/first-column and nth-child striping ported from the legacy
+       .collab-raw-table rules in public_html/assets/style.css, which Tailwind
+       utility classes alone can't express since the rows come from
+       App\Support\CollabTableRenderer as a pre-built HTML string. */
+    .collab-raw-table {
+        min-width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .collab-raw-table th,
+    .collab-raw-table td {
+        @apply border-b border-border/60 px-3 py-2 text-xs whitespace-nowrap;
+    }
+
+    .collab-raw-table thead th {
+        @apply bg-surface-muted text-ink-muted font-semibold tracking-wide uppercase;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        box-shadow: 0 1px 0 var(--color-border);
+    }
+
+    .collab-raw-table thead tr:nth-child(2) th {
+        top: 2.25rem;
+    }
+
+    .collab-raw-table tbody tr:nth-child(even) {
+        background: color-mix(in srgb, var(--color-surface-muted) 60%, transparent);
+    }
+
+    .collab-raw-table tbody tr:hover {
+        @apply bg-brand-50;
+    }
+
+    .collab-raw-table td.num,
+    .collab-raw-table th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .collab-raw-table tbody td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        background: inherit;
+        box-shadow: 1px 0 0 var(--color-border);
+    }
+
+    .collab-raw-table thead th.sticky-col,
+    .collab-raw-table thead th:first-child {
+        left: 0;
+        z-index: 3;
+        box-shadow: 1px 1px 0 var(--color-border);
+    }
+
+    .collab-raw-table tbody tr.collab-subtotal-row {
+        @apply bg-brand-700;
+    }
+
+    .collab-raw-table tbody tr.collab-subtotal-row td {
+        @apply font-bold text-white;
+        border-bottom-color: rgba(255, 255, 255, 0.18);
+    }
+}

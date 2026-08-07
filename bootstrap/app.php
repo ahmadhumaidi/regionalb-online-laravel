@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withSchedule(function (Schedule $schedule): void {
+        // Production cron runs sync_collab_cache.php every 30 minutes; match that cadence here.
+        $schedule->command('rsm:sync-sources --only=collab')->everyThirtyMinutes()->withoutOverlapping();
         $schedule->command('rsm:sync-sources')->dailyAt('02:15')->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
