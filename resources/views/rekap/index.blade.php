@@ -1,4 +1,29 @@
 <x-layouts.app title="Laporan & Rekap" active="rekap">
+    @if (session('status'))
+        <div class="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{{ session('status') }}</div>
+    @endif
+
+    @if (auth()->user()->role === 'super_user')
+        <section class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-sm font-semibold text-ink">Bahan WhatsApp Otomatis</h2>
+                    <p class="text-xs text-ink-muted">Ringkasan pencapaian hari ini, siap salin ke WhatsApp.</p>
+                </div>
+                <form method="POST" action="{{ route('rekap.whatsapp') }}">
+                    @csrf
+                    <button class="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Generate Sekarang</button>
+                </form>
+            </div>
+            @if ($whatsappArtifact['text'] ?? null)
+                <p class="mt-3 text-xs text-ink-muted">Dibuat {{ $whatsappArtifact['generated_at'] ?? '-' }}</p>
+                <textarea readonly rows="10" class="mt-1 w-full rounded-lg border-border bg-surface text-sm">{{ $whatsappArtifact['text'] }}</textarea>
+            @else
+                <p class="mt-3 text-sm text-ink-muted">Belum ada bahan otomatis. Klik Generate Sekarang.</p>
+            @endif
+        </section>
+    @endif
+
     <section class="rounded-2xl border border-border bg-surface p-5">
         <form method="GET" class="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
             <label class="grid gap-1 text-xs text-ink-muted">Dari<input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="rounded-lg border-border bg-surface-muted"></label>

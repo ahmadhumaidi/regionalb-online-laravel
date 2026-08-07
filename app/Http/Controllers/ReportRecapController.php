@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Exports\AdsRekapExport;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\Dashboard\AchievementWhatsappService;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\ReferenceOptionsService;
 use App\Services\Reports\ReportRecapService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -33,7 +35,18 @@ class ReportRecapController extends Controller
             'type' => $type,
             'recap' => $recap,
             'references' => ReferenceOptionsService::build($area, $user),
+            'whatsappArtifact' => AchievementWhatsappService::latest(),
         ]);
+    }
+
+    public function generateWhatsapp(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->role === 'super_user', 403);
+
+        AchievementWhatsappService::generate($user->area ?: 'Regional B', $user);
+
+        return back()->with('status', 'Bahan WhatsApp pencapaian terbaru berhasil dibuat.');
     }
 
     public function export(Request $request)

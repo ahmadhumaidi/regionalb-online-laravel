@@ -61,6 +61,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/aktivitas', [AktivitasController::class, 'index'])->name('aktivitas');
     Route::get('/rekap', [ReportRecapController::class, 'index'])->name('rekap');
     Route::get('/rekap/export', [ReportRecapController::class, 'export'])->name('rekap.export');
+    Route::post('/rekap/whatsapp', [ReportRecapController::class, 'generateWhatsapp'])->name('rekap.whatsapp');
     Route::get('/targets', [TargetController::class, 'index'])->name('targets');
     Route::post('/targets', [TargetController::class, 'store'])->name('targets.store');
     Route::get('/jadwal-personalia', [PersonnelScheduleController::class, 'index'])->name('jadwal-personalia');

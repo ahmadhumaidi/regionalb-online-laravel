@@ -19,8 +19,9 @@
                     <button class="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Generate Laporan WA</button>
                 </form>
             </div>
-            @if (session('whatsapp_report'))
-                <textarea readonly rows="8" class="mt-3 w-full rounded-lg border-border bg-surface text-sm">{{ session('whatsapp_report') }}</textarea>
+            @if ($whatsappArtifact['text'] ?? null)
+                <p class="mt-3 text-xs text-ink-muted">Dibuat {{ $whatsappArtifact['generated_at'] ?? '-' }}</p>
+                <textarea readonly rows="8" class="mt-1 w-full rounded-lg border-border bg-surface text-sm">{{ $whatsappArtifact['text'] }}</textarea>
             @endif
         </section>
     @endif
