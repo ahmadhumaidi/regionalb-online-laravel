@@ -77,7 +77,7 @@
                                 <span class="hidden sm:inline">Tampilan sebagai</span>
                                 <select name="role" onchange="this.form.submit()" class="max-w-[130px] bg-transparent text-sm font-medium text-white focus:outline-none">
                                     @foreach ($allowedRoleKeys as $roleKey)
-                                        <option value="{{ $roleKey }}" @selected(($effectiveRole ?? null) === $roleKey)>{{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) \App\Support\RsmRole::label($roleKey)) }}</option>
+                                        <option value="{{ $roleKey }}" @selected(($effectiveRole ?? null) === $roleKey) class="text-slate-900">{{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) \App\Support\RsmRole::label($roleKey)) }}</option>
                                     @endforeach
                                 </select>
                             </label>
@@ -91,7 +91,7 @@
                                 <x-icon name="switch" class="h-4 w-4" />
                                 <select name="user_id" onchange="this.form.submit()" class="max-w-[180px] truncate bg-transparent text-sm font-medium text-white focus:outline-none">
                                     @foreach ($impersonationUsers as $candidate)
-                                        <option value="{{ $candidate->id }}" @selected($candidate->id === $user->id)>{{ $candidate->name }} &mdash; {{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) ($candidate->jabatan ?: \App\Support\RsmRole::label($candidate->role))) }}</option>
+                                        <option value="{{ $candidate->id }}" @selected($candidate->id === $user->id) class="text-slate-900">{{ $candidate->name }} &mdash; {{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) ($candidate->jabatan ?: \App\Support\RsmRole::label($candidate->role))) }}</option>
                                     @endforeach
                                 </select>
                             </label>
