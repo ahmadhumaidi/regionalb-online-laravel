@@ -184,7 +184,13 @@ class CollabSourceService
         return self::buildSnapshotEntry($reportName, $report);
     }
 
-    public static function sync(): array
+    /**
+     * @param  int|null  $windowDays  Batasi ingest rsm_collab_daily_metrics ke
+     *      N hari terakhir (hari ini inklusif) — dipakai oleh cron 30-menitan
+     *      supaya hari yang sudah lewat window tidak ditulis ulang terus.
+     *      null = ingest penuh (full sync harian & sync manual dari UI).
+     */
+    public static function sync(?int $windowDays = null): array
     {
         $syncedAt = now()->format('Y-m-d H:i:s');
         $result = [
@@ -206,7 +212,7 @@ class CollabSourceService
             $result['reports'][$reportName] = $report;
             self::archiveReport($reportName, $report);
             if (in_array($reportName, self::DAILY_METRIC_REPORTS, true)) {
-                self::ingestDailyMetrics($reportName, $report);
+                self::ingestDailyMetrics($reportName, $report, $windowDays);
             }
         }
 
@@ -517,7 +523,7 @@ class CollabSourceService
         return $decoded;
     }
 
-    private static function ingestDailyMetrics(string $reportName, array $report): void
+    private static function ingestDailyMetrics(string $reportName, array $report, ?int $windowDays = null): void
     {
         $rows = $report['tables'][0] ?? [];
         if (! is_array($rows) || count($rows) < 3) {
@@ -551,6 +557,10 @@ class CollabSourceService
         if ($dayValueIndexes === []) {
             return;
         }
+
+        $syncCutoff = $windowDays !== null
+            ? now()->startOfDay()->subDays(max(0, $windowDays - 1))->format('Y-m-d')
+            : null;
 
         $now = now();
         $records = [];
@@ -622,8 +632,11 @@ class CollabSourceService
             }
 
             foreach ($dayValueIndexes as $dayNumber => $valueIndex) {
-                $value = self::numberValue($row[$valueIndex] ?? 0);
                 $metricDate = $reportMonth.'-'.str_pad((string) $dayNumber, 2, '0', STR_PAD_LEFT);
+                if ($syncCutoff !== null && $metricDate < $syncCutoff) {
+                    continue;
+                }
+                $value = self::numberValue($row[$valueIndex] ?? 0);
                 $records[] = [
                     'report_name' => $reportName,
                     'metric_date' => $metricDate,

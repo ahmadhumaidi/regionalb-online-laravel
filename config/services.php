@@ -38,6 +38,10 @@ return [
     'collab' => [
         'username' => env('COLLAB_USERNAME'),
         'password' => env('COLLAB_PASSWORD'),
+        // Hari yang masih disentuh sinkron 30-menitan (hari ini + N-1 hari
+        // ke belakang untuk toleransi koreksi telat). Hari di luar window ini
+        // dianggap final dan hanya diperbarui lagi oleh full sync harian.
+        'sync_window_days' => (int) env('COLLAB_SYNC_WINDOW_DAYS', 2),
     ],
 
 ];

@@ -13,7 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withSchedule(function (Schedule $schedule): void {
         // Production cron runs sync_collab_cache.php every 30 minutes; match that cadence here.
-        $schedule->command('rsm:sync-sources --only=collab')->everyThirtyMinutes()->withoutOverlapping();
+        // Only touch the last N days (config: services.collab.sync_window_days) so
+        // closed days aren't rewritten every 30 minutes - they're effectively
+        // permanent once outside the window. The daily full sync below is the
+        // once-a-day safety net that catches any late corrections beyond that window.
+        $collabWindowDays = (int) config('services.collab.sync_window_days', 2);
+        $schedule->command("rsm:sync-sources --only=collab --window={$collabWindowDays}")->everyThirtyMinutes()->withoutOverlapping();
         $schedule->command('rsm:sync-sources')->dailyAt('02:15')->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {

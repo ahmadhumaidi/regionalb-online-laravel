@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 
 class SyncLegacySources extends Command
 {
-    protected $signature = 'rsm:sync-sources {--only= : personalia,collab,bdc atau kosong untuk semua}';
+    protected $signature = 'rsm:sync-sources {--only= : personalia,collab,bdc atau kosong untuk semua} {--window= : collab saja - batasi ingest daily_metrics ke N hari terakhir (kosong = penuh)}';
     protected $description = 'Refresh snapshot sumber Personalia, Collab, dan BDC';
 
     public function handle(): int
@@ -21,8 +21,13 @@ class SyncLegacySources extends Command
             $this->line('Personalia: '.(!empty($data['errors']) ? 'fallback/error' : 'ok'));
         }
         if ($run('collab')) {
-            $data = CollabSourceService::sync();
-            $this->line('Collab: '.count($data['reports'] ?? []).' report, '.count($data['errors'] ?? []).' error');
+            $window = $this->option('window');
+            $windowDays = $window !== null && $window !== '' ? (int) $window : null;
+            $data = CollabSourceService::sync($windowDays);
+            $this->line(
+                'Collab: '.count($data['reports'] ?? []).' report, '.count($data['errors'] ?? []).' error'
+                .($windowDays !== null ? " (window {$windowDays} hari)" : ' (full)')
+            );
         }
         if ($run('bdc')) {
             $data = BdcReportUsersService::refresh();
