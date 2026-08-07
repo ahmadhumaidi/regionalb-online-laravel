@@ -61,6 +61,11 @@ class ReportFormService
         if ($report->report_type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_KOORDINATOR) {
             return $report->wilayah === $user->regional;
         }
+        if ($report->report_type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_STAFF) {
+            return in_array(mb_strtolower((string) $report->status), [
+                'disetujui', 'transfer-/-invoice', 'transfer / invoice', 'berjalan', 'dilaporkan-unit', 'dilaporkan unit', 'revisi',
+            ], true);
+        }
 
         return $user->role === RsmUser::ROLE_STAFF
             && in_array(mb_strtolower((string) $report->status), ['draft', 'revisi'], true)
