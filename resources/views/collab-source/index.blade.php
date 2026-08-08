@@ -6,7 +6,7 @@
     <section class="mb-5 grid gap-3 sm:grid-cols-2">
         @php($collabHealth = $syncHealth['collab'] ?? [])
         @php($bdcHealth = $syncHealth['bdc'] ?? [])
-        <div class="rounded-2xl border border-border bg-surface p-4">
+        <div class="rounded-2xl glass-card p-4">
             <span class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Collab</span>
             <strong class="mt-1 block text-lg text-ink">{{ $collabHealth['status'] ?? '-' }}</strong>
             <small class="text-xs text-ink-muted">
@@ -14,7 +14,7 @@
                 @if(!empty($collabHealth['errors'])) &middot; ada error source @endif
             </small>
         </div>
-        <div class="rounded-2xl border border-border bg-surface p-4">
+        <div class="rounded-2xl glass-card p-4">
             <span class="text-xs font-semibold tracking-wide text-ink-muted uppercase">BDC Marketing</span>
             <strong class="mt-1 block text-lg text-ink">{{ $bdcHealth['status'] ?? '-' }}</strong>
             <small class="text-xs text-ink-muted">
@@ -24,7 +24,7 @@
         </div>
     </section>
 
-    <section class="rounded-2xl border border-border bg-surface p-5">
+    <section class="rounded-2xl glass-card p-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h2 class="text-base font-semibold text-ink">Sumber Data Collab (cb.web.id)</h2>
@@ -66,10 +66,10 @@
         @endif
 
         <div class="mt-4 flex flex-wrap gap-2 text-xs text-ink-muted">
-            <span class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-muted px-3 py-1.5"><b class="text-[10.5px] font-black tracking-wide text-ink-muted uppercase">Mode</b> {{ $modeLabel }}</span>
-            <span class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-muted px-3 py-1.5"><b class="text-[10.5px] font-black tracking-wide text-ink-muted uppercase">Diambil</b> {{ ($reportData['created_at'] ?? '') ?: '-' }}</span>
-            <span class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-muted px-3 py-1.5"><b class="text-[10.5px] font-black tracking-wide text-ink-muted uppercase">Cache disimpan</b> {{ ($reportData['cached_at'] ?? '') ?: '-' }}</span>
-            <span class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-muted px-3 py-1.5"><b class="text-[10.5px] font-black tracking-wide text-ink-muted uppercase">Ukuran</b> {{ number_format((int) ($reportData['row_count'] ?? 0), 0, ',', '.') }} baris &times; {{ number_format((int) ($reportData['column_count'] ?? 0), 0, ',', '.') }} kolom</span>
+            <span class="inline-flex items-center gap-1.5 rounded-lg glass-card-muted px-3 py-1.5"><b class="text-[10.5px] font-black tracking-wide text-ink-muted uppercase">Mode</b> {{ $modeLabel }}</span>
+            <span class="inline-flex items-center gap-1.5 rounded-lg glass-card-muted px-3 py-1.5"><b class="text-[10.5px] font-black tracking-wide text-ink-muted uppercase">Diambil</b> {{ ($reportData['created_at'] ?? '') ?: '-' }}</span>
+            <span class="inline-flex items-center gap-1.5 rounded-lg glass-card-muted px-3 py-1.5"><b class="text-[10.5px] font-black tracking-wide text-ink-muted uppercase">Cache disimpan</b> {{ ($reportData['cached_at'] ?? '') ?: '-' }}</span>
+            <span class="inline-flex items-center gap-1.5 rounded-lg glass-card-muted px-3 py-1.5"><b class="text-[10.5px] font-black tracking-wide text-ink-muted uppercase">Ukuran</b> {{ number_format((int) ($reportData['row_count'] ?? 0), 0, ',', '.') }} baris &times; {{ number_format((int) ($reportData['column_count'] ?? 0), 0, ',', '.') }} kolom</span>
             @if(($reportData['source_url'] ?? '') !== '')
                 <a class="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 font-bold text-brand-700" href="{{ $reportData['source_url'] }}" target="_blank" rel="noopener">Buka sumber asli &#8599;</a>
             @endif

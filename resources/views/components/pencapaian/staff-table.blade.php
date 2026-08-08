@@ -1,6 +1,6 @@
 @props(['rows'])
 
-<section class="rounded-2xl border border-border bg-surface p-5">
+<section class="rounded-2xl glass-card p-5">
     <h2 class="mb-4 text-base font-semibold text-ink">Pencapaian Staff</h2>
     @if (empty($rows))
         <p class="py-6 text-center text-sm text-ink-muted">Belum ada data staff pada periode/filter ini.</p>

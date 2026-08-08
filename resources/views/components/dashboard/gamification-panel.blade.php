@@ -1,6 +1,6 @@
 @props(['gamification'])
 
-<section class="mb-6 rounded-2xl border border-border bg-surface p-5">
+<section class="mb-6 rounded-2xl glass-card p-5">
     <div class="mb-4">
         <h2 class="text-base font-semibold text-ink">Arena Performa Staff</h2>
         <span class="text-xs text-ink-muted">Leaderboard poin berdasarkan aktivitas &amp; pencapaian</span>

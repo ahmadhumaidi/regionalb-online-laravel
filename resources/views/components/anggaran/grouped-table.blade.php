@@ -1,6 +1,6 @@
 @props(['groups'])
 
-<section class="rounded-2xl border border-border bg-surface p-5">
+<section class="rounded-2xl glass-card p-5">
     <h2 class="mb-4 text-base font-semibold text-ink">Anggaran & Laporan Iklan</h2>
     @if (empty($groups))
         <p class="py-6 text-center text-sm text-ink-muted">Belum ada laporan iklan pada periode ini.</p>

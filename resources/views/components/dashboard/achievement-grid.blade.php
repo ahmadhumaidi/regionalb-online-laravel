@@ -1,7 +1,7 @@
 @props(['campusClosing', 'topStaffAchievement', 'topStaffMaxValue'])
 
 <section class="mb-6 grid gap-4 lg:grid-cols-2">
-    <article class="rounded-2xl border border-border bg-surface p-5">
+    <article class="rounded-2xl glass-card p-5">
         <div class="mb-3 flex items-start justify-between gap-2">
             <div>
                 <h2 class="text-base font-semibold text-ink">Top 5 Pencapaian Kampus</h2>
@@ -28,7 +28,7 @@
         @endif
     </article>
 
-    <article class="rounded-2xl border border-border bg-surface p-5">
+    <article class="rounded-2xl glass-card p-5">
         <div class="mb-3">
             <h2 class="text-base font-semibold text-ink">Pencapaian Staff Regional</h2>
             <span class="text-xs text-ink-muted">Berdasarkan data Closing/Herreg Collab</span>

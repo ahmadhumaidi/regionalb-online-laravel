@@ -26,7 +26,7 @@
         </section>
     @endif
 
-    <section class="rounded-2xl border border-border bg-surface p-5">
+    <section class="rounded-2xl glass-card p-5">
         <form method="GET" class="grid gap-3 md:grid-cols-5">
             <label class="grid gap-1 text-xs text-ink-muted">Bulan<input type="month" name="month" value="{{ $month }}" class="rounded-lg border-border bg-surface-muted"></label>
             <label class="grid gap-1 text-xs text-ink-muted">Wilayah<select name="wilayah" class="rounded-lg border-border bg-surface-muted"><option value="">Semua Wilayah</option>@foreach ($regionals as $regional)<option @selected(request('wilayah') === $regional)>{{ $regional }}</option>@endforeach</select></label>
@@ -39,7 +39,7 @@
     <section class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         @foreach ($regionals as $regional)
             @php $row = $summary[$regional] ?? ['total' => 0, 'Fisik' => 0, 'Zoom' => 0, 'Telepon' => 0, 'Selesai' => 0]; @endphp
-            <div class="rounded-2xl border border-border bg-surface p-4">
+            <div class="rounded-2xl glass-card p-4">
                 <p class="text-xs text-ink-muted">{{ $regional }}</p>
                 <p class="mt-1 text-lg font-semibold text-ink">{{ number_format($row['total'], 0, ',', '.') }} agenda</p>
                 <p class="mt-1 text-xs text-ink-muted">{{ number_format($row['Fisik'], 0, ',', '.') }} fisik, {{ number_format($row['Zoom'], 0, ',', '.') }} Zoom, {{ number_format($row['Selesai'], 0, ',', '.') }} selesai</p>
@@ -48,7 +48,7 @@
     </section>
 
     @if ($canManage)
-        <section class="mt-5 rounded-2xl border border-border bg-surface p-5">
+        <section class="mt-5 rounded-2xl glass-card p-5">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-base font-semibold text-ink">Tambah Agenda Kunjungan</h2>
                 <form method="POST" action="{{ route('jadwal-koordinator.generate') }}" class="flex items-center gap-2">
@@ -74,13 +74,13 @@
     <section class="mt-5">
         <h2 class="mb-3 text-base font-semibold text-ink">Jadwal Bulanan — {{ \Carbon\Carbon::createFromFormat('Y-m-d', $month.'-01')->format('F Y') }}</h2>
         @if ($rows->isEmpty())
-            <p class="rounded-2xl border border-border bg-surface p-5 text-center text-sm text-ink-muted">Belum ada jadwal untuk filter ini. Gunakan tombol generate atau tambah agenda manual.</p>
+            <p class="rounded-2xl glass-card p-5 text-center text-sm text-ink-muted">Belum ada jadwal untuk filter ini. Gunakan tombol generate atau tambah agenda manual.</p>
         @endif
         <div class="space-y-4">
             @foreach ($regionals as $regional)
                 @php $regionalRows = $grouped[$regional] ?? collect(); @endphp
                 @continue($regionalRows->isEmpty())
-                <div class="overflow-hidden rounded-2xl border border-border bg-surface">
+                <div class="overflow-hidden rounded-2xl glass-card">
                     <div class="flex flex-wrap items-center justify-between gap-2 bg-brand-50/60 px-5 py-3">
                         <div><strong class="text-ink">{{ $regional }}</strong><span class="ml-2 text-xs text-ink-muted">{{ $profiles[$regional]['name'] ?? 'Korwil' }} — domisili {{ $profiles[$regional]['home'] ?? '-' }}</span></div>
                         <b class="text-sm text-ink">{{ number_format($regionalRows->count(), 0, ',', '.') }} agenda</b>

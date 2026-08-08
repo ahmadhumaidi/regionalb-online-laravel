@@ -1,6 +1,6 @@
 @props(['recap', 'budget'])
 
-<section class="mb-6 rounded-2xl border border-border bg-surface p-5">
+<section class="mb-6 rounded-2xl glass-card p-5">
     <div class="mb-4">
         <h2 class="text-base font-semibold text-ink">Rekap Pencapaian Registrasi</h2>
         <p class="text-sm text-ink-muted">Ringkasan hasil PMB dari filter aktif</p>

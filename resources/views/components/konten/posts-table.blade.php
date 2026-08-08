@@ -4,7 +4,7 @@
     $mediaLabels = ['feed' => 'Feed', 'reels' => 'Reels', 'story' => 'Story', 'no_post' => 'Belum ada postingan'];
 @endphp
 
-<section class="rounded-2xl border border-border bg-surface p-5">
+<section class="rounded-2xl glass-card p-5">
     <h2 class="mb-4 text-base font-semibold text-ink">Aktivitas Konten Terbaru</h2>
     @if (empty($posts))
         <p class="py-6 text-center text-sm text-ink-muted">Belum ada aktivitas konten pada periode/filter ini.</p>

@@ -1,6 +1,6 @@
 @props(['filters', 'referenceOptions'])
 
-<form method="GET" action="{{ route('konten') }}" class="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-surface p-4">
+<form method="GET" action="{{ route('konten') }}" class="mb-6 flex flex-wrap items-end gap-3 rounded-2xl glass-card p-4">
     <div>
         <label class="mb-1 block text-xs font-medium text-ink-muted">Dari tanggal</label>
         <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="rounded-lg border border-border px-3 py-2 text-sm text-ink">

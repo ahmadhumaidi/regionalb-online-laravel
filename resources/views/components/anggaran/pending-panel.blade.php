@@ -1,7 +1,7 @@
 @props(['pending'])
 
 @if ($pending)
-    <section class="mb-6 rounded-2xl border border-border bg-surface p-5">
+    <section class="mb-6 rounded-2xl glass-card p-5">
         <h2 class="text-base font-semibold text-ink">Anggaran Perlu Dilaporkan</h2>
         <p class="mt-1 text-sm text-ink-muted">Otomatis muncul untuk anggaran kampus Anda yang belum atau belum tuntas dilaporkan</p>
 

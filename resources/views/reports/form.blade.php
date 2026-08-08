@@ -1,6 +1,6 @@
 @php $isSeniorExpenseForm = ! $editing && $config['label'] === 'anggaran' && $user->role === 'super_user'; @endphp
 <x-layouts.app :title="$isSeniorExpenseForm ? 'Tambah Pengeluaran Senior Manager' : ($editing ? 'Edit ' : 'Tambah ') . $config['title']" :active="$active">
-    <section class="rounded-2xl border border-border bg-surface p-5">
+    <section class="rounded-2xl glass-card p-5">
         <div class="mb-5 flex items-start justify-between gap-3"><div><h2 class="text-base font-semibold text-ink">{{ $isSeniorExpenseForm ? 'Tambah Pengeluaran Senior Manager' : ($editing ? 'Edit' : 'Tambah') . ' ' . $config['title'] }}</h2><p class="mt-1 text-sm text-ink-muted">Lengkapi data laporan.</p></div><a href="{{ route($active) }}" class="rounded-lg border border-border px-3 py-2 text-sm">Kembali</a></div>
         <form method="POST" enctype="multipart/form-data" action="{{ $editing ? route('reports.update', $report) : route($storeRoute) }}" class="grid gap-4 md:grid-cols-2">
             @csrf @if ($editing) @method('PATCH') @endif

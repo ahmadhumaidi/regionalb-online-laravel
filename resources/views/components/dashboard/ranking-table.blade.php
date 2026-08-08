@@ -1,6 +1,6 @@
 @props(['ranking'])
 
-<section class="mb-6 rounded-2xl border border-border bg-surface p-5">
+<section class="mb-6 rounded-2xl glass-card p-5">
     <h2 class="mb-4 text-base font-semibold text-ink">Ranking Top 10 Unit/Kampus</h2>
     @if (empty($ranking))
         <p class="py-6 text-center text-sm text-ink-muted">Belum ada data pada periode/filter ini.</p>

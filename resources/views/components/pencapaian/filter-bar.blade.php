@@ -1,7 +1,7 @@
 @props(['filters', 'referenceOptions'])
 @php $user = auth()->user(); @endphp
 
-<form method="GET" action="{{ route('pencapaian') }}" class="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-surface p-4">
+<form method="GET" action="{{ route('pencapaian') }}" class="mb-6 flex flex-wrap items-end gap-3 rounded-2xl glass-card p-4">
     <div>
         <label class="mb-1 block text-xs font-medium text-ink-muted">Dari tanggal</label>
         <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="rounded-lg border border-border px-3 py-2 text-sm text-ink">
@@ -14,11 +14,11 @@
     @if ($user->role === 'staff')
         <div>
             <label class="mb-1 block text-xs font-medium text-ink-muted">Wilayah</label>
-            <input value="{{ $user->regional }}" readonly title="Otomatis sesuai akun login" class="rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm text-ink-muted">
+            <input value="{{ $user->regional }}" readonly title="Otomatis sesuai akun login" class="rounded-lg glass-card-muted px-3 py-2 text-sm text-ink-muted">
         </div>
         <div>
             <label class="mb-1 block text-xs font-medium text-ink-muted">Staff</label>
-            <input value="{{ $user->name }}" readonly title="Otomatis sesuai akun login" class="rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm text-ink-muted">
+            <input value="{{ $user->name }}" readonly title="Otomatis sesuai akun login" class="rounded-lg glass-card-muted px-3 py-2 text-sm text-ink-muted">
         </div>
     @else
         <div>

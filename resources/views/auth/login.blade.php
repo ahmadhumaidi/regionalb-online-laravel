@@ -16,7 +16,7 @@
             <p class="mt-1 text-sm text-ink-muted">Masuk untuk melanjutkan ke dashboard regional.</p>
         </div>
 
-        <div class="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+        <div class="rounded-2xl glass-card p-6 shadow-sm">
             @if ($errors->any())
                 <div class="mb-4 rounded-lg border border-tone-red/30 bg-tone-red/10 px-3 py-2.5 text-sm font-medium text-red-700">
                     {{ $errors->first() }}
@@ -29,14 +29,14 @@
                     <label for="username" class="mb-1.5 block text-sm font-medium text-ink">Username</label>
                     <input
                         id="username" type="text" name="username" value="{{ old('username') }}" required autofocus
-                        class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none"
+                        class="w-full rounded-lg glass-card px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none"
                         placeholder="Masukkan username">
                 </div>
                 <div>
                     <label for="password" class="mb-1.5 block text-sm font-medium text-ink">Password</label>
                     <input
                         id="password" type="password" name="password" required
-                        class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none"
+                        class="w-full rounded-lg glass-card px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none"
                         placeholder="Masukkan password">
                 </div>
                 <button

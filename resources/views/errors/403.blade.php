@@ -9,7 +9,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="flex min-h-screen items-center justify-center bg-surface-muted px-4 font-sans text-ink antialiased">
-    <div class="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
+    <div class="w-full max-w-sm rounded-2xl glass-card p-8 text-center shadow-sm">
         <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-tone-red/10 text-tone-red">
             <x-icon name="ban" class="h-7 w-7" />
         </span>
