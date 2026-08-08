@@ -25,7 +25,7 @@ class AchievementWhatsappService
 
     public static function generate(string $area, RsmUser $actor): array
     {
-        $today = now()->toDateString();
+        $today = now('Asia/Jakarta')->toDateString();
         $filters = ['date_from' => $today, 'date_to' => $today, 'wilayah' => '', 'unit_name' => '', 'staff_name' => ''];
 
         $performance = CollabMetricsService::staffPerformance($area, $filters, $actor);

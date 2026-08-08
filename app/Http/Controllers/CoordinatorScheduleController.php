@@ -54,7 +54,7 @@ class CoordinatorScheduleController extends Controller
         $user = $request->user();
         abort_unless(RsmRole::canViewJadwalKoordinator($user), 403);
         $area = $user->area ?: 'Regional B';
-        $month = preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month')) ? $request->query('month') : now()->format('Y-m');
+        $month = preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month')) ? $request->query('month') : now('Asia/Jakarta')->format('Y-m');
         $regionals = AreaRegionals::forArea($area);
 
         $filters = [
@@ -170,7 +170,7 @@ class CoordinatorScheduleController extends Controller
             'schedule_attachment' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
         ]);
         if ($user->role === 'koordinator') {
-            $data['schedule_date'] = now()->toDateString();
+            $data['schedule_date'] = now('Asia/Jakarta')->toDateString();
         }
         if ($user->role === 'koordinator' && $user->regional !== $data['wilayah']) {
             abort(422, 'Koordinator hanya bisa mengatur regionalnya sendiri.');
@@ -408,11 +408,11 @@ class CoordinatorScheduleController extends Controller
         // Legacy always builds this for the CURRENT month/day regardless of
         // which $month was requested — the $month param only tags the
         // saved artifact's metadata (rsm_db.php:3246-3251).
-        $today = now()->toDateString();
+        $today = now('Asia/Jakarta')->toDateString();
         $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        $todayLabel = $days[(int) now()->format('w')].', '.now()->format('d/m/Y');
+        $todayLabel = $days[(int) now('Asia/Jakarta')->format('w')].', '.now('Asia/Jakarta')->format('d/m/Y');
 
-        [, $grouped] = $this->fetchSchedules($area, now()->format('Y-m'), [], null);
+        [, $grouped] = $this->fetchSchedules($area, now('Asia/Jakarta')->format('Y-m'), [], null);
 
         $lines = ['*LAPORAN KUNJUNGAN KOORDINATOR WILAYAH*', $area.' - '.$todayLabel, ''];
 
