@@ -21,7 +21,7 @@
             <a href="{{ route('profile') }}" class="flex items-center gap-3 border-b border-white/20 px-5 py-5 hover:bg-white/10">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-600 text-sm font-semibold text-white">
                     @if ($user->photo_path)
-                        <img src="{{ str_starts_with($user->photo_path, 'profiles/') ? Storage::url($user->photo_path) : $user->photo_path }}" alt="{{ $user->name }}" class="h-full w-full object-cover">
+                        <img src="{{ $user->photoUrl() }}" alt="{{ $user->name }}" class="h-full w-full object-cover">
                     @else
                         {{ strtoupper(mb_substr($user->name ?: 'U', 0, 1)) }}
                     @endif

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RsmActivityLog;
 use App\Models\RsmReport;
+use App\Models\RsmUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -63,5 +64,21 @@ class ProfileController extends Controller
         if (! Hash::check($data['old_password'], $user->password_hash)) throw ValidationException::withMessages(['old_password' => 'Password lama tidak sesuai.']);
         $user->forceFill(['password_hash' => Hash::make($data['new_password']), 'must_change_password' => false])->save();
         return back()->with('notice', 'Password berhasil diperbarui.');
+    }
+
+    /** Serves legacy profile photos (photo_path outside Laravel's own public disk); mirrors ReportFormController::attachment(). */
+    public function photo(RsmUser $user)
+    {
+        abort_unless(filled($user->photo_path), 404);
+
+        if (Storage::disk('public')->exists($user->photo_path)) {
+            return Storage::disk('public')->response($user->photo_path);
+        }
+
+        $legacyRoot = config('filesystems.legacy_public_root');
+        $legacyPath = $legacyRoot ? realpath($legacyRoot.'/'.$user->photo_path) : false;
+        abort_unless($legacyPath && str_starts_with($legacyPath, realpath($legacyRoot)), 404);
+
+        return response()->file($legacyPath);
     }
 }

@@ -122,7 +122,7 @@ class DashboardController extends Controller
             ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-')
             ->map(function (array $row) use ($achievementUsers) {
                 $match = $achievementUsers->get(mb_strtolower(trim($row['name'])));
-                $row['photo_path'] = $match?->photo_path;
+                $row['photo_path'] = $match?->photoUrl();
                 $row['campus_name'] = $match?->campus_name;
                 $row['user_role'] = $match?->role;
 

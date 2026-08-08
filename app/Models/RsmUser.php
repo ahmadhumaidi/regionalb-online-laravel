@@ -74,4 +74,22 @@ class RsmUser extends Authenticatable
     {
         return 'password_hash';
     }
+
+    /**
+     * New uploads live under Laravel's own public disk (photo_path
+     * "profiles/..."); legacy accounts have a photo_path pointing at
+     * production's runtime/uploads/profile/ instead, which isn't
+     * web-reachable directly — those go through users.photo, which falls
+     * back to filesystems.legacy_public_root (mirrors ReportFormController::attachment()).
+     */
+    public function photoUrl(): ?string
+    {
+        if (! $this->photo_path) {
+            return null;
+        }
+
+        return str_starts_with($this->photo_path, 'profiles/')
+            ? \Illuminate\Support\Facades\Storage::url($this->photo_path)
+            : route('users.photo', $this);
+    }
 }

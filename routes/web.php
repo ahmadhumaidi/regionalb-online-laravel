@@ -37,6 +37,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/users/{user}/photo', [ProfileController::class, 'photo'])->name('users.photo');
 
     Route::post('/impersonation', [ImpersonationController::class, 'store'])->name('impersonation.store');
     Route::delete('/impersonation', [ImpersonationController::class, 'destroy'])->name('impersonation.destroy');
