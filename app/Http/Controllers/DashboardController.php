@@ -3,28 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\RsmUser;
+use App\Services\BdcReportUsersService;
+use App\Services\CollabSourceService;
 use App\Services\Dashboard\CollabMetricsService;
 use App\Services\Dashboard\DashboardFilters;
-use App\Services\Dashboard\DashboardNumbers;
 use App\Services\Dashboard\DashboardOverviewService;
 use App\Services\Dashboard\GamificationService;
 use App\Services\Dashboard\ReferenceOptionsService;
-use App\Services\Dashboard\TargetService;
+use App\Support\AreaRegionals;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
- * Orchestrates the Dashboard Utama page exactly like legacy dashboard.php's
- * variable-computation block (lines ~318-507) — including its two
- * non-obvious override rules, preserved here on purpose:
- *
- * 1. Displayed Registrasi/Herregistrasi come from the Collab-sourced staff
- *    totals, not this page's own rsm_reports-derived KPI numbers (those
- *    still power the budget/cost-per-registrasi denominators only).
- * 2. A logged-in `staff` user gets a *second*, koordinator-scoped Collab
- *    pull (their own regional, no staff filter) to populate the
- *    "Pencapaian Staff Regional" panel — not their own personal totals.
+ * Orchestrates the Dashboard Utama page. One non-obvious rule preserved on
+ * purpose: a logged-in `staff` user gets a *second*, koordinator-scoped
+ * Collab pull (their own regional, no staff filter) to populate the
+ * "Pencapaian Staff Regional" panel — not their own personal totals
+ * (regionalStaffAchievement()).
  */
 class DashboardController extends Controller
 {
@@ -42,43 +38,38 @@ class DashboardController extends Controller
 
         $campusClosing = CollabMetricsService::campusTotals($filters, $area, $user);
         $overview = DashboardOverviewService::build($area, $filters, $user);
-        $staffAchievement = CollabMetricsService::staffPerformance($area, $filters, $user);
+        $staffAchievement = CollabMetricsService::staffRanking('Closing Personal Per Regional', $filters, $area, $user);
         $regionalStaffAchievement = $this->regionalStaffAchievement($area, $filters, $user, $staffAchievement);
         $gamification = GamificationService::build($area, $filters, $user);
-        $target = TargetService::build($area, $filters, $user);
         $referenceOptions = ReferenceOptionsService::build($area, $user);
 
-        $displayLeads = (float) $overview['kpi']['leads'];
-        $displayRegistrasi = (float) ($staffAchievement['totals']['registrasi'] ?? $overview['kpi']['registrasi']);
-        $displayHerregistrasi = (float) ($staffAchievement['totals']['herregistrasi'] ?? $overview['kpi']['herregistrasi']);
-        $displayConversionRate = DashboardNumbers::percent($displayRegistrasi, $displayLeads);
-        $displayCostPerRegistrasi = DashboardNumbers::divide((float) $overview['budget']['spend'], $displayRegistrasi);
-        $registrationSource = $staffAchievement['sources']['registrasi']['label'] ?? 'Closing Collab';
-        $herregistrationSource = $staffAchievement['sources']['herregistrasi']['label'] ?? 'Herreg Collab';
+        // Rekap Pencapaian's "Total Closing Kampus" card: same "Closing Kampus
+        // Regional" collab report as /sumber-collab, not the staff-level
+        // registrasi total used by the summary cards above.
+        $totalClosingKampus = (float) array_sum(array_column($campusClosing['rows'], 'registrasi'));
 
-        $targetRegistrasi = (float) ($target['target_registrasi'] ?? 0);
-        $targetProgress = $targetRegistrasi > 0 ? DashboardNumbers::percent($displayRegistrasi, $targetRegistrasi) : 0.0;
+        // Summary tiles: all 6 read straight from /sumber-collab report totals
+        // (regional 4-7 only, via allowedRegionals()/AreaRegionals) instead of
+        // this page's own rsm_reports-derived KPIs, per explicit request.
+        $herregKampusRows = CollabMetricsService::campusTotals($filters, $area, $user, 'Herreg Kampus Regional');
+        $totalHerregKampus = (float) array_sum(array_column($herregKampusRows['rows'], 'registrasi'));
+        $totalClosingPersonal = CollabMetricsService::personalTotal($filters, $area, $user, 'Closing Personal Per Regional');
+        $totalRealisasiIklan = (float) $overview['budget']['spend'];
+        $pmbTotals = CollabSourceService::pmbRegionalTotals(AreaRegionals::forArea($area));
 
         $summaryCards = [
-            ['label' => 'Leads', 'value' => number_format($displayLeads, 0, ',', '.'), 'tone' => 'blue', 'note' => 'Total lead pada periode/filter ini'],
-            ['label' => 'Follow Up', 'value' => number_format($overview['kpi']['follow_up'], 0, ',', '.'), 'tone' => 'cyan', 'note' => 'Dari detail lead yang sudah ditindaklanjuti'],
-            ['label' => 'Registrasi', 'value' => number_format($displayRegistrasi, 0, ',', '.'), 'tone' => 'green', 'note' => 'Acuan: '.$registrationSource],
-            ['label' => 'Herregistrasi', 'value' => number_format($displayHerregistrasi, 0, ',', '.'), 'tone' => 'purple', 'note' => 'Acuan: '.$herregistrationSource],
-            ['label' => 'Conversion Rate', 'value' => number_format($displayConversionRate, 2, ',', '.').'%', 'tone' => 'amber', 'note' => 'Registrasi dibagi leads'],
-            ['label' => 'Target PMB', 'value' => $targetRegistrasi > 0 ? number_format($targetRegistrasi, 0, ',', '.') : 'Belum diatur', 'tone' => 'slate', 'note' => $targetRegistrasi > 0 ? 'Target bulan ini' : 'Target belum diatur untuk periode/filter ini'],
+            ['label' => 'Closing Kampus', 'value' => number_format($totalClosingKampus, 0, ',', '.'), 'tone' => 'blue-dark'],
+            ['label' => 'Herreg Kampus', 'value' => number_format($totalHerregKampus, 0, ',', '.'), 'tone' => 'blue'],
+            ['label' => 'Closing Personal', 'value' => number_format($totalClosingPersonal, 0, ',', '.'), 'tone' => 'blue-light'],
+            ['label' => 'Herreg Personal', 'value' => '-', 'tone' => 'red'],
+            ['label' => 'Realisasi Iklan', 'value' => 'Rp '.number_format($totalRealisasiIklan, 0, ',', '.'), 'tone' => 'orange'],
+            ['label' => 'Reg / Herreg All', 'value' => number_format($pmbTotals['daftar'], 0, ',', '.').' / '.number_format($pmbTotals['herreg'], 0, ',', '.'), 'tone' => 'yellow'],
         ];
 
-        $registrationRecap = [
-            'registrasi' => $displayRegistrasi,
-            'registrasi_source' => $registrationSource,
-            'target_registrasi' => $targetRegistrasi,
-            'target_progress' => $targetProgress,
-            'target_staff_count' => $target['staff_target_count'] ?? 0,
-            'leads' => $displayLeads,
-            'herregistrasi' => $displayHerregistrasi,
-            'herregistrasi_source' => $herregistrationSource,
-            'cost_per_registrasi' => $displayCostPerRegistrasi,
-        ];
+        $regionalRecaps = array_map(
+            fn (string $regional) => $this->regionalRecap($area, $filters, $user, $regional),
+            AreaRegionals::forArea($area)
+        );
 
         [$topStaffAchievement, $topStaffMaxValue] = $this->topStaffAchievement($area, $user, $regionalStaffAchievement);
 
@@ -86,10 +77,10 @@ class DashboardController extends Controller
             'active' => 'dashboard',
             'area' => $area,
             'filters' => $filters,
+            'isSeniorTier' => in_array($user->role, self::SENIOR_TIER, true),
             'referenceOptions' => $referenceOptions,
             'summaryCards' => $summaryCards,
-            'registrationRecap' => $registrationRecap,
-            'budget' => $overview['budget'],
+            'regionalRecaps' => $regionalRecaps,
             'campusClosing' => $campusClosing,
             'topStaffAchievement' => $topStaffAchievement,
             'topStaffMaxValue' => $topStaffMaxValue,
@@ -97,6 +88,43 @@ class DashboardController extends Controller
             'ranking' => $overview['ranking'],
             'dailyReports' => $overview['daily_reports'],
         ]);
+    }
+
+    /**
+     * The Dashboard's "Regional 4" recap card: the same 6 /sumber-collab
+     * totals as the summary tiles above, narrowed to just this one
+     * regional, plus 6 /bdc-users column totals for staff in that regional.
+     */
+    private function regionalRecap(string $area, array $filters, RsmUser $user, string $regional): array
+    {
+        $regionalFilters = array_merge($filters, ['wilayah' => $regional]);
+
+        $closingKampus = CollabMetricsService::campusTotals($regionalFilters, $area, $user);
+        $herregKampus = CollabMetricsService::campusTotals($regionalFilters, $area, $user, 'Herreg Kampus Regional');
+        $closingPersonal = CollabMetricsService::personalTotal($regionalFilters, $area, $user, 'Closing Personal Per Regional');
+        $realisasiIklan = (float) DashboardOverviewService::build($area, $regionalFilters, $user)['budget']['spend'];
+        $pmb = CollabSourceService::pmbRegionalTotals([$regional]);
+        $bdc = BdcReportUsersService::regionalTotals($regional);
+        $koordinator = RsmUser::query()->where('area', $area)->where('role', 'koordinator')->where('regional', $regional)->where('is_active', true)->first();
+
+        return [
+            'label' => $regional,
+            'koordinator_name' => $koordinator?->name ?: '-',
+            'koordinator_jabatan' => $koordinator?->jabatan ?: \App\Support\RsmRole::label('koordinator'),
+            'koordinator_photo' => $koordinator?->photoUrl(),
+            'total_closing_kampus' => (float) array_sum(array_column($closingKampus['rows'], 'registrasi')),
+            'total_herreg_kampus' => (float) array_sum(array_column($herregKampus['rows'], 'registrasi')),
+            'total_closing_personal' => $closingPersonal,
+            'total_realisasi_iklan' => $realisasiIklan,
+            'pmb_daftar' => $pmb['daftar'],
+            'pmb_herreg' => $pmb['herreg'],
+            'bdc_total' => $bdc['total'],
+            'bdc_data_baru' => $bdc['data_baru'],
+            'bdc_fu_hari_ini' => $bdc['fu_hari_ini'],
+            'bdc_closing' => $bdc['closing'],
+            'bdc_wawancara' => $bdc['wawancara'],
+            'bdc_belum_herreg' => $bdc['belum_herreg'],
+        ];
     }
 
     private function regionalStaffAchievement(string $area, array $filters, RsmUser $user, array $staffAchievement): array
@@ -111,7 +139,7 @@ class DashboardController extends Controller
 
         $regionalUser = (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'koordinator']));
 
-        return CollabMetricsService::staffPerformance($area, $regionalFilters, $regionalUser);
+        return CollabMetricsService::staffRanking('Closing Personal Per Regional', $regionalFilters, $area, $regionalUser);
     }
 
     private function topStaffAchievement(string $area, RsmUser $user, array $regionalStaffAchievement): array

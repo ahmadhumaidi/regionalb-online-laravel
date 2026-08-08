@@ -144,6 +144,32 @@ class BdcReportUsersService
         );
     }
 
+    /**
+     * Sums the /bdc-users report columns (Total, Baru, FU Hari Ini, Closing,
+     * Wawancara, Belum Herreg) across every staff row whose wilayah matches
+     * the given regional. Used by the Dashboard's per-regional recap card.
+     *
+     * @return array{total: float, data_baru: float, fu_hari_ini: float, closing: float, wawancara: float, belum_herreg: float}
+     */
+    public static function regionalTotals(string $regional): array
+    {
+        $rows = array_filter(
+            (array) (self::snapshot()['listdata'] ?? []),
+            fn ($row) => is_array($row) && (string) ($row['wilayah'] ?? '') === $regional
+        );
+
+        $sum = fn (string $key): float => array_sum(array_map(fn ($row) => self::numberValue($row[$key] ?? 0), $rows));
+
+        return [
+            'total' => $sum('total'),
+            'data_baru' => $sum('data_baru'),
+            'fu_hari_ini' => $sum('fu_hari_ini'),
+            'closing' => $sum('closing'),
+            'wawancara' => $sum('wawancara'),
+            'belum_herreg' => $sum('belum_herreg'),
+        ];
+    }
+
     private static function usernameFromName(string $name): string
     {
         $username = preg_replace('/[^a-z0-9]+/i', '', strtolower(trim($name))) ?: '';

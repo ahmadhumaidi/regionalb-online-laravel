@@ -1,7 +1,7 @@
 <x-layouts.app title="Dashboard Utama" active="dashboard">
-    <x-dashboard.filter-bar :filters="$filters" :reference-options="$referenceOptions" />
+    <x-dashboard.filter-bar :filters="$filters" :reference-options="$referenceOptions" :is-senior-tier="$isSeniorTier" />
     <x-dashboard.summary-cards :cards="$summaryCards" />
-    <x-dashboard.registration-recap :recap="$registrationRecap" :budget="$budget" />
+    <x-dashboard.registration-recap :recaps="$regionalRecaps" />
     <x-dashboard.achievement-grid
         :campus-closing="$campusClosing"
         :top-staff-achievement="$topStaffAchievement"

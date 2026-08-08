@@ -18,12 +18,12 @@ use Illuminate\Support\Facades\DB;
 class CollabMetricsService
 {
     /** @return array{rows: array, max_value: float, synced_at: ?string} */
-    public static function campusTotals(array $filters, string $area, RsmUser $user): array
+    public static function campusTotals(array $filters, string $area, RsmUser $user, string $reportName = 'Closing Kampus Regional'): array
     {
         $regionals = self::allowedRegionals($area, $filters, $user);
 
         $query = RsmCollabDailyMetric::query()
-            ->where('report_name', 'Closing Kampus Regional')
+            ->where('report_name', $reportName)
             ->whereBetween('metric_date', [$filters['date_from'], $filters['date_to']])
             ->whereIn('regional', $regionals);
 
@@ -121,6 +121,33 @@ class CollabMetricsService
                 'herregistrasi' => ['label' => 'Herreg Collab'],
             ],
         ];
+    }
+
+    /** Sums a single staff-level report (e.g. "Closing Personal Per Regional") across the allowed regionals/filters. */
+    public static function personalTotal(array $filters, string $area, RsmUser $user, string $reportName): float
+    {
+        return (float) self::staffTotals($reportName, $filters, $area, $user)->sum('total_value');
+    }
+
+    /**
+     * Per-staff ranking from a single report (e.g. "Closing Personal Per
+     * Regional"), shaped like staffPerformance()'s 'rows' so it's a drop-in
+     * source for the same ranking panels.
+     */
+    public static function staffRanking(string $reportName, array $filters, string $area, RsmUser $user): array
+    {
+        $rows = self::staffTotals($reportName, $filters, $area, $user)
+            ->map(fn ($row, $key) => [
+                'staff_key' => $key,
+                'nik' => $row->staff_nik ?? null,
+                'name' => $row->staff_name ?? '-',
+                'regional' => $row->regional ?? '-',
+                'registrasi' => (float) $row->total_value,
+            ])
+            ->sortByDesc('registrasi')
+            ->values();
+
+        return ['rows' => $rows->all()];
     }
 
     /** @return list<string> */

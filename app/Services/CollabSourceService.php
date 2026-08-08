@@ -679,6 +679,36 @@ class CollabSourceService
         return $username !== '' ? $username : 'rsmuser';
     }
 
+    /**
+     * "Rekapitulasi PMB Periode Prioritas P2K" isn't ingested into
+     * rsm_collab_daily_metrics (see DAILY_METRIC_REPORTS) — it's a raw
+     * two-semester table (cols 2/3 = Daftar/Heregistrasi for the Ganjil
+     * period, 8/9 for Genap) with "Total Regional N - <Korwil>" subtotal
+     * rows. Used by the Dashboard's "Target PMB" card: sums Daftar and
+     * Heregistrasi (both periods) across just the given regional numbers.
+     *
+     * @param  list<string>  $regionals  e.g. ['Regional 4', 'Regional 5', 'Regional 6', 'Regional 7']
+     * @return array{daftar: float, herreg: float}
+     */
+    public static function pmbRegionalTotals(array $regionals): array
+    {
+        $rows = self::snapshot()['reports']['Rekapitulasi PMB Periode Prioritas P2K']['rows'] ?? [];
+        $numbers = array_map(static fn (string $r): int => (int) preg_replace('/\D+/', '', $r), $regionals);
+
+        $daftar = 0.0;
+        $herreg = 0.0;
+        foreach ($rows as $row) {
+            $label = trim((string) ($row[0] ?? ''));
+            if (! preg_match('/^Total Regional\s+(\d+)/i', $label, $match) || ! in_array((int) $match[1], $numbers, true)) {
+                continue;
+            }
+            $daftar += self::numberValue($row[2] ?? 0) + self::numberValue($row[8] ?? 0);
+            $herreg += self::numberValue($row[3] ?? 0) + self::numberValue($row[9] ?? 0);
+        }
+
+        return ['daftar' => $daftar, 'herreg' => $herreg];
+    }
+
     private static function numberValue(mixed $value): float
     {
         $normalized = str_replace(',', '.', trim((string) $value));
