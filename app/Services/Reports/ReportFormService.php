@@ -47,7 +47,8 @@ class ReportFormService
 
     public static function canCreate(string $type, RsmUser $user): bool
     {
-        return $type !== RsmReport::TYPE_ADS || $user->role === RsmUser::ROLE_KOORDINATOR;
+        return $type !== RsmReport::TYPE_ADS
+            || in_array($user->role, [RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true);
     }
 
     public static function canEdit(RsmReport $report, RsmUser $user): bool
@@ -112,7 +113,9 @@ class ReportFormService
 
         $report = DB::transaction(function () use ($type, $data, $attachment, $user) {
             $normalized = self::normalize($type, $data, $user);
-            self::validateBudget($type, $normalized);
+            if ($type !== RsmReport::TYPE_ADS || $user->role !== RsmUser::ROLE_SUPER_USER) {
+                self::validateBudget($type, $normalized);
+            }
             $report = RsmReport::create($normalized);
             self::storeAttachment($report, $attachment);
             self::log($report, $user, 'create_'.$type, null, $report->status);
@@ -173,6 +176,16 @@ class ReportFormService
             $status = in_array($status, ['Draft', 'Revisi', 'Dikirim'], true) ? $status : $existing->status;
         }
 
+        // Laporan pengeluaran Senior Manager: dibuat dan langsung disetujui oleh
+        // Super User sendiri, tidak terikat wilayah/kampus koordinator maupun
+        // plafon anggaran regional (lihat create(), skip validateBudget()).
+        $isSeniorExpense = $type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_SUPER_USER;
+        if ($isSeniorExpense) {
+            $wilayah = 'Regional B';
+            $unit = 'Regional B';
+            $status = 'Disetujui';
+        }
+
         return [
             'area' => $user->area ?: 'Regional B',
             'report_type' => $type,
@@ -197,7 +210,7 @@ class ReportFormService
             'campaign_name' => $data['campaign_name'] ?? null,
             'ad_goal' => $data['ad_goal'] ?? null,
             'budget_requested' => (float) ($data['budget_requested'] ?? 0),
-            'budget_approved' => $existing?->budget_approved ?? 0,
+            'budget_approved' => $isSeniorExpense ? (float) ($data['budget_requested'] ?? 0) : ($existing?->budget_approved ?? 0),
             'realization_amount' => $existing?->realization_amount ?? 0,
             'cpl' => $existing?->cpl ?? 0,
             'campaign_link' => $data['campaign_link'] ?? null,
