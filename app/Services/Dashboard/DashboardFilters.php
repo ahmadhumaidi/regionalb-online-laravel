@@ -11,8 +11,8 @@ class DashboardFilters
     /** @return array{date_from: string, date_to: string, wilayah: string, unit_name: string, staff_name: string} */
     public static function fromRequest(Request $request, string $page = 'dashboard'): array
     {
-        $today = Carbon::today();
-        $defaultFrom = in_array($page, ['dashboard', 'anggaran'], true)
+        $today = Carbon::today('Asia/Jakarta');
+        $defaultFrom = in_array($page, ['dashboard', 'anggaran', 'rekap', 'pencapaian'], true)
             ? $today->copy()->startOfMonth()
             : $today->copy();
 
@@ -26,7 +26,7 @@ class DashboardFilters
         $periode = (string) $request->query('periode', '');
         if (in_array($periode, ['daily', 'weekly', 'monthly'], true)) {
             [$dateFrom, $dateTo] = match ($periode) {
-                'daily' => [$dateFrom->copy(), $dateFrom->copy()],
+                'daily' => [$today->copy(), $today->copy()],
                 'weekly' => [$dateFrom->copy()->startOfWeek(), $dateFrom->copy()->endOfWeek()],
                 'monthly' => [$dateFrom->copy()->startOfMonth(), $dateFrom->copy()->endOfMonth()],
             };
