@@ -46,6 +46,7 @@ class RsmReport extends Model
         'obstacle_text',
         'follow_up_text',
         'attachment_path',
+        'insight_attachment_path',
         'revision_note',
     ];
 

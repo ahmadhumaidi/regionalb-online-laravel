@@ -28,7 +28,7 @@ class AchievementWhatsappService
         $today = now('Asia/Jakarta')->toDateString();
         $filters = ['date_from' => $today, 'date_to' => $today, 'wilayah' => '', 'unit_name' => '', 'staff_name' => ''];
 
-        $performance = CollabMetricsService::staffPerformance($area, $filters, $actor);
+        $performance = CollabMetricsService::personalPerformance($area, $filters, $actor);
 
         $usersByName = RsmUser::query()->where('is_active', true)
             ->get(['name', 'regional', 'campus_name'])

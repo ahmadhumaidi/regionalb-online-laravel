@@ -97,6 +97,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::patch('/laporan/{report}', [ReportFormController::class, 'update'])->name('reports.update');
     Route::delete('/laporan/{report}', [ReportFormController::class, 'destroy'])->name('reports.destroy');
     Route::get('/laporan/{report}/lampiran', [ReportFormController::class, 'attachment'])->name('reports.attachment');
+    Route::get('/laporan/{report}/lampiran-insight', [ReportFormController::class, 'insightAttachment'])->name('reports.insight-attachment');
 
     Route::post('/laporan/{report}/verifikasi', [ReportStatusController::class, 'verify'])->name('reports.verifikasi');
     Route::post('/laporan/{report}/setujui', [ReportStatusController::class, 'approve'])->name('reports.setujui');

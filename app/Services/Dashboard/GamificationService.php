@@ -32,7 +32,7 @@ class GamificationService
 
         $liveRows = self::aggregateByStaff($reports, $buckets);
 
-        $collabPerformance = CollabMetricsService::staffPerformance($area, $filters, $user);
+        $collabPerformance = CollabMetricsService::personalPerformance($area, $filters, $user);
         $collabByName = collect($collabPerformance['rows'])->keyBy(fn ($row) => mb_strtolower(trim((string) $row['name'])));
 
         $scoredRows = $liveRows->map(fn (array $row) => self::scoreRow($row, $collabByName));

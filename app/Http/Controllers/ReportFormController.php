@@ -68,7 +68,7 @@ class ReportFormController extends Controller
         abort_unless(ReportFormService::canEdit($report, $user), 403);
         abort_unless(ReportFormService::visible($report, $user), 404);
         $data = $this->validated($request, $report->report_type, true, $user);
-        ReportFormService::update($report, $data, $request->file('attachment_path'), $user);
+        ReportFormService::update($report, $data, $request->file('attachment_path'), $user, $request->file('insight_attachment_path'));
 
         if ($report->report_type === RsmReport::TYPE_ADS && $request->hasFile('ad_leads_file')) {
             AdLeadImportService::import($report->fresh(), $request->file('ad_leads_file'), replaceExisting: false);
@@ -100,6 +100,16 @@ class ReportFormController extends Controller
         abort_unless($legacyPath && str_starts_with($legacyPath, realpath($legacyRoot)), 404);
 
         return response()->file($legacyPath);
+    }
+
+    /** "Bukti insight/pengeluaran iklan" — separate from attachment() (bukti transfer/invoice). */
+    public function insightAttachment(RsmReport $report)
+    {
+        abort_unless(ReportFormService::visible($report, Auth::user()), 404);
+        abort_unless(filled($report->insight_attachment_path), 404);
+        abort_unless(Storage::disk('public')->exists($report->insight_attachment_path), 404);
+
+        return Storage::disk('public')->response($report->insight_attachment_path);
     }
 
     private function formView(string $type, RsmReport $report, bool $editing, RsmUser $user): View
@@ -163,6 +173,7 @@ class ReportFormController extends Controller
                 'cpl' => ['nullable', 'numeric', 'min:0'],
                 'campaign_link' => ['nullable', 'string', 'max:255'],
                 'ad_leads_file' => ['nullable', 'file', 'max:5120', 'mimes:xls,xlsx'],
+                'insight_attachment_path' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
                 'notes' => ['nullable', 'string'],
             ];
         }
@@ -175,6 +186,8 @@ class ReportFormController extends Controller
             'platform' => ['required', 'string', 'max:120'],
             'budget_requested' => ['required', 'numeric', 'min:0.01'],
             'attachment_path' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
+            'ad_leads_file' => ['nullable', 'file', 'max:5120', 'mimes:xls,xlsx'],
+            'insight_attachment_path' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
             'notes' => ['nullable', 'string'],
         ];
 

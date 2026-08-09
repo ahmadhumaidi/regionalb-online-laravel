@@ -97,10 +97,10 @@ class ReportFormService
     public static function adsEditFieldsForRole(string $role): array
     {
         return match ($role) {
-            RsmUser::ROLE_STAFF => ['campaign_name', 'ad_goal', 'realization_amount', 'cpl', 'campaign_link', 'ad_leads_file', 'notes'],
-            RsmUser::ROLE_KOORDINATOR => ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'attachment_path', 'notes'],
+            RsmUser::ROLE_STAFF => ['campaign_name', 'ad_goal', 'realization_amount', 'cpl', 'campaign_link', 'ad_leads_file', 'insight_attachment_path', 'notes'],
+            RsmUser::ROLE_KOORDINATOR => ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
             default => in_array($role, self::SENIOR_ROLES, true)
-                ? ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'budget_approved', 'attachment_path', 'notes']
+                ? ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'budget_approved', 'attachment_path', 'ad_leads_file', 'notes']
                 : [],
         };
     }
@@ -126,12 +126,12 @@ class ReportFormService
         return $report;
     }
 
-    public static function update(RsmReport $report, array $data, ?UploadedFile $attachment, RsmUser $user): RsmReport
+    public static function update(RsmReport $report, array $data, ?UploadedFile $attachment, RsmUser $user, ?UploadedFile $insightAttachment = null): RsmReport
     {
         abort_unless(self::canEdit($report, $user), 403);
         abort_unless(self::visible($report, $user), 404);
 
-        return DB::transaction(function () use ($report, $data, $attachment, $user) {
+        return DB::transaction(function () use ($report, $data, $attachment, $user, $insightAttachment) {
             $oldStatus = $report->status;
             $normalized = $report->report_type === RsmReport::TYPE_ADS
                 ? self::normalizeAds($data, $user, $report, $attachment !== null)
@@ -142,6 +142,7 @@ class ReportFormService
             $report->fill($normalized);
             $report->save();
             self::storeAttachment($report, $attachment);
+            self::storeInsightAttachment($report, $insightAttachment);
             self::log($report, $user, 'edit', $oldStatus, $report->status);
 
             return $report->fresh();
@@ -323,6 +324,17 @@ class ReportFormService
         }
         $path = $attachment->store('reports', 'public');
         $report->attachment_path = $path;
+        $report->save();
+    }
+
+    /** "Bukti insight/pengeluaran iklan" — separate from storeAttachment()'s transfer/invoice proof. */
+    public static function storeInsightAttachment(RsmReport $report, ?UploadedFile $insightAttachment): void
+    {
+        if (! $insightAttachment) {
+            return;
+        }
+        $path = $insightAttachment->store('reports', 'public');
+        $report->insight_attachment_path = $path;
         $report->save();
     }
 

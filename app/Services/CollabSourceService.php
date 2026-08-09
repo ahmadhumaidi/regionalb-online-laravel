@@ -23,6 +23,7 @@ class CollabSourceService
         'Closing Kampus Regional',
         'Herreg Kampus Regional',
         'Closing Personal Per Regional',
+        'Herreg Personal Per Regional',
         'Rekapitulasi PMB Periode Prioritas P2K',
     ];
 
@@ -30,6 +31,7 @@ class CollabSourceService
         'Closing Kampus Regional',
         'Herreg Kampus Regional',
         'Closing Personal Per Regional',
+        'Herreg Personal Per Regional',
         'Rekapitulasi PMB Periode Prioritas P2K',
     ];
 
@@ -39,6 +41,7 @@ class CollabSourceService
         'Closing Kampus Regional',
         'Herreg Kampus Regional',
         'Closing Personal Per Regional',
+        'Herreg Personal Per Regional',
     ];
 
     private const SOURCE_URLS = [
@@ -47,6 +50,7 @@ class CollabSourceService
         'Closing Kampus Regional' => 'https://cb.web.id/pencapaian_closing_perkampus_peregional.php',
         'Herreg Kampus Regional' => 'https://cb.web.id/pencapaian_closing_herreg_perkampus_peregional.php',
         'Closing Personal Per Regional' => 'https://cb.web.id/pencapaian_closing_personal_per_regional.php',
+        'Herreg Personal Per Regional' => 'https://cb.web.id/pencapaian_closing_herreg_personal_per_regional.php',
         'Rekapitulasi PMB Periode Prioritas P2K' => 'https://cb.web.id/rekapitulasi_pencapaian_pmb_periode_prioritas.php?program=p2k',
     ];
 
@@ -543,7 +547,7 @@ class CollabSourceService
         }
 
         $isCampus = in_array($reportName, ['Closing Kampus Regional', 'Herreg Kampus Regional'], true);
-        $isPersonalRegional = $reportName === 'Closing Personal Per Regional';
+        $isPersonalRegional = in_array($reportName, ['Closing Personal Per Regional', 'Herreg Personal Per Regional'], true);
         $valueBase = $isCampus ? 4 : 5;
 
         $dayValueIndexes = [];

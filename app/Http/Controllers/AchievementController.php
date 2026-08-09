@@ -28,7 +28,7 @@ class AchievementController extends Controller
         $area = $user->area ?: 'Regional B';
 
         $filters = DashboardFilters::fromRequest($request, 'pencapaian');
-        $performance = CollabMetricsService::staffPerformance($area, $filters, $user);
+        $performance = CollabMetricsService::personalPerformance($area, $filters, $user);
         $target = TargetService::build($area, $filters, $user);
         $regionalTargets = TargetService::regionalSummary($area, $filters, $user);
         $referenceOptions = ReferenceOptionsService::build($area, $user);
@@ -54,7 +54,7 @@ class AchievementController extends Controller
                     : 'Target belum diatur',
             ],
             ['label' => 'Staff Terbaca', 'tone' => 'blue', 'value' => number_format($performance['totals']['staff_count'], 0, ',', '.'), 'note' => 'Staff dengan data pada periode/filter ini'],
-            ['label' => 'Sumber Data', 'tone' => 'slate', 'value' => 'Collab', 'note' => 'Closing Collab & Herreg Collab'],
+            ['label' => 'Sumber Data', 'tone' => 'slate', 'value' => 'Collab', 'note' => 'Closing Personal Per Regional'],
         ];
 
         $regionalSummary = collect($performance['regional_summary'])->map(function (array $row) use ($regionalTargets) {

@@ -97,6 +97,8 @@ class AdBudgetReportsService
             'cpl' => DashboardNumbers::divide((float) $report->realization_amount, (float) $report->leads_count),
             'status' => $report->status,
             'has_attachment' => filled($report->attachment_path),
+            'has_insight_attachment' => filled($report->insight_attachment_path),
+            'has_ad_leads' => (int) $report->leads_count > 0,
             'can_review' => $canReview,
             'can_edit' => ReportFormService::canEdit($report, $user),
             'can_delete' => ReportFormService::canDelete($report, $user),

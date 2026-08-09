@@ -38,7 +38,7 @@ class DashboardController extends Controller
 
         $campusClosing = CollabMetricsService::campusTotals($filters, $area, $user);
         $overview = DashboardOverviewService::build($area, $filters, $user);
-        $staffAchievement = CollabMetricsService::staffRanking('Closing Personal Per Regional', $filters, $area, $user);
+        $staffAchievement = CollabMetricsService::personalPerformance($area, $filters, $user);
         $regionalStaffAchievement = $this->regionalStaffAchievement($area, $filters, $user, $staffAchievement);
         $gamification = GamificationService::build($area, $filters, $user);
         $referenceOptions = ReferenceOptionsService::build($area, $user);
@@ -54,6 +54,7 @@ class DashboardController extends Controller
         $herregKampusRows = CollabMetricsService::campusTotals($filters, $area, $user, 'Herreg Kampus Regional');
         $totalHerregKampus = (float) array_sum(array_column($herregKampusRows['rows'], 'registrasi'));
         $totalClosingPersonal = CollabMetricsService::personalTotal($filters, $area, $user, 'Closing Personal Per Regional');
+        $totalHerregPersonal = CollabMetricsService::personalTotal($filters, $area, $user, 'Herreg Personal Per Regional');
         $totalRealisasiIklan = (float) $overview['budget']['spend'];
         $pmbTotals = CollabSourceService::pmbRegionalTotals(AreaRegionals::forArea($area));
 
@@ -61,7 +62,7 @@ class DashboardController extends Controller
             ['label' => 'Closing Kampus', 'value' => number_format($totalClosingKampus, 0, ',', '.'), 'tone' => 'blue-dark'],
             ['label' => 'Herreg Kampus', 'value' => number_format($totalHerregKampus, 0, ',', '.'), 'tone' => 'blue'],
             ['label' => 'Closing Personal', 'value' => number_format($totalClosingPersonal, 0, ',', '.'), 'tone' => 'blue-light'],
-            ['label' => 'Herreg Personal', 'value' => '-', 'tone' => 'red'],
+            ['label' => 'Herreg Personal', 'value' => number_format($totalHerregPersonal, 0, ',', '.'), 'tone' => 'red'],
             ['label' => 'Realisasi Iklan', 'value' => 'Rp '.number_format($totalRealisasiIklan, 0, ',', '.'), 'tone' => 'orange'],
             ['label' => 'Reg / Herreg All', 'value' => number_format($pmbTotals['daftar'], 0, ',', '.').' / '.number_format($pmbTotals['herreg'], 0, ',', '.'), 'tone' => 'yellow'],
         ];
@@ -102,6 +103,7 @@ class DashboardController extends Controller
         $closingKampus = CollabMetricsService::campusTotals($regionalFilters, $area, $user);
         $herregKampus = CollabMetricsService::campusTotals($regionalFilters, $area, $user, 'Herreg Kampus Regional');
         $closingPersonal = CollabMetricsService::personalTotal($regionalFilters, $area, $user, 'Closing Personal Per Regional');
+        $herregPersonal = CollabMetricsService::personalTotal($regionalFilters, $area, $user, 'Herreg Personal Per Regional');
         $realisasiIklan = (float) DashboardOverviewService::build($area, $regionalFilters, $user)['budget']['spend'];
         $pmb = CollabSourceService::pmbRegionalTotals([$regional]);
         $bdc = BdcReportUsersService::regionalTotals($regional);
@@ -115,6 +117,7 @@ class DashboardController extends Controller
             'total_closing_kampus' => (float) array_sum(array_column($closingKampus['rows'], 'registrasi')),
             'total_herreg_kampus' => (float) array_sum(array_column($herregKampus['rows'], 'registrasi')),
             'total_closing_personal' => $closingPersonal,
+            'total_herreg_personal' => $herregPersonal,
             'total_realisasi_iklan' => $realisasiIklan,
             'pmb_daftar' => $pmb['daftar'],
             'pmb_herreg' => $pmb['herreg'],
@@ -139,7 +142,7 @@ class DashboardController extends Controller
 
         $regionalUser = (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'koordinator']));
 
-        return CollabMetricsService::staffRanking('Closing Personal Per Regional', $regionalFilters, $area, $regionalUser);
+        return CollabMetricsService::personalPerformance($area, $regionalFilters, $regionalUser);
     }
 
     private function topStaffAchievement(string $area, RsmUser $user, array $regionalStaffAchievement): array

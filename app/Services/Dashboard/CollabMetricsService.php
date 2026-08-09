@@ -9,11 +9,13 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Ports rsm_collab_campus_totals()/rsm_collab_staff_totals()/
- * rsm_collab_staff_performance() (rsm_db.php:6100/5946/6023). These read
- * rsm_collab_daily_metrics, a synced cache of the external "Closing Collab"
- * / "Herreg Collab" / "Closing Kampus Regional" reports — the source of
- * truth for displayed Registrasi/Herregistrasi, not rsm_reports.
+ * Reads rsm_collab_daily_metrics, a synced cache of the external
+ * /sumber-collab reports — the source of truth for displayed
+ * Registrasi/Herregistrasi, not rsm_reports. "Closing Collab" and "Herreg
+ * Collab" (the original per-staff pair this ported from rsm_collab_staff_
+ * performance(), rsm_db.php:6023) are no longer considered reliable;
+ * per-staff figures now come from "Closing Personal Per Regional" alone
+ * (personalPerformance()) — Herreg Personal has no source yet.
  */
 class CollabMetricsService
 {
@@ -76,11 +78,23 @@ class CollabMetricsService
             ->keyBy(fn ($row) => self::staffKey($row));
     }
 
-    /** Ports rsm_collab_staff_performance() — merges Closing Collab + Herreg Collab by staff. */
-    public static function staffPerformance(string $area, array $filters, RsmUser $user): array
+    /** Sums a single staff-level report (e.g. "Closing Personal Per Regional") across the allowed regionals/filters. */
+    public static function personalTotal(array $filters, string $area, RsmUser $user, string $reportName): float
     {
-        $closing = self::staffTotals('Closing Collab', $filters, $area, $user);
-        $herreg = self::staffTotals('Herreg Collab', $filters, $area, $user);
+        return (float) self::staffTotals($reportName, $filters, $area, $user)->sum('total_value');
+    }
+
+    /**
+     * Per-staff performance sourced from "Closing Personal Per Regional" +
+     * "Herreg Personal Per Regional" — the old "Closing Collab"/"Herreg
+     * Collab" pairing is no longer considered reliable. Shape:
+     * rows/regional_summary/totals/sources — used wherever per-staff
+     * ranking is needed.
+     */
+    public static function personalPerformance(string $area, array $filters, RsmUser $user): array
+    {
+        $closing = self::staffTotals('Closing Personal Per Regional', $filters, $area, $user);
+        $herreg = self::staffTotals('Herreg Personal Per Regional', $filters, $area, $user);
 
         $rows = $closing->keys()->merge($herreg->keys())->unique()->map(function ($key) use ($closing, $herreg) {
             $source = $closing->get($key) ?? $herreg->get($key);
@@ -117,37 +131,10 @@ class CollabMetricsService
                 'herregistrasi' => $rows->sum('herregistrasi'),
             ],
             'sources' => [
-                'registrasi' => ['label' => 'Closing Collab'],
-                'herregistrasi' => ['label' => 'Herreg Collab'],
+                'registrasi' => ['label' => 'Closing Personal Per Regional'],
+                'herregistrasi' => ['label' => 'Herreg Personal Per Regional'],
             ],
         ];
-    }
-
-    /** Sums a single staff-level report (e.g. "Closing Personal Per Regional") across the allowed regionals/filters. */
-    public static function personalTotal(array $filters, string $area, RsmUser $user, string $reportName): float
-    {
-        return (float) self::staffTotals($reportName, $filters, $area, $user)->sum('total_value');
-    }
-
-    /**
-     * Per-staff ranking from a single report (e.g. "Closing Personal Per
-     * Regional"), shaped like staffPerformance()'s 'rows' so it's a drop-in
-     * source for the same ranking panels.
-     */
-    public static function staffRanking(string $reportName, array $filters, string $area, RsmUser $user): array
-    {
-        $rows = self::staffTotals($reportName, $filters, $area, $user)
-            ->map(fn ($row, $key) => [
-                'staff_key' => $key,
-                'nik' => $row->staff_nik ?? null,
-                'name' => $row->staff_name ?? '-',
-                'regional' => $row->regional ?? '-',
-                'registrasi' => (float) $row->total_value,
-            ])
-            ->sortByDesc('registrasi')
-            ->values();
-
-        return ['rows' => $rows->all()];
     }
 
     /** @return list<string> */

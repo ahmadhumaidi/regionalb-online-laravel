@@ -17,11 +17,12 @@
                 @foreach ($topCampus as $row)
                     @php $rate = $campusClosing['max_value'] > 0 ? min(100, max(3, round($row['registrasi'] / $campusClosing['max_value'] * 100))) : 0; @endphp
                     <div>
-                        <div class="mb-1 flex items-center justify-between text-sm">
-                            <div><strong class="font-medium text-ink">{{ $row['unit'] }}</strong> <span class="text-xs text-ink-muted">{{ $row['regional'] }}</span></div>
-                            <b class="font-semibold text-ink">{{ number_format($row['registrasi'], 0, ',', '.') }}</b>
+                        <div class="flex items-center justify-between text-sm">
+                            <strong class="truncate font-medium text-ink">{{ $row['unit'] }}</strong>
+                            <b class="shrink-0 font-semibold text-ink">{{ number_format($row['registrasi'], 0, ',', '.') }}</b>
                         </div>
-                        <div class="h-1.5 overflow-hidden rounded-full bg-surface-muted"><div class="h-full rounded-full bg-brand-600" style="width: {{ $rate }}%"></div></div>
+                        <span class="text-xs text-ink-muted">{{ $row['regional'] }}</span>
+                        <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted"><div class="h-full rounded-full bg-brand-600" style="width: {{ $rate }}%"></div></div>
                     </div>
                 @endforeach
             </div>

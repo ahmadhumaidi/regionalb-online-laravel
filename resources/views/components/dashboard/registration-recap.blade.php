@@ -12,7 +12,7 @@
                     ['label' => 'Closing Kampus', 'value' => number_format($recap['total_closing_kampus'], 0, ',', '.'), 'tone' => 'blue-dark'],
                     ['label' => 'Herreg Kampus', 'value' => number_format($recap['total_herreg_kampus'], 0, ',', '.'), 'tone' => 'blue'],
                     ['label' => 'Closing Personal', 'value' => number_format($recap['total_closing_personal'], 0, ',', '.'), 'tone' => 'blue-light'],
-                    ['label' => 'Herreg Personal', 'value' => '-', 'tone' => 'red'],
+                    ['label' => 'Herreg Personal', 'value' => number_format($recap['total_herreg_personal'], 0, ',', '.'), 'tone' => 'red'],
                     ['label' => 'Realisasi Iklan', 'value' => 'Rp '.number_format($recap['total_realisasi_iklan'], 0, ',', '.'), 'tone' => 'orange'],
                     ['label' => 'Reg / Herreg All', 'value' => number_format($recap['pmb_daftar'], 0, ',', '.').' / '.number_format($recap['pmb_herreg'], 0, ',', '.'), 'tone' => 'yellow'],
                 ];
@@ -46,7 +46,7 @@
                 <p class="mb-2 text-xs font-bold tracking-wide text-ink-muted uppercase">Sumber Collab</p>
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                     @foreach ($collabItems as $item)
-                        <div class="rounded-xl border border-ink/15 border-l-4 bg-surface-muted/70 p-3 text-center" style="border-left-color: var(--color-tone-{{ $item['tone'] }})">
+                        <div class="rounded-xl border border-ink/15 border-l-4 bg-surface-muted/70 p-3 text-center shadow-sm" style="border-left-color: var(--color-tone-{{ $item['tone'] }})">
                             <span class="block text-xs font-medium text-ink">{{ $item['label'] }}</span>
                             <strong class="mt-1 block text-xl font-bold" style="color: var(--color-tone-{{ $item['tone'] }})">{{ $item['value'] }}</strong>
                         </div>
@@ -58,7 +58,7 @@
                 <p class="mb-2 text-xs font-bold tracking-wide text-ink-muted uppercase">Sumber BDC</p>
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                     @foreach ($bdcItems as $item)
-                        <div class="relative rounded-xl border border-ink/15 border-l-4 bg-surface-muted/70 p-3 text-center" style="border-left-color: var(--color-tone-cyan)">
+                        <div class="relative rounded-xl border border-ink/15 border-l-4 bg-surface-muted/70 p-3 text-center shadow-sm" style="border-left-color: var(--color-tone-cyan)">
                             @if (! empty($item['warn']))
                                 <span class="absolute top-1.5 right-1.5 animate-denyut text-tone-red" title="Segera follow up">
                                     <x-icon name="warning" class="h-4 w-4" />

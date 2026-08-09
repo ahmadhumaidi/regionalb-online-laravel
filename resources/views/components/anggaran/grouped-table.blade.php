@@ -64,7 +64,16 @@
                                     </td>
                                     <td class="py-2">
                                         <div class="flex flex-wrap items-center gap-1">
-                                            <a href="{{ route('reports.show', $row['id']) }}" title="Lihat" aria-label="Lihat" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="eye" class="h-3.5 w-3.5" /></a>
+                                            <a href="{{ route('reports.show', $row['id']) }}" title="Lihat" aria-label="Lihat" class="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-semibold text-ink-muted hover:bg-surface-muted hover:text-ink"><x-icon name="eye" class="h-3.5 w-3.5" />Lihat</a>
+                                            @if ($row['has_attachment'])
+                                                <a href="{{ route('reports.attachment', $row['id']) }}" target="_blank" rel="noopener" title="Lihat invoice/bukti transfer" aria-label="Lihat invoice" class="inline-flex items-center gap-1 rounded-md border border-l-2 border-border border-l-tone-blue px-2 py-1 text-[11px] font-semibold text-tone-blue hover:bg-surface-muted"><x-icon name="document" class="h-3.5 w-3.5" />Invoice</a>
+                                            @endif
+                                            @if ($row['has_insight_attachment'])
+                                                <a href="{{ route('reports.insight-attachment', $row['id']) }}" target="_blank" rel="noopener" title="Lihat bukti insight/pengeluaran iklan" aria-label="Lihat insight" class="inline-flex items-center gap-1 rounded-md border border-l-2 border-border border-l-tone-orange px-2 py-1 text-[11px] font-semibold text-tone-orange hover:bg-surface-muted"><x-icon name="bolt" class="h-3.5 w-3.5" />Insight</a>
+                                            @endif
+                                            @if ($row['has_ad_leads'])
+                                                <a href="{{ route('reports.show', $row['id']) }}#data-hasil-iklan" title="Lihat data hasil iklan" aria-label="Lihat data hasil iklan" class="inline-flex items-center gap-1 rounded-md border border-l-2 border-border border-l-tone-green px-2 py-1 text-[11px] font-semibold text-tone-green hover:bg-surface-muted"><x-icon name="chart-bar" class="h-3.5 w-3.5" />Data</a>
+                                            @endif
                                             @if ($row['can_edit'])
                                                 <a href="{{ route('reports.edit', $row['id']) }}" title="Edit" aria-label="Edit" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="edit" class="h-3.5 w-3.5" /></a>
                                             @endif
