@@ -12,7 +12,7 @@ class DashboardFilters
     public static function fromRequest(Request $request, string $page = 'dashboard'): array
     {
         $today = Carbon::today('Asia/Jakarta');
-        $defaultFrom = in_array($page, ['dashboard', 'anggaran', 'rekap', 'pencapaian'], true)
+        $defaultFrom = in_array($page, ['dashboard', 'anggaran', 'rekap', 'pencapaian', 'closing-kampus'], true)
             ? $today->copy()->startOfMonth()
             : $today->copy();
 
