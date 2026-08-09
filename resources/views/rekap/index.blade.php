@@ -25,17 +25,35 @@
     @endif
 
     <section class="rounded-2xl glass-card p-5">
-        <div class="mb-3 flex flex-wrap gap-2 text-xs font-semibold">
-            <a href="{{ route('rekap', array_merge(request()->query(), ['periode' => 'monthly'])) }}" class="rounded-lg px-3 py-1.5 {{ request('periode') !== 'daily' ? 'bg-brand-600 text-white' : 'border border-border text-ink-muted hover:bg-surface-muted' }}">Bulan Ini</a>
-            <a href="{{ route('rekap', array_merge(request()->query(), ['periode' => 'daily'])) }}" class="rounded-lg px-3 py-1.5 {{ request('periode') === 'daily' ? 'bg-brand-600 text-white' : 'border border-border text-ink-muted hover:bg-surface-muted' }}">Live (Hari Ini)</a>
-        </div>
+        @php
+            $liveActive = request('periode') === 'daily';
+            $currentMonthValue = substr($filters['date_from'], 0, 7);
+            $periodeMonthOptions = [];
+            $periodeCursor = \Illuminate\Support\Carbon::now('Asia/Jakarta')->startOfMonth();
+            for ($i = 0; $i < 24; $i++) {
+                $periodeMonthOptions[] = ['value' => $periodeCursor->format('Y-m'), 'label' => $periodeCursor->locale('id')->translatedFormat('F Y')];
+                $periodeCursor = $periodeCursor->copy()->subMonthNoOverflow();
+            }
+        @endphp
+        <form method="GET" class="mb-3 flex items-center gap-2">
+            @foreach (request()->except(['periode', 'date_from', 'date_to']) as $key => $value)
+                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+            @endforeach
+            <input type="hidden" name="periode" value="{{ $liveActive ? 'daily' : 'monthly' }}">
+            <input type="hidden" name="date_from" value="{{ $currentMonthValue }}">
+            <label class="grid gap-1">
+                <span class="text-[11px] font-bold tracking-wide text-ink-muted uppercase">Periode</span>
+                <select onchange="const o=this.options[this.selectedIndex];this.form.periode.value=o.dataset.periode;this.form.date_from.value=o.dataset.month;this.form.submit();" class="min-h-[36px] rounded-lg border border-border px-2.5 py-1.5 text-sm">
+                    <option data-periode="daily" data-month="" @selected($liveActive)>Live (Hari Ini)</option>
+                    @foreach ($periodeMonthOptions as $option)
+                        <option data-periode="monthly" data-month="{{ $option['value'] }}" @selected(! $liveActive && $currentMonthValue === $option['value'])>{{ $option['label'] }}</option>
+                    @endforeach
+                </select>
+            </label>
+        </form>
         <form method="GET" class="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
-            <input type="hidden" name="periode" value="{{ request('periode', 'monthly') }}">
-            @if (request('periode') === 'daily')
-                <label class="grid gap-1 text-xs text-ink-muted">Tanggal<input type="text" value="{{ \Illuminate\Support\Carbon::parse($filters['date_from'])->format('d M Y') }} (Live)" disabled class="rounded-lg border-border bg-surface-muted text-ink-muted"></label>
-            @else
-                <label class="grid gap-1 text-xs text-ink-muted">Bulan<input type="month" name="date_from" value="{{ substr($filters['date_from'], 0, 7) }}" class="rounded-lg border-border bg-surface-muted"></label>
-            @endif
+            <input type="hidden" name="periode" value="{{ $liveActive ? 'daily' : 'monthly' }}">
+            <input type="hidden" name="date_from" value="{{ $currentMonthValue }}">
             <label class="grid gap-1 text-xs text-ink-muted">Wilayah<select name="wilayah" class="rounded-lg border-border bg-surface-muted"><option value="">Semua</option>@foreach ($references['regionals'] as $value)<option value="{{ $value }}" @selected($filters['wilayah'] === $value)>{{ $value }}</option>@endforeach</select></label>
             <label class="grid gap-1 text-xs text-ink-muted">Unit<select name="unit_name" class="rounded-lg border-border bg-surface-muted"><option value="">Semua</option>@foreach ($references['campuses'] as $campus)<option value="{{ $campus['label'] }}" @selected($filters['unit_name'] === $campus['label'])>{{ $campus['label'] }}</option>@endforeach</select></label>
             <label class="grid gap-1 text-xs text-ink-muted">Jenis<select name="rekap_type" class="rounded-lg border-border bg-surface-muted"><option value="all" @selected($type === 'all')>Semua laporan</option><option value="marketing" @selected($type === 'marketing')>Marketing</option><option value="ads" @selected($type === 'ads')>Iklan</option><option value="other" @selected($type === 'other')>Aktivitas lain</option></select></label>
