@@ -1,9 +1,25 @@
 @props(['filters', 'referenceOptions', 'isSeniorTier' => false])
-@php $user = auth()->user(); @endphp
+@php
+    $user = auth()->user();
+    $liveActive = request('periode') === 'daily';
+    $currentMonthValue = substr($filters['date_from'], 0, 7);
+    $periodeMonthOptions = [];
+    $periodeCursor = \Illuminate\Support\Carbon::now('Asia/Jakarta')->startOfMonth();
+    for ($i = 0; $i < 24; $i++) {
+        $periodeMonthOptions[] = ['value' => $periodeCursor->format('Y-m'), 'label' => $periodeCursor->locale('id')->translatedFormat('F Y')];
+        $periodeCursor = $periodeCursor->copy()->subMonthNoOverflow();
+    }
+@endphp
 
 <form method="GET" action="{{ route('dashboard') }}" class="mb-4 flex flex-wrap items-center justify-end gap-2">
-    <input type="hidden" name="periode" value="monthly">
-    <input type="month" name="date_from" value="{{ substr($filters['date_from'], 0, 7) }}" title="Bulan" class="rounded-lg border border-border bg-surface px-2 py-1 text-xs text-ink">
+    <input type="hidden" name="periode" value="{{ $liveActive ? 'daily' : 'monthly' }}">
+    <input type="hidden" name="date_from" value="{{ $currentMonthValue }}">
+    <select onchange="const o=this.options[this.selectedIndex];this.form.periode.value=o.dataset.periode;this.form.date_from.value=o.dataset.month;this.form.submit();" title="Periode" class="rounded-lg border border-border bg-surface px-2 py-1 text-xs text-ink">
+        <option data-periode="daily" data-month="" @selected($liveActive)>Live (Hari Ini)</option>
+        @foreach ($periodeMonthOptions as $option)
+            <option data-periode="monthly" data-month="{{ $option['value'] }}" @selected(! $liveActive && $currentMonthValue === $option['value'])>{{ $option['label'] }}</option>
+        @endforeach
+    </select>
 
     @if ($user->role === 'staff')
         <input value="{{ $user->regional }}" readonly title="Wilayah - otomatis sesuai akun login" class="w-28 rounded-lg glass-card-muted px-2 py-1 text-xs text-ink-muted">
