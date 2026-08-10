@@ -23,16 +23,29 @@ class BdcReportUsersService
 
     private const MAX_AGE_SECONDS = 900;
 
+    /**
+     * Memoized for the lifetime of the request: regionalTotals() calls
+     * snapshot() once per regional (4x on the Dashboard), and a failed live
+     * fetch doesn't touch the cache's mtime — without this, a slow/down
+     * api.p2k.co.id would eat a full timeout() on every one of those calls
+     * instead of just the first.
+     */
+    private static ?array $requestSnapshot = null;
+
     public static function snapshot(): array
     {
+        if (self::$requestSnapshot !== null) {
+            return self::$requestSnapshot;
+        }
+
         $cached = self::cacheRead();
         if ($cached !== [] && self::cacheAge() <= self::MAX_AGE_SECONDS) {
             $cached['source_mode'] = 'cache';
 
-            return $cached;
+            return self::$requestSnapshot = $cached;
         }
 
-        return self::fetch($cached);
+        return self::$requestSnapshot = self::fetch($cached);
     }
 
     public static function refresh(): array

@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // once-a-day safety net that catches any late corrections beyond that window.
         $collabWindowDays = (int) config('services.collab.sync_window_days', 2);
         $schedule->command("rsm:sync-sources --only=collab --window={$collabWindowDays}")->everyThirtyMinutes()->withoutOverlapping();
+        // BdcReportUsersService's own cache TTL is 15 minutes; refresh a bit
+        // faster than that so a Dashboard load practically never needs to
+        // fall back to a live (and possibly slow/timed-out) api.p2k.co.id call.
+        $schedule->command('rsm:sync-sources --only=bdc')->everyTenMinutes()->withoutOverlapping();
         $schedule->command('rsm:sync-sources')->dailyAt('02:15')->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
