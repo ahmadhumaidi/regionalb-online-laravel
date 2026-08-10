@@ -75,6 +75,12 @@
     [x-cloak] {
         display: none !important;
     }
+
+    /* Unstyled <input type="file"> can render wider than its container on
+       mobile Safari, pushing the whole page into horizontal scroll. */
+    input[type='file'] {
+        max-width: 100%;
+    }
 }
 
 @layer components {
