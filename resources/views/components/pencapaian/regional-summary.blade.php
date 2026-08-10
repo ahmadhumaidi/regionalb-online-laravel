@@ -10,7 +10,7 @@
         <p class="py-6 text-center text-sm text-ink-muted">Belum ada data pencapaian pada periode/filter ini.</p>
     @else
         @php $tones = ['blue-dark', 'blue', 'blue-light', 'red']; @endphp
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             @foreach ($regionalSummary as $i => $row)
                 @php
                     $regRate = $row['target_registrasi'] > 0 ? min(100, max(0, round($row['registrasi'] / $row['target_registrasi'] * 100))) : 0;
