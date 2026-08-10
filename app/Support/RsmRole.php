@@ -86,10 +86,12 @@ class RsmRole
     }
 
     /**
-     * The lightweight "Verifikasi" step (Pengajuan → Diverifikasi) ahead of
-     * the Setujui/Tolak/Revisi decision: open to Korwil (their own wilayah's
-     * requests only, mirroring REPORT_ACTIONS's koordinator => 'verifikasi')
-     * and to canManageAdBudget()'s super_user/senior pairing.
+     * The "Verifikasi Laporan" step (Dilaporkan Unit → Diverifikasi), one
+     * step ahead of canManageAdBudget()'s "Tandai Selesai": confirms the
+     * bukti/realisasi staff or korwil reported is correct, before the
+     * senior tier can close the report out. Open to Korwil (their own
+     * wilayah's reports only, mirroring REPORT_ACTIONS's koordinator =>
+     * 'verifikasi') and to canManageAdBudget()'s super_user/senior pairing.
      */
     public static function canVerifyAdBudgetRequest(RsmReport $report, ?RsmUser $user): bool
     {

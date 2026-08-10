@@ -19,9 +19,10 @@
     // either) - not just left uncolored here.
     $statusTones = [
         'pengajuan' => 'amber',
-        'diverifikasi' => 'blue-light',
         'revisi' => 'orange',
         'disetujui' => 'green',
+        'dilaporkan unit' => 'cyan',
+        'diverifikasi' => 'blue-light',
         'selesai' => 'purple',
         'ditolak' => 'red',
     ];
@@ -110,12 +111,6 @@
                                                     <button type="submit" title="Hapus" aria-label="Hapus" class="rounded-md border border-tone-red p-1 text-tone-red"><x-icon name="trash" class="h-3.5 w-3.5" /></button>
                                                 </form>
                                             @endif
-                                            @if ($row['can_verify'])
-                                                <form method="POST" action="{{ route('anggaran.verifikasi', $row['id']) }}" onsubmit="return confirm('Verifikasi pengajuan ini?')">
-                                                    @csrf
-                                                    <button type="submit" title="Verifikasi" aria-label="Verifikasi" class="rounded-md border border-tone-blue-light p-1 text-tone-blue-light"><x-icon name="shield" class="h-3.5 w-3.5" /></button>
-                                                </form>
-                                            @endif
                                             @if ($row['can_review'])
                                                 <form method="POST" action="{{ route('anggaran.setujui', $row['id']) }}" class="flex items-center gap-1" onsubmit="return confirm('Setujui pengajuan ini?')">
                                                     @csrf
@@ -130,6 +125,12 @@
                                                     @csrf
                                                     <input type="hidden" name="note" value="">
                                                     <button type="submit" title="Revisi" aria-label="Revisi" class="rounded-md border border-tone-amber p-1 text-tone-amber"><x-icon name="warning" class="h-3.5 w-3.5" /></button>
+                                                </form>
+                                            @endif
+                                            @if ($row['can_verify'])
+                                                <form method="POST" action="{{ route('anggaran.verifikasi', $row['id']) }}" onsubmit="return confirm('Verifikasi laporan ini?')">
+                                                    @csrf
+                                                    <button type="submit" title="Verifikasi Laporan" aria-label="Verifikasi Laporan" class="rounded-md border border-tone-blue-light p-1 text-tone-blue-light"><x-icon name="shield" class="h-3.5 w-3.5" /></button>
                                                 </form>
                                             @endif
                                             @if ($row['can_complete'])

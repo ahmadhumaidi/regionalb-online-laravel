@@ -11,28 +11,29 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Ports the ads-specific branch of action_buttons()/rsm_update_status()
- * (dashboard.php:3730-3736, action_buttons()'s ads branch): Setujui/Tolak/
- * Revisi for super_user/executive_director/director/senior on a report
- * still in Pengajuan/Revisi. Realization reporting and the Disetujui→
- * Transfer/Invoice attachment trigger go through the generic
- * ReportFormController/ReportFormService edit flow instead — see
- * report_fields_for_type()/rsm_update_report() in the legacy source.
+ * Full ads status machine (per Ahmad Humaidi's workflow description):
+ * Pengajuan --(Setujui/Tolak/Revisi, senior tier)--> Disetujui/Ditolak/Revisi
+ * --(staff/korwil upload bukti)--> Dilaporkan Unit --(korwil/senior verifies
+ * the *report*, not the budget request)--> Diverifikasi --(senior tier marks
+ * complete)--> Selesai. Ports the ads-specific branch of action_buttons()/
+ * rsm_update_status() (dashboard.php:3730-3736) for the Setujui/Tolak/Revisi
+ * leg; realization reporting goes through ReportFormController/
+ * ReportFormService's edit flow instead.
  */
 class AdBudgetActionController extends Controller
 {
-    private const REVIEWABLE_STATUSES = ['Pengajuan', 'Diverifikasi', 'Revisi'];
+    private const REVIEWABLE_STATUSES = ['Pengajuan', 'Revisi'];
 
-    private const VERIFIABLE_STATUSES = ['Pengajuan'];
+    private const VERIFIABLE_STATUSES = ['Dilaporkan Unit'];
 
     public function verify(Request $request, RsmReport $report): RedirectResponse
     {
         $this->markVerified($request, $report);
 
-        return back()->with('notice', 'Pengajuan anggaran diverifikasi.');
+        return back()->with('notice', 'Laporan diverifikasi.');
     }
 
-    /** Shared by the dedicated "Verifikasi" action above and the ads edit form's optional verify checkbox (ReportFormController::update()). */
+    /** Shared by the dedicated "Verifikasi" action above and the ads edit form's optional verify checkbox (ReportFormController::update()). Confirms the staff/korwil-reported evidence, not the original budget request. */
     public function markVerified(Request $request, RsmReport $report): void
     {
         $this->authorizeVerify($report);
@@ -79,7 +80,7 @@ class AdBudgetActionController extends Controller
         return back()->with('notice', 'Pengajuan dikembalikan untuk revisi.');
     }
 
-    /** Marking an ads report "Selesai" is reserved for canManageAdBudget() (super_user/senior), not the wider canReviewAdBudgetRequest() tier. */
+    /** Marking an ads report "Selesai" is reserved for canManageAdBudget() (super_user/senior), not the wider canReviewAdBudgetRequest() tier — and only once korwil/senior has verified the reported evidence. */
     public function complete(Request $request, RsmReport $report): RedirectResponse
     {
         $this->markSelesai($request, $report);
@@ -122,7 +123,7 @@ class AdBudgetActionController extends Controller
 
         abort_unless($report->report_type === RsmReport::TYPE_ADS, 404);
         abort_unless(RsmRole::canManageAdBudget($user), 403);
-        abort_if(in_array($report->status, ['Selesai', 'Ditolak'], true), 422, 'Status laporan sudah final.');
+        abort_unless($report->status === 'Diverifikasi', 422, 'Laporan harus diverifikasi korwil terlebih dahulu.');
     }
 
     private function transition(Request $request, RsmReport $report, string $newStatus, string $action, ?string $note = null, ?callable $mutate = null): void

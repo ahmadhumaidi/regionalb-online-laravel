@@ -82,12 +82,15 @@ class AdBudgetReportsService
     private static function rowShape(RsmReport $report, RsmUser $user): array
     {
         $status = (string) $report->status;
-        $canVerify = RsmRole::canVerifyAdBudgetRequest($report, $user) && $status === 'Pengajuan';
-        $canReview = RsmRole::canReviewAdBudgetRequest($user) && in_array($status, ['Pengajuan', 'Diverifikasi', 'Revisi'], true);
+        // Verifikasi confirms the reported evidence (Dilaporkan Unit), not
+        // the original budget request - see AdBudgetActionController.
+        $canVerify = RsmRole::canVerifyAdBudgetRequest($report, $user) && $status === 'Dilaporkan Unit';
+        $canReview = RsmRole::canReviewAdBudgetRequest($user) && in_array($status, ['Pengajuan', 'Revisi'], true);
         // Marking "Selesai" is narrower than canReviewAdBudgetRequest()'s
         // super_user/executive_director/director/senior tier - just the
-        // super_user/senior pairing canManageAdBudget() already codifies.
-        $canComplete = RsmRole::canManageAdBudget($user) && ! in_array($status, ['Selesai', 'Ditolak'], true);
+        // super_user/senior pairing canManageAdBudget() already codifies -
+        // and only once korwil/senior has verified the reported evidence.
+        $canComplete = RsmRole::canManageAdBudget($user) && $status === 'Diverifikasi';
 
         return [
             'id' => $report->id,

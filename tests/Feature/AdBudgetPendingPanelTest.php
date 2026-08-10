@@ -209,14 +209,14 @@ class AdBudgetPendingPanelTest extends TestCase
         $report = RsmReport::create([
             'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
             'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff',
-            'status' => 'Dilaporkan Unit', 'title' => 'Complete Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Complete Campaign',
+            'status' => 'Diverifikasi', 'title' => 'Complete Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Complete Campaign',
             'budget_requested' => 100000,
         ]);
 
         // A koordinator - outside the canManageAdBudget() tier - is not
-        // allowed to mark a report "Selesai".
+        // allowed to mark a report "Selesai", even once it's verified.
         $this->actingAs($koordinator)->post(route('anggaran.selesai', $report))->assertForbidden();
-        $this->assertSame('Dilaporkan Unit', $report->fresh()->status);
+        $this->assertSame('Diverifikasi', $report->fresh()->status);
 
         // super_user is treated the same as senior for this action - Ahmad
         // Humaidi (the developer) logs in as super_user day-to-day.
@@ -230,6 +230,31 @@ class AdBudgetPendingPanelTest extends TestCase
         $senior->delete();
         $superUser->delete();
         $koordinator->delete();
+    }
+
+    public function test_selesai_requires_diverifikasi_status_first(): void
+    {
+        $this->migrate();
+
+        $superUser = RsmUser::create([
+            'id' => 900028, 'name' => 'Test Super', 'username' => 'test_super_900028',
+            'password_hash' => 'x', 'role' => 'super_user', 'jabatan' => 'Super User',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        // Reported but not yet verified by korwil - "Tandai Selesai" must
+        // not be reachable yet, even for super_user/senior.
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff',
+            'status' => 'Dilaporkan Unit', 'title' => 'Unverified Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Unverified Campaign',
+            'budget_requested' => 100000,
+        ]);
+
+        $this->actingAs($superUser)->post(route('anggaran.selesai', $report))->assertStatus(422);
+        $this->assertSame('Dilaporkan Unit', $report->fresh()->status);
+
+        $report->delete();
+        $superUser->delete();
     }
 
     public function test_mark_selesai_checkbox_on_edit_form_transitions_status(): void
@@ -261,9 +286,21 @@ class AdBudgetPendingPanelTest extends TestCase
         ])->assertRedirect();
         $this->assertSame('Dilaporkan Unit', $report->fresh()->status);
 
-        // Senior manager ticking the checkbox on the edit form should mark
-        // the report "Selesai" in the same request, without a separate
-        // trip to the list page's dedicated action button.
+        // Not verified yet - senior ticking the checkbox must not force
+        // "Selesai" before korwil/senior has verified the reported evidence.
+        $this->actingAs($senior)->patch(route('reports.update', $report), [
+            'report_date' => now()->toDateString(),
+            'ad_period' => $report->ad_period,
+            'platform' => 'Meta Ads',
+            'budget_requested' => 100000,
+            'mark_selesai' => '1',
+        ])->assertRedirect();
+        $this->assertSame('Dilaporkan Unit', $report->fresh()->status);
+
+        // Once verified, senior manager ticking the checkbox on the edit
+        // form should mark the report "Selesai" in the same request,
+        // without a separate trip to the list page's dedicated button.
+        $report->update(['status' => 'Diverifikasi']);
         $this->actingAs($senior)->patch(route('reports.update', $report), [
             'report_date' => now()->toDateString(),
             'ad_period' => $report->ad_period,
@@ -278,7 +315,7 @@ class AdBudgetPendingPanelTest extends TestCase
         $senior->delete();
     }
 
-    public function test_koordinator_and_senior_can_verify_own_ads_pengajuan(): void
+    public function test_koordinator_and_senior_can_verify_own_ads_reported_evidence(): void
     {
         $this->migrate();
 
@@ -297,25 +334,38 @@ class AdBudgetPendingPanelTest extends TestCase
             'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
             'area' => 'Regional B', 'is_active' => true,
         ]);
+        // Already Disetujui, then staff/korwil reported evidence -
+        // "Dilaporkan Unit" - so it's now waiting on korwil's review.
         $report = RsmReport::create([
             'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
-            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'koordinator',
-            'status' => 'Pengajuan', 'title' => 'Verify Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Verify Campaign',
-            'budget_requested' => 300000,
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff',
+            'status' => 'Dilaporkan Unit', 'title' => 'Verify Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Verify Campaign',
+            'budget_requested' => 300000, 'budget_approved' => 300000,
         ]);
 
-        // A koordinator from a different wilayah can't verify this request.
+        // Can't verify while still just "Pengajuan"/"Disetujui" - only once
+        // the evidence has actually been reported.
+        $notYetReported = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff',
+            'status' => 'Disetujui', 'title' => 'Not Reported Yet', 'platform' => 'Meta Ads', 'campaign_name' => 'Not Reported Yet',
+            'budget_requested' => 100000,
+        ]);
+        $this->actingAs($koordinatorR6)->post(route('anggaran.verifikasi', $notYetReported))->assertStatus(422);
+
+        // A koordinator from a different wilayah can't verify this report.
         $this->actingAs($koordinatorR4)->post(route('anggaran.verifikasi', $report))->assertForbidden();
-        $this->assertSame('Pengajuan', $report->fresh()->status);
+        $this->assertSame('Dilaporkan Unit', $report->fresh()->status);
 
         // The koordinator who owns Regional 6 can.
         $this->actingAs($koordinatorR6)->post(route('anggaran.verifikasi', $report))->assertRedirect();
         $this->assertSame('Diverifikasi', $report->fresh()->status);
 
-        // Once verified, Setujui/Tolak/Revisi still work for the senior tier.
-        $this->actingAs($senior)->post(route('anggaran.setujui', $report), ['budget_approved' => 300000])->assertRedirect();
-        $this->assertSame('Disetujui', $report->fresh()->status);
+        // Once verified, senior manager can now mark it "Selesai".
+        $this->actingAs($senior)->post(route('anggaran.selesai', $report))->assertRedirect();
+        $this->assertSame('Selesai', $report->fresh()->status);
 
+        $notYetReported->delete();
         $report->delete();
         $senior->delete();
         $koordinatorR4->delete();
@@ -334,7 +384,7 @@ class AdBudgetPendingPanelTest extends TestCase
         $report = RsmReport::create([
             'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
             'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'koordinator',
-            'status' => 'Pengajuan', 'title' => 'Verify Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Verify Campaign',
+            'status' => 'Dilaporkan Unit', 'title' => 'Verify Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Verify Campaign',
             'budget_requested' => 300000, 'ad_period' => \App\Services\AdBudget\AdBudgetPeriods::default(),
         ]);
 

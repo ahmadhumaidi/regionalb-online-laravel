@@ -78,7 +78,7 @@ class ReportFormController extends Controller
             $report->report_type === RsmReport::TYPE_ADS
             && $request->boolean('mark_verified')
             && \App\Support\RsmRole::canVerifyAdBudgetRequest($report->fresh(), $user)
-            && $report->fresh()->status === 'Pengajuan'
+            && $report->fresh()->status === 'Dilaporkan Unit'
         ) {
             app(AdBudgetActionController::class)->markVerified($request, $report->fresh());
         }
@@ -87,7 +87,7 @@ class ReportFormController extends Controller
             $report->report_type === RsmReport::TYPE_ADS
             && $request->boolean('mark_selesai')
             && \App\Support\RsmRole::canManageAdBudget($user)
-            && ! in_array($report->fresh()->status, ['Selesai', 'Ditolak'], true)
+            && $report->fresh()->status === 'Diverifikasi'
         ) {
             app(AdBudgetActionController::class)->markSelesai($request, $report->fresh());
         }
