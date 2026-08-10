@@ -113,7 +113,7 @@ class CollabMetricsService
             return [
                 'staff_key' => $key,
                 'nik' => $source->staff_nik ?? null,
-                'name' => $source->staff_name ?? '-',
+                'name' => self::cleanStaffName((string) ($source->staff_name ?? '-')),
                 'regional' => $source->regional ?? '-',
                 'registrasi' => (float) ($closing->get($key)->total_value ?? 0),
                 'herregistrasi' => (float) ($herreg->get($key)->total_value ?? 0),
@@ -165,6 +165,20 @@ class CollabMetricsService
         $nik = trim((string) ($row->staff_nik ?? ''));
 
         return $nik !== '' ? 'nik:'.$nik : 'name:'.mb_strtolower(trim((string) $row->staff_name));
+    }
+
+    /**
+     * The "Closing Personal Per Regional" source appends a "Tim Terpilih"
+     * suffix to some staff_name values (a cohort tag from cb.web.id, not
+     * part of the person's actual name) - strip it before it reaches
+     * display, self-matching, or the rsm_users name lookup.
+     */
+    private static function cleanStaffName(string $name): string
+    {
+        $name = trim($name);
+        $stripped = preg_replace('/\s+Tim Terpilih$/i', '', $name);
+
+        return trim($stripped ?? $name);
     }
 
     public static function syncedAt(): ?string

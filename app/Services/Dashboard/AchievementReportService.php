@@ -84,7 +84,7 @@ class AchievementReportService
             if ($registrasi <= 0) {
                 continue;
             }
-            $name = self::cleanStaffName((string) $row['name']);
+            $name = (string) $row['name'];
             $nik = trim((string) ($row['nik'] ?? ''));
             if ($user->role === 'staff') {
                 $rowName = mb_strtolower($name);
@@ -195,20 +195,6 @@ class AchievementReportService
             ],
             'regionals' => $regionalCards,
         ];
-    }
-
-    /**
-     * The "Closing Personal Per Regional" source appends a "Tim Terpilih"
-     * suffix to some staff_name values (a cohort tag from cb.web.id, not
-     * part of the person's actual name) — strip it before it reaches
-     * display, self-matching, or the rsm_users name lookup.
-     */
-    private static function cleanStaffName(string $name): string
-    {
-        $name = trim($name);
-        $stripped = preg_replace('/\s+Tim Terpilih$/i', '', $name);
-
-        return trim($stripped ?? $name);
     }
 
     /**
