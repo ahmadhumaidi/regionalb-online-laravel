@@ -81,7 +81,7 @@ class AchievementWhatsappService
                     $lines[] = '- '.$staff['name'].': '.number_format($staff['registrasi'], 0, ',', '.').' closing staff';
                 }
                 if (($unit['non_staff_registrasi'] ?? 0) > 0) {
-                    $lines[] = '- Non-staff (kemungkinan CS): '.number_format($unit['non_staff_registrasi'], 0, ',', '.').' closing';
+                    $lines[] = '- CS: '.number_format($unit['non_staff_registrasi'], 0, ',', '.').' closing';
                 }
             }
             $lines[] = '';
