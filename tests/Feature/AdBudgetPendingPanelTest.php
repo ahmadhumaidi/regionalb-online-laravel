@@ -56,7 +56,7 @@ class AdBudgetPendingPanelTest extends TestCase
         $response->assertSee('Approved Campaign');
         $response->assertSee('Verifying Campaign');
         $response->assertSee('Draft Campaign');
-        $response->assertSee('Lapor realisasi');
+        $response->assertSee('Laporkan');
         $response->assertSee('Menunggu persetujuan');
         $response->assertSee(route('reports.edit', $approved));
         $response->assertSee(route('reports.edit', $verifying));

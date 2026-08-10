@@ -27,7 +27,7 @@
                                 <td class="py-2 pr-3"><span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span></td>
                                 <td class="py-2">
                                     @if ($row['can_edit'])
-                                        <a href="{{ route('reports.edit', $row['id']) }}" class="text-xs font-semibold text-brand-600 underline">Lapor realisasi</a>
+                                        <a href="{{ route('reports.edit', $row['id']) }}" class="inline-block rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700">Laporkan</a>
                                     @else
                                         <span class="text-xs text-ink-muted">Menunggu persetujuan</span>
                                     @endif
@@ -85,7 +85,7 @@
                                 <td class="py-2 pr-3"><span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span></td>
                                 <td class="py-2">
                                     @if ($row['can_edit'])
-                                        <a href="{{ route('reports.edit', $row['id']) }}" class="text-xs font-semibold text-brand-600 underline">Lengkapi</a>
+                                        <a href="{{ route('reports.edit', $row['id']) }}" class="inline-block rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700">Lengkapi</a>
                                     @else
                                         <span class="text-xs text-ink-muted">Menunggu persetujuan</span>
                                     @endif
