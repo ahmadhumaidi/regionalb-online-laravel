@@ -37,15 +37,6 @@ class CollabSourceService
         'Follow Up BDC',
     ];
 
-    /**
-     * "Follow Up BDC" is deliberately NOT here yet: its raw table layout
-     * (which columns hold the date/staff/regional/value cells) is unknown -
-     * ingestDailyMetrics() branches on report-specific column indexes per
-     * report, so guessing them would silently write wrong numbers into
-     * rsm_collab_daily_metrics instead of failing loudly. Add it once the
-     * live table has been inspected (Sumber Data Collab's raw viewer, after
-     * a sync, shows exactly what dashboard.php:987 used to show).
-     */
     private const DAILY_METRIC_REPORTS = [
         'Closing Collab',
         'Herreg Collab',
@@ -53,6 +44,7 @@ class CollabSourceService
         'Herreg Kampus Regional',
         'Closing Personal Per Regional',
         'Herreg Personal Per Regional',
+        'Follow Up BDC',
     ];
 
     private const SOURCE_URLS = [
@@ -559,7 +551,14 @@ class CollabSourceService
         }
 
         $isCampus = in_array($reportName, ['Closing Kampus Regional', 'Herreg Kampus Regional'], true);
-        $isPersonalRegional = in_array($reportName, ['Closing Personal Per Regional', 'Herreg Personal Per Regional'], true);
+        // "Follow Up BDC" is assumed to share "Closing/Herreg Personal Per
+        // Regional"'s layout (per-staff rows grouped under "(Korwil
+        // Regional N)" headers, day-of-month columns) per Ahmad Humaidi's
+        // instruction to treat it the same - not yet confirmed against the
+        // live page (cb.web.id is unreachable from this sandbox). If the
+        // first real sync ingests zero rows for it, the layout differs and
+        // this needs adjusting against the actual table.
+        $isPersonalRegional = in_array($reportName, ['Closing Personal Per Regional', 'Herreg Personal Per Regional', 'Follow Up BDC'], true);
         $valueBase = $isCampus ? 4 : 5;
 
         $dayValueIndexes = [];
