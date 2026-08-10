@@ -134,7 +134,7 @@ class ReportFormService
         return DB::transaction(function () use ($report, $data, $attachment, $user, $insightAttachment) {
             $oldStatus = $report->status;
             $normalized = $report->report_type === RsmReport::TYPE_ADS
-                ? self::normalizeAds($data, $user, $report, $attachment !== null)
+                ? self::normalizeAds($data, $user, $report)
                 : self::normalize($report->report_type, $data, $user, $report);
             if ($report->report_type !== RsmReport::TYPE_ADS || (float) $normalized['budget_requested'] !== (float) $report->budget_requested) {
                 self::validateBudget($report->report_type, $normalized, $report);
@@ -229,7 +229,7 @@ class ReportFormService
      * posts the subset of fields report_fields_for_type() shows for the
      * current role (adsEditFieldsForRole()).
      */
-    private static function normalizeAds(array $data, RsmUser $user, RsmReport $existing, bool $attachmentUploaded): array
+    private static function normalizeAds(array $data, RsmUser $user, RsmReport $existing): array
     {
         $posted = static fn (string $key, mixed $fallback) => array_key_exists($key, $data) ? $data[$key] : $fallback;
 
@@ -280,8 +280,6 @@ class ReportFormService
             'notes' => $posted('notes', $existing->notes),
         ];
 
-        $wasDisetujui = mb_strtolower(trim((string) $existing->status)) === 'disetujui';
-
         return match (true) {
             $user->role === RsmUser::ROLE_STAFF => array_merge($base, [
                 'report_date' => optional($existing->report_date)->toDateString(),
@@ -300,12 +298,10 @@ class ReportFormService
                 'budget_approved' => (float) $existing->budget_approved,
                 'realization_amount' => (float) $existing->realization_amount,
                 'cpl' => (float) $existing->cpl,
-                'status' => $attachmentUploaded && $wasDisetujui ? 'Transfer / Invoice' : $existing->status,
             ]),
             in_array($user->role, self::SENIOR_ROLES, true) => array_merge($base, [
                 'realization_amount' => (float) $existing->realization_amount,
                 'cpl' => (float) $existing->cpl,
-                'status' => $attachmentUploaded && $wasDisetujui ? 'Transfer / Invoice' : $existing->status,
             ]),
             default => $base,
         };

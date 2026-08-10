@@ -356,4 +356,39 @@ class AdBudgetPendingPanelTest extends TestCase
         $report->delete();
         $koordinator->delete();
     }
+
+    public function test_uploading_invoice_on_disetujui_report_no_longer_auto_switches_to_transfer_invoice(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900027, 'name' => 'Test Senior', 'username' => 'test_senior_900027',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff',
+            'status' => 'Disetujui', 'title' => 'Invoice Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Invoice Campaign',
+            'budget_requested' => 100000, 'ad_period' => \App\Services\AdBudget\AdBudgetPeriods::default(),
+        ]);
+
+        $file = \Illuminate\Http\UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf');
+
+        $this->actingAs($senior)->patch(route('reports.update', $report), [
+            'report_date' => now()->toDateString(),
+            'ad_period' => $report->ad_period,
+            'platform' => 'Meta Ads',
+            'budget_requested' => 100000,
+            'attachment_path' => $file,
+        ])->assertRedirect();
+
+        // "Transfer / Invoice" was retired from the ads status machine -
+        // uploading the invoice proof no longer moves status off "Disetujui".
+        $this->assertSame('Disetujui', $report->fresh()->status);
+        $this->assertNotNull($report->fresh()->attachment_path);
+
+        $report->delete();
+        $senior->delete();
+    }
 }

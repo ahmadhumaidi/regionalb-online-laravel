@@ -14,15 +14,14 @@
         'linear-gradient(135deg, var(--color-tone-blue-dark) 0%, #0f172a 100%)',
     ];
 
+    // "Draft" and "Transfer / Invoice" were dropped from the ads status
+    // machine entirely (ReportFormService::normalizeAds() no longer emits
+    // either) - not just left uncolored here.
     $statusTones = [
-        'draft' => 'slate',
-        'dikirim' => 'blue-light',
         'pengajuan' => 'amber',
         'diverifikasi' => 'blue-light',
         'revisi' => 'orange',
         'disetujui' => 'green',
-        'transfer / invoice' => 'blue',
-        'transfer-/-invoice' => 'blue',
         'selesai' => 'purple',
         'ditolak' => 'red',
     ];
