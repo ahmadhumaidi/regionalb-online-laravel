@@ -74,6 +74,15 @@ class DashboardController extends Controller
 
         [$topStaffAchievement, $topStaffMaxValue] = $this->topStaffAchievement($area, $user, $regionalStaffAchievement);
 
+        // "Top 5 Pencapaian Kampus" is a leaderboard across every campus, not
+        // this one staff member's own campus - reuse the staff-scoped
+        // $campusClosing for the (staff-hidden) summary tile above, but pull
+        // an unscoped total for this panel so a staff viewer sees the same
+        // ranking everyone else does instead of just their own campus.
+        $topCampusClosing = $user->role === 'staff'
+            ? CollabMetricsService::campusTotals($filters, $area, (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior'])))
+            : $campusClosing;
+
         return view('dashboard.index', [
             'active' => 'dashboard',
             'area' => $area,
@@ -82,7 +91,7 @@ class DashboardController extends Controller
             'referenceOptions' => $referenceOptions,
             'summaryCards' => $summaryCards,
             'regionalRecaps' => $regionalRecaps,
-            'campusClosing' => $campusClosing,
+            'campusClosing' => $topCampusClosing,
             'topStaffAchievement' => $topStaffAchievement,
             'topStaffMaxValue' => $topStaffMaxValue,
             'gamification' => $gamification,
