@@ -1,6 +1,8 @@
 <x-layouts.app title="Dashboard Utama" active="dashboard">
     <x-dashboard.filter-bar :filters="$filters" :reference-options="$referenceOptions" :is-senior-tier="$isSeniorTier" />
-    <x-dashboard.summary-cards :cards="$summaryCards" />
+    @unless (auth()->user()->role === 'staff')
+        <x-dashboard.summary-cards :cards="$summaryCards" />
+    @endunless
     <x-dashboard.registration-recap :recaps="$regionalRecaps" />
     <x-dashboard.achievement-grid
         :campus-closing="$campusClosing"

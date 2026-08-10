@@ -122,14 +122,18 @@ class DashboardController extends Controller
         $herregPersonal = CollabMetricsService::personalTotal($regionalFilters, $area, $user, 'Herreg Personal Per Regional');
         $realisasiIklan = (float) DashboardOverviewService::build($area, $regionalFilters, $user)['budget']['spend'];
         $pmb = CollabSourceService::pmbRegionalTotals([$regional]);
-        $bdc = BdcReportUsersService::regionalTotals($regional, $user->role === 'staff' ? $user->campus_name : null);
-        $koordinator = RsmUser::query()->where('area', $area)->where('role', 'koordinator')->where('regional', $regional)->where('is_active', true)->first();
+        $isStaffView = $user->role === 'staff';
+        $bdc = BdcReportUsersService::regionalTotals($regional, $isStaffView ? $user->campus_name : null);
+        $koordinator = $isStaffView ? null : RsmUser::query()->where('area', $area)->where('role', 'koordinator')->where('regional', $regional)->where('is_active', true)->first();
 
         return [
-            'label' => $regional,
-            'koordinator_name' => $koordinator?->name ?: '-',
-            'koordinator_jabatan' => $koordinator?->jabatan ?: \App\Support\RsmRole::label('koordinator'),
-            'koordinator_photo' => $koordinator?->photoUrl(),
+            // For staff, the card is really "my own campus" rather than the
+            // whole regional, so it's headed by their own name/photo and the
+            // campus name instead of the koordinator's.
+            'label' => $isStaffView && trim((string) $user->campus_name) !== '' ? $user->campus_name : $regional,
+            'person_name' => $isStaffView ? $user->name : ($koordinator?->name ?: '-'),
+            'person_jabatan' => $isStaffView ? ($user->jabatan ?: \App\Support\RsmRole::label('staff')) : ($koordinator?->jabatan ?: \App\Support\RsmRole::label('koordinator')),
+            'person_photo' => $isStaffView ? $user->photoUrl() : $koordinator?->photoUrl(),
             'total_closing_kampus' => (float) array_sum(array_column($closingKampus['rows'], 'registrasi')),
             'total_herreg_kampus' => (float) array_sum(array_column($herregKampus['rows'], 'registrasi')),
             'total_closing_personal' => $closingPersonal,

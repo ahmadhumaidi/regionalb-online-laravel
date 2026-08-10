@@ -30,15 +30,15 @@
                     <h2 class="text-base font-bold text-ink">{{ $recap['label'] }}</h2>
                     <div class="flex items-center gap-2">
                         <span class="flex h-[50px] w-[50px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-600 text-sm font-semibold text-white">
-                            @if ($recap['koordinator_photo'])
-                                <img src="{{ $recap['koordinator_photo'] }}" alt="{{ $recap['koordinator_name'] }}" class="h-full w-full object-cover">
+                            @if ($recap['person_photo'])
+                                <img src="{{ $recap['person_photo'] }}" alt="{{ $recap['person_name'] }}" class="h-full w-full object-cover">
                             @else
-                                {{ strtoupper(mb_substr($recap['koordinator_name'] ?: 'K', 0, 1)) }}
+                                {{ strtoupper(mb_substr($recap['person_name'] ?: 'K', 0, 1)) }}
                             @endif
                         </span>
                         <span class="leading-tight">
-                            <span class="block text-xs font-semibold text-ink">{{ $recap['koordinator_name'] }}</span>
-                            <span class="block text-[11px] text-ink-muted">{{ $recap['koordinator_jabatan'] }}</span>
+                            <span class="block text-xs font-semibold text-ink">{{ $recap['person_name'] }}</span>
+                            <span class="block text-[11px] text-ink-muted">{{ $recap['person_jabatan'] }}</span>
                         </span>
                     </div>
                 </div>
