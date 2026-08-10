@@ -9,21 +9,23 @@
     @if (empty($regionalSummary))
         <p class="py-6 text-center text-sm text-ink-muted">Belum ada data pencapaian pada periode/filter ini.</p>
     @else
+        @php $tones = ['blue-dark', 'blue', 'blue-light', 'red']; @endphp
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            @foreach ($regionalSummary as $row)
+            @foreach ($regionalSummary as $i => $row)
                 @php
                     $regRate = $row['target_registrasi'] > 0 ? min(100, max(0, round($row['registrasi'] / $row['target_registrasi'] * 100))) : 0;
+                    $tone = $tones[$i % count($tones)];
                 @endphp
-                <article class="rounded-xl border border-border p-4">
+                <article class="rounded-xl border border-ink/15 border-l-4 bg-surface-muted/70 p-4 shadow-sm" style="border-left-color: var(--color-tone-{{ $tone }})">
                     <strong class="block text-sm font-semibold text-ink">{{ $row['regional'] }}</strong>
                     <p class="mt-2 text-xs text-ink-muted">Registrasi</p>
-                    <p class="text-lg font-bold text-ink">{{ number_format($row['registrasi'], 0, ',', '.') }}
+                    <p class="text-lg font-bold" style="color: var(--color-tone-{{ $tone }})">{{ number_format($row['registrasi'], 0, ',', '.') }}
                         @if ($row['target_registrasi'] > 0)
                             <span class="text-xs font-normal text-ink-muted">/ {{ number_format($row['target_registrasi'], 0, ',', '.') }}</span>
                         @endif
                     </p>
-                    <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted">
-                        <div class="h-full rounded-full bg-brand-600" style="width: {{ $regRate }}%"></div>
+                    <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface">
+                        <div class="h-full rounded-full" style="width: {{ max(2, $regRate) }}%; background-color: var(--color-tone-{{ $tone }})"></div>
                     </div>
                     <p class="mt-3 text-xs text-ink-muted">Herregistrasi</p>
                     <p class="text-sm font-semibold text-ink">{{ number_format($row['herregistrasi'], 0, ',', '.') }}
