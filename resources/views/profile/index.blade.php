@@ -2,8 +2,13 @@
     <div class="rounded-3xl bg-[#101227] p-4 text-white shadow-2xl sm:p-6">
         <div class="grid gap-5 lg:grid-cols-[270px_1fr]">
             <aside class="rounded-2xl border border-white/10 bg-[#212446] p-5 text-center">
-                <div class="mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/60 bg-gradient-to-br from-emerald-400 to-sky-400 text-4xl font-black shadow-xl">
-                    @if($user->photo_path)<img src="{{ $user->photoUrl() }}" alt="{{ $user->name }}" class="h-full w-full object-cover">@else{{ strtoupper(mb_substr($user->name ?: 'U',0,1)) }}@endif
+                <div class="relative mx-auto h-40 w-40">
+                    <div class="flex h-40 w-40 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/60 bg-gradient-to-br from-emerald-400 to-sky-400 text-4xl font-black shadow-xl">
+                        @if($user->photo_path)<img src="{{ $user->photoUrl() }}" alt="{{ $user->name }}" class="h-full w-full object-cover">@else{{ strtoupper(mb_substr($user->name ?: 'U',0,1)) }}@endif
+                    </div>
+                    <label for="profile_photo" title="Ganti foto profil" class="absolute -bottom-2 -right-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 border-[#212446] bg-emerald-500 text-white shadow-lg hover:bg-emerald-400">
+                        <x-icon name="edit" class="h-4 w-4" />
+                    </label>
                 </div>
                 <h2 class="mt-4 text-lg font-bold">{{ $user->name }}</h2>
                 <p class="text-xs text-indigo-200">{{ $user->username }}</p>
@@ -17,7 +22,7 @@
                 <section class="grid gap-3 sm:grid-cols-5">@foreach([['Kegiatan',$stats['reports']],['Leads',$stats['leads']],['Closing',$stats['closing']],['Hari aktif',$stats['active_days']],['Skor',$score]] as [$label,$value])<article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">{{ $label }}</span><strong class="mt-2 block text-2xl">{{ number_format($value,0,',','.') }}</strong></article>@endforeach</section>
                 <section id="pencapaian" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="mb-3 text-base font-bold">Badge dan Achievement</h2><div class="flex flex-wrap gap-2">@foreach($badges as $badge)<span class="rounded-full px-3 py-1 text-xs font-semibold {{ $badge['ok'] ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-200' }}">{{ $badge['ok'] ? '✓' : '○' }} {{ $badge['name'] }}</span>@endforeach</div></section>
                 <section id="aktivitas" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="mb-3 text-base font-bold">Aktivitas Terbaru</h2><div class="space-y-2">@forelse($reports as $report)<a href="{{ route('reports.show',$report) }}" class="block rounded-xl border border-white/10 p-3 hover:bg-white/10"><div class="flex justify-between gap-3"><strong class="text-sm">{{ $report->title ?: $report->campaign_name }}</strong><span class="text-xs text-indigo-200">{{ optional($report->report_date)->format('d/m/Y') }}</span></div><p class="text-xs text-indigo-200">{{ $report->report_type }} · {{ $report->status }} · {{ $report->leads_count }} leads · {{ $report->closing_count }} closing</p></a>@empty<p class="text-sm text-indigo-200">Belum ada aktivitas.</p>@endforelse</div></section>
-                <section id="pengaturan" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="text-base font-bold">Pengaturan Profil</h2><form class="mt-4 grid gap-3" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">@csrf<textarea name="bio_text" maxlength="800" rows="4" class="rounded-lg border-white/10 bg-[#212446] text-white" placeholder="Biodata singkat">{{ old('bio_text', $user->bio_text) }}</textarea><input type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp" class="text-sm text-indigo-100"><button class="w-fit rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-white">Simpan Profil</button></form></section>
+                <section id="pengaturan" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="text-base font-bold">Pengaturan Profil</h2><form class="mt-4 grid gap-3" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">@csrf<textarea name="bio_text" maxlength="800" rows="4" class="rounded-lg border-white/10 bg-[#212446] text-white" placeholder="Biodata singkat">{{ old('bio_text', $user->bio_text) }}</textarea><input type="file" id="profile_photo" name="profile_photo" accept="image/jpeg,image/png,image/webp" class="text-sm text-indigo-100"><button class="w-fit rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-white">Simpan Profil</button></form></section>
             </div>
         </div>
     </div>
