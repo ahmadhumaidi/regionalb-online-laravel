@@ -28,9 +28,19 @@ class AchievementController extends Controller
         $area = $user->area ?: 'Regional B';
 
         $filters = DashboardFilters::fromRequest($request, 'pencapaian');
-        $performance = CollabMetricsService::personalPerformance($area, $filters, $user);
-        $target = TargetService::build($area, $filters, $user);
-        $regionalTargets = TargetService::regionalSummary($area, $filters, $user);
+
+        // The filter-bar box for staff ("Wilayah"/"Staff") is read-only
+        // display only, never actually submitted - this page is meant to
+        // show all of Regional B, not just the logged-in staff member's own
+        // row, so bypass the services' own staff auto-scoping the same way
+        // DashboardController does for its "Pencapaian Staff Regional" panel.
+        $scopeUser = $user->role === 'staff'
+            ? (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior']))
+            : $user;
+
+        $performance = CollabMetricsService::personalPerformance($area, $filters, $scopeUser);
+        $target = TargetService::build($area, $filters, $scopeUser);
+        $regionalTargets = TargetService::regionalSummary($area, $filters, $scopeUser);
         $referenceOptions = ReferenceOptionsService::build($area, $user);
 
         $registrasi = (float) $performance['totals']['registrasi'];
