@@ -27,18 +27,19 @@ class SocialScope
         };
     }
 
+    /**
+     * The unit_name exact-match this used to also apply here was too
+     * strict: rsm_social_accounts.unit_name is free-typed on the "Akun
+     * Instagram Kampus" form and doesn't reliably match rsm_users.campus_name
+     * character-for-character (same class of mismatch CampusMatcher exists
+     * for). Narrowed to campus is done as a fuzzy post-fetch filter in
+     * ContentSummaryService::build() instead - regional is still exact
+     * since wilayah values are a fixed, consistent list.
+     */
     private static function applyStaffScope(Builder $query, RsmUser $user, \Closure $col): Builder
     {
         $regional = trim((string) $user->regional);
-        $campus = trim((string) $user->campus_name);
 
-        if ($regional !== '') {
-            $query->where($col('wilayah'), $regional);
-        }
-        if ($campus !== '') {
-            $query->where($col('unit_name'), $campus);
-        }
-
-        return $query;
+        return $regional !== '' ? $query->where($col('wilayah'), $regional) : $query;
     }
 }

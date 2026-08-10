@@ -6,6 +6,7 @@ use App\Models\RsmUser;
 use App\Models\RsmSocialAccount;
 use App\Models\RsmSocialPost;
 use App\Services\Content\ContentSummaryService;
+use App\Services\Content\SocialScope;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\ReferenceOptionsService;
 use Illuminate\Http\Request;
@@ -44,6 +45,7 @@ class ContentController extends Controller
             'summaryCards' => $summaryCards,
             'regionals' => $summary['regionals'],
             'posts' => $summary['posts'],
+            'accounts' => $summary['accounts'],
         ]);
     }
 
@@ -59,7 +61,12 @@ class ContentController extends Controller
     {
         $user = $request->user();
         $data = $request->validate(['account_id'=>'required|integer|exists:rsm_social_accounts,id','post_date'=>'required|date','media_type'=>['required',\Illuminate\Validation\Rule::in(['no_post','feed','reels','story'])],'caption'=>'nullable|string|max:5000','post_url'=>'nullable|url|max:500','keyword_match'=>'nullable|boolean','reach_count'=>'nullable|integer|min:0','like_count'=>'nullable|integer|min:0','comment_count'=>'nullable|integer|min:0']);
-        $account = RsmSocialAccount::where('id',$data['account_id'])->where('area',$user->area ?: 'Regional B')->firstOrFail();
+        $account = SocialScope::apply(
+            RsmSocialAccount::where('id',$data['account_id'])->where('area',$user->area ?: 'Regional B'),
+            $user
+        )->firstOrFail();
+        $ownCampus = trim((string) $user->campus_name);
+        abort_if($user->role === 'staff' && $ownCampus !== '' && ! \App\Support\CampusMatcher::matches($account->unit_name, $ownCampus), 403);
         $score = ['feed'=>10,'reels'=>15,'story'=>5,'no_post'=>0][$data['media_type']] + (!empty($data['keyword_match']) ? 5 : 0);
         RsmSocialPost::create($data + ['area'=>$user->area ?: 'Regional B','score'=>$score,'source_name'=>'Manual','created_by_user_id'=>$user->id,'created_by_name'=>$user->name]);
         return back()->with('status','Post konten berhasil dicatat.');
