@@ -5,6 +5,7 @@ namespace App\Services\AdBudget;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\ReportScope;
+use App\Services\Reports\ReportFormService;
 
 /**
  * Ports rsm_ads_pending_reports() (rsm_db.php:3850-3872): ad reports still
@@ -33,13 +34,13 @@ class PendingAdReportsService
             $status = mb_strtolower(trim((string) $report->status));
 
             if (! in_array($status, ['dilaporkan unit', 'ditolak'], true)) {
-                $belumDilaporkan[] = self::rowShape($report);
+                $belumDilaporkan[] = self::rowShape($report, $user);
 
                 continue;
             }
 
             if ($status === 'dilaporkan unit' && ((float) $report->realization_amount <= 0 || blank($report->attachment_path))) {
-                $belumTuntas[] = self::rowShape($report);
+                $belumTuntas[] = self::rowShape($report, $user);
             }
         }
 
@@ -47,7 +48,7 @@ class PendingAdReportsService
     }
 
     /** Matches the columns render_ads_pending_report_panel() actually shows (dashboard.php:2279-2321). */
-    private static function rowShape(RsmReport $report): array
+    private static function rowShape(RsmReport $report, RsmUser $user): array
     {
         return [
             'id' => $report->id,
@@ -59,6 +60,10 @@ class PendingAdReportsService
             'realization_amount' => (float) $report->realization_amount,
             'has_attachment' => filled($report->attachment_path),
             'status' => $report->status,
+            // Not every "belum dilaporkan" status is actually editable yet
+            // (e.g. "Diverifikasi" is still awaiting final approval) - only
+            // show a report action when ReportFormService::canEdit() agrees.
+            'can_edit' => ReportFormService::canEdit($report, $user),
         ];
     }
 }

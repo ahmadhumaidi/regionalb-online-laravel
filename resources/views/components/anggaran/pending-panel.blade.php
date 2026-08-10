@@ -14,7 +14,8 @@
                             <th class="py-2 pr-3 font-medium">Tanggal</th>
                             <th class="py-2 pr-3 font-medium">Platform/Campaign</th>
                             <th class="py-2 pr-3 text-right font-medium">Anggaran Disetujui</th>
-                            <th class="py-2 font-medium">Status</th>
+                            <th class="py-2 pr-3 font-medium">Status</th>
+                            <th class="py-2 font-medium">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -23,7 +24,14 @@
                                 <td class="py-2 pr-3 text-ink-muted">{{ $row['report_date'] }}<br><span class="text-xs">{{ $row['ad_period'] }}</span></td>
                                 <td class="py-2 pr-3 text-ink">{{ $row['platform'] ?: '-' }}<br><span class="text-xs text-ink-muted">{{ $row['campaign_name'] ?: '-' }}</span></td>
                                 <td class="py-2 pr-3 text-right text-ink">Rp {{ number_format($row['budget_approved'], 0, ',', '.') }}</td>
-                                <td class="py-2"><span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span></td>
+                                <td class="py-2 pr-3"><span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span></td>
+                                <td class="py-2">
+                                    @if ($row['can_edit'])
+                                        <a href="{{ route('reports.edit', $row['id']) }}" class="text-xs font-semibold text-brand-600 underline">Lapor realisasi</a>
+                                    @else
+                                        <span class="text-xs text-ink-muted">Menunggu persetujuan</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -41,7 +49,8 @@
                             <th class="py-2 pr-3 font-medium">Platform/Campaign</th>
                             <th class="py-2 pr-3 text-right font-medium">Realisasi</th>
                             <th class="py-2 pr-3 font-medium">Bukti</th>
-                            <th class="py-2 font-medium">Status</th>
+                            <th class="py-2 pr-3 font-medium">Status</th>
+                            <th class="py-2 font-medium">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -57,7 +66,14 @@
                                         <span class="rounded-full bg-tone-red/10 px-2 py-0.5 text-[11px] font-medium text-tone-red">Belum ada</span>
                                     @endif
                                 </td>
-                                <td class="py-2"><span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span></td>
+                                <td class="py-2 pr-3"><span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span></td>
+                                <td class="py-2">
+                                    @if ($row['can_edit'])
+                                        <a href="{{ route('reports.edit', $row['id']) }}" class="text-xs font-semibold text-brand-600 underline">Lengkapi</a>
+                                    @else
+                                        <span class="text-xs text-ink-muted">Menunggu persetujuan</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
