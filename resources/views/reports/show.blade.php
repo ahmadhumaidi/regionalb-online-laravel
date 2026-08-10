@@ -14,6 +14,45 @@
     }
 @endphp
 <dl class="mt-5 grid gap-4 text-sm md:grid-cols-3">@foreach ($fields as [$label,$value])<div><dt class="text-xs text-ink-muted">{{ $label }}</dt><dd class="mt-1 text-ink">{{ $value ?: '-' }}</dd></div>@endforeach</dl>@if ($report->attachment_path || $report->insight_attachment_path)<div class="mt-5 flex flex-wrap gap-2">@if ($report->attachment_path)<a href="{{ route('reports.attachment', $report) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg border border-l-4 border-border border-l-tone-blue bg-surface-muted/50 px-3 py-2 text-sm font-semibold text-tone-blue hover:bg-surface-muted"><x-icon name="document" class="h-4 w-4" />Lihat lampiran</a>@endif @if ($report->insight_attachment_path)<a href="{{ route('reports.insight-attachment', $report) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg border border-l-4 border-border border-l-tone-orange bg-surface-muted/50 px-3 py-2 text-sm font-semibold text-tone-orange hover:bg-surface-muted"><x-icon name="bolt" class="h-4 w-4" />Lihat bukti insight</a>@endif</div>@endif</section>
+@if (($actionRow['has_kendala'] ?? false) && (($actionRow['can_follow_up'] ?? false) || ($actionRow['can_mark_selesai'] ?? false)))
+    <section class="rounded-2xl glass-card p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 class="text-base font-semibold text-ink">Tindakan Kendala</h2>
+                @if (! empty($actionRow['escalated_to_label']))
+                    <p class="mt-1 text-sm text-ink-muted">Dieskalasi ke {{ $actionRow['escalated_to_label'] }}</p>
+                @endif
+            </div>
+            @if ($actionRow['can_mark_selesai'] ?? false)
+                <form method="POST" action="{{ route('reports.selesai-kendala', $report) }}" onsubmit="return confirm('Tandai laporan ini selesai?')">
+                    @csrf
+                    <button type="submit" class="rounded-lg bg-tone-purple px-3 py-2 text-sm font-semibold text-white">Selesai</button>
+                </form>
+            @endif
+        </div>
+        @if ($actionRow['can_follow_up'] ?? false)
+            <form method="POST" action="{{ route('reports.tindak-lanjut', $report) }}" class="mt-4 grid gap-3 md:grid-cols-3 md:items-end">
+                @csrf
+                <label class="grid gap-1 text-sm text-ink">
+                    <span class="text-xs font-medium text-ink-muted">Saran tindak lanjut</span>
+                    <textarea name="saran_tindak_lanjut" rows="3" class="rounded-lg border-border bg-surface-muted px-3 py-2" placeholder="Tulis tindakan atau arahan untuk kendala ini"></textarea>
+                </label>
+                @if (($actionRow['escalation_options'] ?? []) !== [])
+                    <label class="grid gap-1 text-sm text-ink">
+                        <span class="text-xs font-medium text-ink-muted">Eskalasi</span>
+                        <select name="eskalasi_ke" class="rounded-lg border-border bg-surface-muted px-3 py-2">
+                            <option value="">Tidak eskalasi</option>
+                            @foreach ($actionRow['escalation_options'] as $option)
+                                <option value="{{ $option }}">Eskalasi ke {{ \App\Support\RsmRole::label($option) }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                @endif
+                <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Tindak Lanjuti</button>
+            </form>
+        @endif
+    </section>
+@endif
 @if ($report->report_type === 'ads')
     <section id="data-hasil-iklan" class="rounded-2xl glass-card p-5">
         <div class="mb-4 flex flex-wrap items-start justify-between gap-3">

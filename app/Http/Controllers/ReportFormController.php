@@ -48,6 +48,7 @@ class ReportFormController extends Controller
             'report' => $report,
             'canEdit' => ReportFormService::canEdit($report, $user),
             'canDelete' => ReportFormService::canDelete($report, $user),
+            'actionRow' => ReportListService::shape($report, $user),
             'logs' => $report->logs()->latest('id')->get(),
             'adLeads' => $report->report_type === RsmReport::TYPE_ADS ? $report->adLeads()->orderBy('id')->get() : collect(),
         ]);

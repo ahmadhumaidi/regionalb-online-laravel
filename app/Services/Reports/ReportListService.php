@@ -43,10 +43,10 @@ class ReportListService
             $user
         )->orderByDesc('report_date')->orderByDesc('id')->limit(50)->get();
 
-        return $reports->map(fn (RsmReport $report) => self::rowShape($report, $user))->all();
+        return $reports->map(fn (RsmReport $report) => self::shape($report, $user))->all();
     }
 
-    private static function rowShape(RsmReport $report, RsmUser $user): array
+    public static function shape(RsmReport $report, RsmUser $user): array
     {
         $status = (string) $report->status;
         $hasKendala = $report->report_type === RsmReport::TYPE_OTHER && trim((string) $report->obstacle_text) !== '';
