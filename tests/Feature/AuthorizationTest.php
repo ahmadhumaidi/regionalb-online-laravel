@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\RsmActivityLog;
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
@@ -77,5 +78,32 @@ class AuthorizationTest extends TestCase
 
         $managedUser->delete();
         $superUser->delete();
+    }
+
+    public function test_staff_only_sees_own_rows_in_activity_log(): void
+    {
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
+        ]]);
+
+        $staff = RsmUser::create([
+            'id' => 900006, 'name' => 'Test Staff', 'username' => 'test_staff_900006',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $ownLog = RsmActivityLog::create(['area' => 'Regional B', 'actor_user_id' => $staff->id, 'actor_role' => 'staff', 'actor_name' => 'Test Staff', 'action_name' => 'own_action']);
+        $otherLog = RsmActivityLog::create(['area' => 'Regional B', 'actor_user_id' => 999999, 'actor_role' => 'staff', 'actor_name' => 'Other Staff', 'action_name' => 'other_action']);
+
+        $response = $this->actingAs($staff)->get('/role');
+
+        $response->assertOk();
+        $response->assertSee('own_action');
+        $response->assertDontSee('other_action');
+
+        $ownLog->delete();
+        $otherLog->delete();
+        $staff->delete();
     }
 }
