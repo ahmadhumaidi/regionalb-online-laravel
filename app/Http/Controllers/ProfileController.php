@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RsmActivityLog;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\Dashboard\GamificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,13 +33,21 @@ class ProfileController extends Controller
         ];
         $reports = (clone $query)->latest('report_date')->latest('id')->limit(10)->get();
         $logs = RsmActivityLog::query()->where('area', $user->area)->where('actor_user_id', $user->id)->latest()->limit(10)->get();
-        $xp = ($stats['reports'] * 10) + ($stats['leads'] * 2) + ($stats['closing'] * 25);
-        $level = max(1, (int) floor($xp / 200) + 1);
-        $levelBase = ($level - 1) * 200;
-        $levelProgress = min(100, (int) round((($xp - $levelBase) / 200) * 100));
-        $league = $xp >= 5000 ? 'Diamond' : ($xp >= 2500 ? 'Platinum' : ($xp >= 1000 ? 'Gold' : ($xp >= 500 ? 'Silver' : 'Starter')));
+
+        // Same point formula and badge thresholds as the Dashboard's "Arena
+        // Performa Staff" leaderboard (GamificationService) - staff see
+        // their own standing, koordinator/senior tier see their team's
+        // pooled totals. See GamificationService::profileSummary().
+        $gamification = GamificationService::profileSummary($user->area ?: 'Regional B', $user);
+        $xp = $gamification['points'];
+        ['level' => $level, 'level_progress' => $levelProgress, 'league' => $league] = GamificationService::levelFor($xp);
+        $earnedBadges = $gamification['badges'];
+        $badges = array_map(
+            fn (string $name) => ['name' => $name, 'ok' => in_array($name, $earnedBadges, true)],
+            GamificationService::BADGE_NAMES
+        );
         $score = min(100, ($stats['reports'] * 4) + ($stats['leads'] * 2) + ($stats['closing'] * 8));
-        $badges = [['name'=>'First Report','ok'=>$stats['reports'] >= 1],['name'=>'Lead Hunter','ok'=>$stats['leads'] >= 25],['name'=>'Closer','ok'=>$stats['closing'] >= 5],['name'=>'Consistent','ok'=>$stats['active_days'] >= 10]];
+
         return view('profile.index', compact('user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'score', 'badges'));
     }
 

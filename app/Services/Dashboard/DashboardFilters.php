@@ -42,6 +42,29 @@ class DashboardFilters
         ];
     }
 
+    /**
+     * No date/wilayah/unit/staff restriction - used by
+     * GamificationService::profileSummary() so a user's Profile page shows
+     * their all-time standing, not just whatever period happens to be
+     * selected on the Dashboard filter.
+     *
+     * @return array{date_from: string, date_to: string, wilayah: string, unit_name: string, staff_name: string}
+     */
+    public static function allTime(): array
+    {
+        return [
+            'date_from' => '2000-01-01',
+            // End-of-day (not just today's date) so a whereBetween upper
+            // bound still includes today's reports on drivers/columns that
+            // store report_date with a time component (e.g. SQLite in
+            // tests) instead of a bare date.
+            'date_to' => Carbon::today('Asia/Jakarta')->endOfDay()->toDateTimeString(),
+            'wilayah' => '',
+            'unit_name' => '',
+            'staff_name' => '',
+        ];
+    }
+
     private static function parseDate(string $value, Carbon $default): Carbon
     {
         if ($value === '') {

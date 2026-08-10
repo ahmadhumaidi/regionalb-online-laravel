@@ -22,20 +22,12 @@ class GamificationService
 {
     private const STATUS_APPROVED = ['Diverifikasi', 'Disetujui', 'Disetujui Senior Manager', 'Selesai', 'Berjalan'];
 
+    /** The 5 achievable badges scoreRow()/badges() can award - excludes the "On Progress" fallback shown when none are earned yet. */
+    public const BADGE_NAMES = ['Follow Up Hero', 'Closing Hunter', 'Herregistrasi Champion', 'Consistency Streak', 'Budget Efficient'];
+
     public static function build(string $area, array $filters, RsmUser $user): array
     {
-        $reports = ScopedReports::query($area, $filters, $user)->with('adLeads')->get();
-
-        $rawStatuses = $reports->flatMap(fn (RsmReport $report) => $report->adLeads->pluck('closing_status'))
-            ->filter(fn ($value) => trim((string) $value) !== '');
-        $buckets = ClosingStatusClassifier::buckets($rawStatuses);
-
-        $liveRows = self::aggregateByStaff($reports, $buckets);
-
-        $collabPerformance = CollabMetricsService::personalPerformance($area, $filters, $user);
-        $collabByName = collect($collabPerformance['rows'])->keyBy(fn ($row) => mb_strtolower(trim((string) $row['name'])));
-
-        $scoredRows = $liveRows->map(fn (array $row) => self::scoreRow($row, $collabByName));
+        [, $scoredRows] = self::scoredRows($area, $filters, $user);
 
         $leaderboard = $scoredRows
             ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-')
@@ -51,6 +43,83 @@ class GamificationService
             'challenge' => ['items' => self::challengeItems()],
             'point_rules' => self::pointRules(),
         ];
+    }
+
+    /**
+     * Single source of truth for the "Level"/"XP"/"League" numbers shown on
+     * the Profile page - same point formula and badge thresholds as the
+     * Dashboard's "Arena Performa Staff" leaderboard, just scoped
+     * differently per the viewer's role (ReportScope already does the
+     * scoping work for us via scoredRows() -> ScopedReports):
+     * - staff: their own row only (ReportScope already narrows visible
+     *   reports to their own campus/work).
+     * - koordinator: their wilayah's staff pooled together (ReportScope
+     *   widens visible reports to the whole wilayah for this role).
+     * - everyone else (senior tier, mentor): the whole area pooled
+     *   together (ReportScope leaves reports unscoped for these roles).
+     *
+     * @return array{points: int, badges: list<string>}
+     */
+    public static function profileSummary(string $area, RsmUser $user): array
+    {
+        [$reports, $scoredRows] = self::scoredRows($area, DashboardFilters::allTime(), $user);
+
+        if ($user->role === RsmUser::ROLE_STAFF) {
+            $mine = $scoredRows->first(fn (array $row) => $row['user_id'] === $user->id)
+                ?? $scoredRows->first(fn (array $row) => mb_strtolower(trim($row['name'])) === mb_strtolower(trim((string) $user->name)));
+
+            return [
+                'points' => (int) ($mine['points'] ?? 0),
+                'badges' => $mine['badges'] ?? ['On Progress'],
+            ];
+        }
+
+        $reportDays = $reports->pluck('report_date')->filter()->map(fn ($date) => $date->toDateString())->unique()->count();
+
+        return [
+            'points' => (int) $scoredRows->sum('points'),
+            'badges' => self::badges(
+                (float) $scoredRows->sum('follow_up_total'),
+                (float) $scoredRows->sum('closing_for_points'),
+                (float) $scoredRows->sum('herreg_for_points'),
+                $reportDays,
+                (float) $scoredRows->sum('spend_total'),
+            ),
+        ];
+    }
+
+    /** @return array{level: int, level_progress: int, league: string} */
+    public static function levelFor(int $points): array
+    {
+        $level = max(1, (int) floor($points / 200) + 1);
+        $levelBase = ($level - 1) * 200;
+        $levelProgress = min(100, (int) round((($points - $levelBase) / 200) * 100));
+        $league = match (true) {
+            $points >= 5000 => 'Diamond',
+            $points >= 2500 => 'Platinum',
+            $points >= 1000 => 'Gold',
+            $points >= 500 => 'Silver',
+            default => 'Starter',
+        };
+
+        return ['level' => $level, 'level_progress' => $levelProgress, 'league' => $league];
+    }
+
+    /** @return array{0: Collection<int, RsmReport>, 1: Collection<int, array>} */
+    private static function scoredRows(string $area, array $filters, RsmUser $user): array
+    {
+        $reports = ScopedReports::query($area, $filters, $user)->with('adLeads')->get();
+
+        $rawStatuses = $reports->flatMap(fn (RsmReport $report) => $report->adLeads->pluck('closing_status'))
+            ->filter(fn ($value) => trim((string) $value) !== '');
+        $buckets = ClosingStatusClassifier::buckets($rawStatuses);
+
+        $liveRows = self::aggregateByStaff($reports, $buckets);
+
+        $collabPerformance = CollabMetricsService::personalPerformance($area, $filters, $user);
+        $collabByName = collect($collabPerformance['rows'])->keyBy(fn ($row) => mb_strtolower(trim((string) $row['name'])));
+
+        return [$reports, $liveRows->map(fn (array $row) => self::scoreRow($row, $collabByName))];
     }
 
     /** @return Collection<int, array> */
