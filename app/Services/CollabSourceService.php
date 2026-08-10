@@ -25,6 +25,7 @@ class CollabSourceService
         'Closing Personal Per Regional',
         'Herreg Personal Per Regional',
         'Rekapitulasi PMB Periode Prioritas P2K',
+        'Follow Up BDC',
     ];
 
     private const AUTHENTICATED_REPORTS = [
@@ -33,8 +34,18 @@ class CollabSourceService
         'Closing Personal Per Regional',
         'Herreg Personal Per Regional',
         'Rekapitulasi PMB Periode Prioritas P2K',
+        'Follow Up BDC',
     ];
 
+    /**
+     * "Follow Up BDC" is deliberately NOT here yet: its raw table layout
+     * (which columns hold the date/staff/regional/value cells) is unknown -
+     * ingestDailyMetrics() branches on report-specific column indexes per
+     * report, so guessing them would silently write wrong numbers into
+     * rsm_collab_daily_metrics instead of failing loudly. Add it once the
+     * live table has been inspected (Sumber Data Collab's raw viewer, after
+     * a sync, shows exactly what dashboard.php:987 used to show).
+     */
     private const DAILY_METRIC_REPORTS = [
         'Closing Collab',
         'Herreg Collab',
@@ -52,6 +63,7 @@ class CollabSourceService
         'Closing Personal Per Regional' => 'https://cb.web.id/pencapaian_closing_personal_per_regional.php',
         'Herreg Personal Per Regional' => 'https://cb.web.id/pencapaian_closing_herreg_personal_per_regional.php',
         'Rekapitulasi PMB Periode Prioritas P2K' => 'https://cb.web.id/rekapitulasi_pencapaian_pmb_periode_prioritas.php?program=p2k',
+        'Follow Up BDC' => 'https://cb.web.id/pencapaian_follow_up_BDC.php',
     ];
 
     private const CACHE_KEY = 'collab_achievement.json';
