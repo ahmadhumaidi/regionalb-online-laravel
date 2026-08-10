@@ -21,6 +21,9 @@ use Illuminate\View\View;
  */
 class AchievementController extends Controller
 {
+    /** Mirrors DashboardController::NON_STAFF_ROLES: this table is staff-only, koordinator/senior/etc. shouldn't show up in it even if they have a personal closing row. */
+    private const NON_STAFF_ROLES = ['super_user', 'executive_director', 'director', 'senior', 'mentor', 'koordinator'];
+
     public function index(Request $request): View
     {
         /** @var RsmUser $user */
@@ -75,6 +78,12 @@ class AchievementController extends Controller
             return $row;
         })->all();
 
+        $staffByName = RsmUser::query()->where('area', $area)->get()->keyBy(fn (RsmUser $u) => mb_strtolower(trim($u->name)));
+        $rows = collect($performance['rows'])
+            ->reject(fn (array $row) => in_array($staffByName->get(mb_strtolower(trim($row['name'])))?->role, self::NON_STAFF_ROLES, true))
+            ->values()
+            ->all();
+
         return view('pencapaian.index', [
             'active' => 'pencapaian',
             'filters' => $filters,
@@ -82,7 +91,7 @@ class AchievementController extends Controller
             'summaryCards' => $summaryCards,
             'sources' => $performance['sources'],
             'regionalSummary' => $regionalSummary,
-            'rows' => $performance['rows'],
+            'rows' => $rows,
         ]);
     }
 }
