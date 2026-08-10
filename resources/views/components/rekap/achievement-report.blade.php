@@ -11,7 +11,6 @@
 
 <div class="@container">
     <h2 class="text-base font-semibold text-ink">Laporan Pencapaian</h2>
-    <p class="mt-1 text-sm text-ink-muted">{{ $report['note'] }}</p>
 
     <div class="mt-4 rounded-xl border border-tone-green/30 bg-tone-green/5 p-4">
         <div class="flex items-center gap-3">

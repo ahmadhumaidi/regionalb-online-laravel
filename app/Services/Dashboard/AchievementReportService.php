@@ -213,7 +213,6 @@ class AchievementReportService
                 'registrasi' => $visibleTotal,
             ],
             'regionals' => $regionalCards,
-            'note' => 'Semua regional, unit yang tampil hanya yang memiliki closing',
         ];
     }
 
