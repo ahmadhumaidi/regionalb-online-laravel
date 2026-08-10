@@ -17,9 +17,9 @@ use Illuminate\View\View;
 
 /**
  * Orchestrates the Dashboard Utama page. One non-obvious rule preserved on
- * purpose: a logged-in `staff` user gets a *second*, koordinator-scoped
- * Collab pull (their own regional, no staff filter) to populate the
- * "Pencapaian Staff Regional" panel — not their own personal totals
+ * purpose: a logged-in `staff` user gets a *second*, unscoped Collab pull
+ * (all of Regional B, no wilayah/staff filter) to populate the "Pencapaian
+ * Staff Regional" panel — not their own personal totals
  * (regionalStaffAchievement()).
  */
 class DashboardController extends Controller
@@ -161,17 +161,20 @@ class DashboardController extends Controller
 
     private function regionalStaffAchievement(string $area, array $filters, RsmUser $user, array $staffAchievement): array
     {
-        if ($user->role !== 'staff' || trim((string) $user->regional) === '') {
+        if ($user->role !== 'staff') {
             return $staffAchievement;
         }
 
-        $regionalFilters = $filters;
-        $regionalFilters['wilayah'] = $user->regional;
-        $regionalFilters['staff_name'] = '';
+        $areaFilters = $filters;
+        $areaFilters['staff_name'] = '';
 
-        $regionalUser = (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'koordinator']));
+        // Cloned as 'senior' (not 'koordinator') so allowedRegionals() doesn't
+        // narrow this down to the staff member's own regional — "Pencapaian
+        // Staff Regional" is meant to rank every staff member across all of
+        // Regional B, not just their own regional.
+        $areaUser = (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior']));
 
-        return CollabMetricsService::personalPerformance($area, $regionalFilters, $regionalUser);
+        return CollabMetricsService::personalPerformance($area, $areaFilters, $areaUser);
     }
 
     private function topStaffAchievement(string $area, RsmUser $user, array $regionalStaffAchievement): array
