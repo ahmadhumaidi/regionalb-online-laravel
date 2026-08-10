@@ -74,6 +74,15 @@ class ReportFormController extends Controller
             AdLeadImportService::import($report->fresh(), $request->file('ad_leads_file'), replaceExisting: false);
         }
 
+        if (
+            $report->report_type === RsmReport::TYPE_ADS
+            && $request->boolean('mark_selesai')
+            && \App\Support\RsmRole::canManageAdBudget($user)
+            && ! in_array($report->fresh()->status, ['Selesai', 'Ditolak'], true)
+        ) {
+            app(AdBudgetActionController::class)->markSelesai($request, $report->fresh());
+        }
+
         return redirect()->route('reports.show', $report)->with('notice', 'Laporan diperbarui.');
     }
 

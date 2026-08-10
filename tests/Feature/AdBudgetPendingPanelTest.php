@@ -187,10 +187,15 @@ class AdBudgetPendingPanelTest extends TestCase
         $senior->delete();
     }
 
-    public function test_only_senior_manager_can_mark_ads_report_selesai(): void
+    public function test_only_senior_manager_and_super_user_can_mark_ads_report_selesai(): void
     {
         $this->migrate();
 
+        $koordinator = RsmUser::create([
+            'id' => 900020, 'name' => 'Test Koordinator', 'username' => 'test_koordinator_900020',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
         $superUser = RsmUser::create([
             'id' => 900018, 'name' => 'Test Super', 'username' => 'test_super_900018',
             'password_hash' => 'x', 'role' => 'super_user', 'jabatan' => 'Super User',
@@ -208,19 +213,68 @@ class AdBudgetPendingPanelTest extends TestCase
             'budget_requested' => 100000,
         ]);
 
-        // Even super_user - a role that outranks senior everywhere else in
-        // this app - is not allowed to mark a report "Selesai".
-        $this->actingAs($superUser)->post(route('anggaran.selesai', $report))->assertForbidden();
+        // A koordinator - outside the canManageAdBudget() tier - is not
+        // allowed to mark a report "Selesai".
+        $this->actingAs($koordinator)->post(route('anggaran.selesai', $report))->assertForbidden();
         $this->assertSame('Dilaporkan Unit', $report->fresh()->status);
 
-        $this->actingAs($senior)->post(route('anggaran.selesai', $report))->assertRedirect();
+        // super_user is treated the same as senior for this action - Ahmad
+        // Humaidi (the developer) logs in as super_user day-to-day.
+        $this->actingAs($superUser)->post(route('anggaran.selesai', $report))->assertRedirect();
         $this->assertSame('Selesai', $report->fresh()->status);
 
-        // Once already "Selesai", even senior can't re-trigger it.
+        // Once already "Selesai", even super_user/senior can't re-trigger it.
         $this->actingAs($senior)->post(route('anggaran.selesai', $report))->assertStatus(422);
 
         $report->delete();
         $senior->delete();
         $superUser->delete();
+        $koordinator->delete();
+    }
+
+    public function test_mark_selesai_checkbox_on_edit_form_transitions_status(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900021, 'name' => 'Test Senior', 'username' => 'test_senior_900021',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900022, 'name' => 'Test Staff', 'username' => 'test_staff_900022',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff',
+            'status' => 'Dilaporkan Unit', 'title' => 'Complete Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Complete Campaign',
+            'budget_requested' => 100000, 'ad_period' => \App\Services\AdBudget\AdBudgetPeriods::default(),
+        ]);
+
+        // Staff submitting mark_selesai=1 on their own edit form must not
+        // be able to force the transition - they aren't in canManageAdBudget().
+        $this->actingAs($staff)->patch(route('reports.update', $report), [
+            'campaign_name' => 'Complete Campaign',
+            'mark_selesai' => '1',
+        ])->assertRedirect();
+        $this->assertSame('Dilaporkan Unit', $report->fresh()->status);
+
+        // Senior manager ticking the checkbox on the edit form should mark
+        // the report "Selesai" in the same request, without a separate
+        // trip to the list page's dedicated action button.
+        $this->actingAs($senior)->patch(route('reports.update', $report), [
+            'report_date' => now()->toDateString(),
+            'ad_period' => $report->ad_period,
+            'platform' => 'Meta Ads',
+            'budget_requested' => 100000,
+            'mark_selesai' => '1',
+        ])->assertRedirect();
+        $this->assertSame('Selesai', $report->fresh()->status);
+
+        $report->delete();
+        $staff->delete();
+        $senior->delete();
     }
 }

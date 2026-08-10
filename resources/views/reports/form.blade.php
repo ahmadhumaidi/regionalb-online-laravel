@@ -68,6 +68,12 @@
                 @if (in_array('notes', $adsFields))
                     <label class="grid gap-1 text-sm md:col-span-2">Catatan performa iklan<textarea name="notes" rows="2" class="rounded-lg border-border bg-surface-muted">{{ old('notes', $report->notes) }}</textarea></label>
                 @endif
+                @if (\App\Support\RsmRole::canManageAdBudget($user) && ! in_array(mb_strtolower((string) $report->status), ['selesai', 'ditolak'], true))
+                    <label class="md:col-span-2 flex items-center gap-2 rounded-xl border border-l-4 border-border border-l-tone-purple bg-surface-muted/50 p-4 text-sm font-semibold text-ink">
+                        <input type="checkbox" name="mark_selesai" value="1" class="h-4 w-4 rounded border-border">
+                        Tandai laporan ini selesai setelah disimpan
+                    </label>
+                @endif
                 <div class="md:col-span-2"><button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Simpan Perubahan</button></div>
             @else
                 <label class="grid gap-1 text-sm">Tanggal laporan<input type="date" name="report_date" required value="{{ old('report_date', optional($report->report_date)->format('Y-m-d') ?: now()->toDateString()) }}" class="rounded-lg border-border bg-surface-muted"></label>

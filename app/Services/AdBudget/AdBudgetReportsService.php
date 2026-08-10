@@ -83,9 +83,10 @@ class AdBudgetReportsService
     {
         $status = (string) $report->status;
         $canReview = RsmRole::canReviewAdBudgetRequest($user) && in_array($status, ['Pengajuan', 'Revisi'], true);
-        // Only Senior Manager can mark a report "Selesai" - narrower than
-        // canReviewAdBudgetRequest()'s wider super_user/director/etc. tier.
-        $canComplete = $user->role === RsmUser::ROLE_SENIOR && ! in_array($status, ['Selesai', 'Ditolak'], true);
+        // Marking "Selesai" is narrower than canReviewAdBudgetRequest()'s
+        // super_user/executive_director/director/senior tier - just the
+        // super_user/senior pairing canManageAdBudget() already codifies.
+        $canComplete = RsmRole::canManageAdBudget($user) && ! in_array($status, ['Selesai', 'Ditolak'], true);
 
         return [
             'id' => $report->id,
