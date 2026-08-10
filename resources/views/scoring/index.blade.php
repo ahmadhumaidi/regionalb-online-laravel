@@ -41,12 +41,10 @@
             <p class="py-6 text-center text-sm text-ink-muted">Belum ada data pada periode/filter ini.</p>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1280px] text-left text-sm">
+                <table class="w-full min-w-[980px] text-left text-sm">
                     <thead>
                         <tr class="border-b border-border text-xs text-ink-muted">
-                            <th class="py-2 pr-3 font-medium">Wilayah</th>
                             <th class="py-2 pr-3 font-medium">Staff</th>
-                            <th class="py-2 pr-3 font-medium">Kampus/Unit</th>
                             <th class="py-2 pr-3 text-right font-medium">Registrasi Personal</th>
                             <th class="py-2 pr-3 text-right font-medium">Herreg Personal</th>
                             <th class="py-2 pr-3 text-right font-medium">Registrasi Kampus</th>
@@ -62,9 +60,7 @@
                     <tbody>
                         @foreach ($rows as $row)
                             <tr class="border-b border-border/60">
-                                <td class="py-2 pr-3 text-ink-muted whitespace-nowrap">{{ $row['wilayah'] }}</td>
-                                <td class="py-2 pr-3 font-medium text-ink whitespace-nowrap">{{ $row['name'] }}</td>
-                                <td class="py-2 pr-3 text-ink-muted">{{ $row['unit_name'] }}</td>
+                                <td class="py-2 pr-3 font-medium text-ink whitespace-nowrap" title="{{ $row['wilayah'] }} · {{ $row['unit_name'] }}">{{ $row['name'] }}</td>
                                 <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['registrasi_personal'], 0, ',', '.') }}</td>
                                 <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['herregistrasi_personal'], 0, ',', '.') }}</td>
                                 <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['registrasi_kampus'], 0, ',', '.') }}</td>

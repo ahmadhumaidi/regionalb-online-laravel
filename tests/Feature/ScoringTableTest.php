@@ -143,4 +143,53 @@ class ScoringTableTest extends TestCase
         $inactiveStaff->delete();
         $senior->delete();
     }
+
+    public function test_registrasi_and_herreg_columns_come_from_collab_source_not_ad_leads(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900041, 'name' => 'Test Senior', 'username' => 'test_senior_900041',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900042, 'name' => 'Collab Staff', 'username' => 'test_collab_staff_900042',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+
+        // Deliberately no ad_leads rows for this staff - if the columns
+        // were still reading GamificationService's ad_leads-derived
+        // fallback, they'd show 0 instead of the Collab-sourced values.
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
+            'entity_key' => 'collab-staff-1', 'staff_name' => 'Collab Staff', 'regional' => 'Regional 6', 'value' => 42,
+        ]);
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Herreg Personal Per Regional', 'metric_date' => now(),
+            'entity_key' => 'collab-staff-1', 'staff_name' => 'Collab Staff', 'regional' => 'Regional 6', 'value' => 17,
+        ]);
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Closing Kampus Regional', 'metric_date' => now(),
+            'entity_key' => 'collab-campus-1', 'campus_name' => 'STIESIA Surabaya', 'regional' => 'Regional 6', 'value' => 99,
+        ]);
+
+        $table = \App\Services\Dashboard\ScoringTableService::build(
+            'Regional B',
+            \App\Services\Dashboard\DashboardFilters::allTime(),
+            $senior->fresh()
+        );
+
+        $row = collect($table['rows'])->firstWhere('name', 'Collab Staff');
+
+        $this->assertNotNull($row);
+        $this->assertSame(42.0, $row['registrasi_personal']);
+        $this->assertSame(17.0, $row['herregistrasi_personal']);
+        $this->assertSame(99.0, $row['registrasi_kampus']);
+        $this->assertSame(0.0, $row['herregistrasi_kampus']);
+
+        $staff->delete();
+        $senior->delete();
+    }
 }

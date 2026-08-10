@@ -29,12 +29,20 @@ class ScoringTableService
         $indicatorByName = GamificationService::indicatorRows($area, $filters, $user)
             ->keyBy(fn (array $row) => mb_strtolower(trim((string) $row['name'])));
 
+        // Registrasi/Herreg Personal & Kampus all come straight from the
+        // /sumber-collab sync (rsm_collab_daily_metrics), not the ad_leads-
+        // derived fallback GamificationService blends in for its points
+        // formula - keeps every "registrasi"/"herreg" number on this table
+        // sourced consistently, personal and kampus alike.
+        $personalPerformance = CollabMetricsService::personalPerformance($area, $filters, $user);
+        $personalByName = collect($personalPerformance['rows'])->keyBy(fn (array $row) => mb_strtolower(trim((string) $row['name'])));
         $campusRegistrasi = self::campusIndex(CollabMetricsService::campusTotals($filters, $area, $user, 'Closing Kampus Regional'));
         $campusHerreg = self::campusIndex(CollabMetricsService::campusTotals($filters, $area, $user, 'Herreg Kampus Regional'));
 
         $rows = $roster
-            ->map(function (RsmUser $staff) use ($indicatorByName, $campusRegistrasi, $campusHerreg) {
+            ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg) {
                 $indicator = $indicatorByName->get(mb_strtolower(trim((string) $staff->name)));
+                $personal = $personalByName->get(mb_strtolower(trim((string) $staff->name)));
                 $unitName = (string) ($indicator['unit_name'] ?? $staff->campus_name ?? '');
                 $wilayah = (string) ($indicator['wilayah'] ?? $staff->regional ?? '');
 
@@ -42,8 +50,8 @@ class ScoringTableService
                     'name' => $staff->name,
                     'wilayah' => $wilayah !== '' ? $wilayah : '-',
                     'unit_name' => $unitName !== '' ? $unitName : '-',
-                    'registrasi_personal' => (float) ($indicator['closing_for_points'] ?? 0),
-                    'herregistrasi_personal' => (float) ($indicator['herreg_for_points'] ?? 0),
+                    'registrasi_personal' => (float) ($personal['registrasi'] ?? 0),
+                    'herregistrasi_personal' => (float) ($personal['herregistrasi'] ?? 0),
                     'registrasi_kampus' => self::lookupCampus($unitName, $campusRegistrasi),
                     'herregistrasi_kampus' => self::lookupCampus($unitName, $campusHerreg),
                     'laporan_iklan' => (int) ($indicator['uploaded_ad_reports'] ?? 0),
