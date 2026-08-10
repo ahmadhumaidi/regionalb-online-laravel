@@ -22,6 +22,12 @@ class GamificationService
 {
     private const STATUS_APPROVED = ['Diverifikasi', 'Disetujui', 'Disetujui Senior Manager', 'Selesai', 'Berjalan'];
 
+    /** "Laporan Iklan" indicator: counted once the staff unit has filed their report (status reaches "Dilaporkan Unit" or later in the ads workflow). */
+    private const AD_STAFF_REPORTED_STATUSES = ['dilaporkan unit', 'diverifikasi', 'selesai'];
+
+    /** "Realisasi Iklan" indicator: only counted once the koordinator wilayah has verified the report ("Diverifikasi" or later). */
+    private const AD_KOORDINATOR_VERIFIED_STATUSES = ['diverifikasi', 'selesai'];
+
     /** The 5 achievable badges scoreRow()/badges() can award - excludes the "On Progress" fallback shown when none are earned yet. */
     public const BADGE_NAMES = ['Follow Up Hero', 'Closing Hunter', 'Herregistrasi Champion', 'Consistency Streak', 'Budget Efficient'];
 
@@ -169,9 +175,12 @@ class GamificationService
                     }
 
                     if ($report->report_type === RsmReport::TYPE_ADS) {
-                        $spend += (float) $report->realization_amount;
-                        if ((float) $report->realization_amount > 0) {
+                        $adStatus = mb_strtolower(trim((string) $report->status));
+                        if (in_array($adStatus, self::AD_STAFF_REPORTED_STATUSES, true)) {
                             $uploadedAdReports++;
+                        }
+                        if (in_array($adStatus, self::AD_KOORDINATOR_VERIFIED_STATUSES, true)) {
+                            $spend += (float) $report->realization_amount;
                         }
                     }
                 }

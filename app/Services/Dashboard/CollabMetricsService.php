@@ -95,6 +95,14 @@ class CollabMetricsService
         return (float) self::staffTotals($reportName, $filters, $area, $user)->sum('total_value');
     }
 
+    /** Same as personalTotal() but per staff, keyed by lowercased staff name - used by ScoringTableService for one-column-per-indicator lookups. */
+    public static function personalTotalsByName(array $filters, string $area, RsmUser $user, string $reportName): Collection
+    {
+        return self::staffTotals($reportName, $filters, $area, $user)
+            ->keyBy(fn ($row) => mb_strtolower(trim((string) $row->staff_name)))
+            ->map(fn ($row) => (float) $row->total_value);
+    }
+
     /**
      * Per-staff performance sourced from "Closing Personal Per Regional" +
      * "Herreg Personal Per Regional" — the old "Closing Collab"/"Herreg

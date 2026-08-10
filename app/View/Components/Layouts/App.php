@@ -31,7 +31,9 @@ class App extends Component
         $this->eyebrow = str_replace('Regional B', 'RSM B', $eyebrow !== '' ? $eyebrow : ($user->area ?: 'Regional B'));
         $this->menuSections = Menu::sections($user);
         $this->impersonationUsers = RsmRole::canImpersonate($user)
-            ? RsmUser::where('is_active', true)->where('area', $user->area)->orderBy('regional')->orderBy('name')->get()
+            ? RsmUser::where('is_active', true)
+                ->where(fn ($q) => $q->where('area', $user->area)->orWhereNull('area')->orWhere('area', ''))
+                ->orderBy('regional')->orderBy('name')->get()
             : collect();
     }
 

@@ -18,14 +18,17 @@ use Illuminate\Support\Facades\Storage;
 class CollabSourceService
 {
     private const KNOWN_REPORTS = [
-        'Closing Collab',
-        'Herreg Collab',
         'Closing Kampus Regional',
         'Herreg Kampus Regional',
         'Closing Personal Per Regional',
         'Herreg Personal Per Regional',
         'Rekapitulasi PMB Periode Prioritas P2K',
         'Follow Up BDC',
+        'Share FB Group',
+        'Live Streaming',
+        'Canvasing',
+        'Affiliator Mahasiswa',
+        'Affiliator Non Mahasiswa',
     ];
 
     private const AUTHENTICATED_REPORTS = [
@@ -35,27 +38,45 @@ class CollabSourceService
         'Herreg Personal Per Regional',
         'Rekapitulasi PMB Periode Prioritas P2K',
         'Follow Up BDC',
+        'Share FB Group',
+        'Live Streaming',
+        'Canvasing',
+        'Affiliator Mahasiswa',
+        'Affiliator Non Mahasiswa',
     ];
 
+    /**
+     * "Canvasing" is intentionally excluded - its table layout differs from
+     * the other "personal regional" reports (leading row-number column,
+     * combined "NIK - Nama" cell, section headers without a regional
+     * number) and ingestDailyMetrics() doesn't parse it correctly yet. It's
+     * still viewable raw on /sumber-collab, just not fed into
+     * rsm_collab_daily_metrics until that's built.
+     */
     private const DAILY_METRIC_REPORTS = [
-        'Closing Collab',
-        'Herreg Collab',
         'Closing Kampus Regional',
         'Herreg Kampus Regional',
         'Closing Personal Per Regional',
         'Herreg Personal Per Regional',
         'Follow Up BDC',
+        'Share FB Group',
+        'Live Streaming',
+        'Affiliator Mahasiswa',
+        'Affiliator Non Mahasiswa',
     ];
 
     private const SOURCE_URLS = [
-        'Closing Collab' => 'https://cb.web.id/pencapaian_closing_collab_template.php',
-        'Herreg Collab' => 'https://cb.web.id/pencapaian_herreg_collab_template.php',
         'Closing Kampus Regional' => 'https://cb.web.id/pencapaian_closing_perkampus_peregional.php',
         'Herreg Kampus Regional' => 'https://cb.web.id/pencapaian_closing_herreg_perkampus_peregional.php',
         'Closing Personal Per Regional' => 'https://cb.web.id/pencapaian_closing_personal_per_regional.php',
         'Herreg Personal Per Regional' => 'https://cb.web.id/pencapaian_closing_herreg_personal_per_regional.php',
         'Rekapitulasi PMB Periode Prioritas P2K' => 'https://cb.web.id/rekapitulasi_pencapaian_pmb_periode_prioritas.php?program=p2k',
         'Follow Up BDC' => 'https://cb.web.id/pencapaian_follow_up_BDC.php',
+        'Share FB Group' => 'https://cb.web.id/pencapaian_share_fb.php',
+        'Live Streaming' => 'https://cb.web.id/pencapaian_live_streaming.php',
+        'Canvasing' => 'https://cb.web.id/data_canvassing_harian_peregional.php',
+        'Affiliator Mahasiswa' => 'https://cb.web.id/pencapaian_kar_aff_mhs.php',
+        'Affiliator Non Mahasiswa' => 'https://cb.web.id/pencapaian_kar_aff_non_mhs.php',
     ];
 
     private const CACHE_KEY = 'collab_achievement.json';
@@ -243,6 +264,120 @@ class CollabSourceService
         self::cacheWrite($result);
 
         return $result;
+    }
+
+    /**
+     * One-time historical backfill for a single report - archives + ingests
+     * each month in [$from, $to] (inclusive, 'Y-m') that isn't already
+     * archived (unless $force). Authenticates once and reuses that session
+     * for every month instead of logging in per request.
+     *
+     * cb.web.id's date-range filter (`filter_dayone`/`filter_daytwo`,
+     * format d/m/Y, submitted together with `bmonth=View` - the "View"
+     * button's own name/value pair, required or the server silently falls
+     * back to its default rolling "last ~40 days through today" view and
+     * ignores the date fields entirely) only works while the session's
+     * filter state is in the initial "View" state, not the toggled "Close"
+     * (clear filter) state a prior filtered request leaves it in - so each
+     * request here reuses one cookie jar but the *previous* request's
+     * result is never a "Close" action, keeping every subsequent request in
+     * the same working "View" state. Confirmed working against a real
+     * browser session and replicated here as plain HTTP (2026-08-10).
+     *
+     * @return array<string, bool> month => whether that month's fetch/ingest succeeded
+     */
+    public static function backfillRange(string $reportName, string $from, string $to, bool $force = false): array
+    {
+        $jar = self::loginSession();
+        if ($jar === null) {
+            return [];
+        }
+
+        $existing = $force ? [] : self::availableMonths($reportName);
+        $results = [];
+
+        $cursor = \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $from.'-01');
+        $end = \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $to.'-01');
+
+        while ($cursor->lte($end)) {
+            $month = $cursor->format('Y-m');
+            if (in_array($month, $existing, true)) {
+                $results[$month] = true;
+            } else {
+                $dayFrom = $cursor->format('d/m/Y');
+                $dayTo = $cursor->copy()->endOfMonth()->format('d/m/Y');
+                $report = self::reportFromRange($reportName, $dayFrom, $dayTo, $jar);
+                if ($report !== []) {
+                    self::archiveReport($reportName, $report);
+                    if (in_array($reportName, self::DAILY_METRIC_REPORTS, true)) {
+                        self::ingestDailyMetrics($reportName, $report, null);
+                    }
+                }
+                $results[$month] = $report !== [];
+            }
+            $cursor->addMonth();
+        }
+
+        return $results;
+    }
+
+    private static function loginSession(): ?CookieJar
+    {
+        $credentials = self::credentials();
+        if ($credentials === null) {
+            return null;
+        }
+
+        try {
+            $jar = new CookieJar;
+            $headers = ['Accept' => 'text/html,application/xhtml+xml', 'User-Agent' => 'RegionalB-Dashboard/1.0'];
+            Http::withOptions(['cookies' => $jar])
+                ->timeout(20)->connectTimeout(10)->withHeaders($headers)
+                ->asForm()->post(self::sourceUrl('Closing Kampus Regional'), [
+                    'acc_username' => $credentials['username'],
+                    'acc_password' => $credentials['password'],
+                    'bsignin' => '',
+                ]);
+
+            return $jar;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private static function reportFromRange(string $reportName, string $dayFrom, string $dayTo, CookieJar $jar): array
+    {
+        $url = self::sourceUrl($reportName);
+        if ($url === '' || ! in_array($reportName, self::AUTHENTICATED_REPORTS, true)) {
+            return [];
+        }
+
+        try {
+            $headers = ['Accept' => 'text/html,application/xhtml+xml', 'User-Agent' => 'RegionalB-Dashboard/1.0'];
+            $html = Http::withOptions(['cookies' => $jar])
+                ->timeout(20)->connectTimeout(10)->withHeaders($headers)
+                ->asForm()->post($url, ['filter_dayone' => $dayFrom, 'filter_daytwo' => $dayTo, 'bmonth' => 'View'])
+                ->body();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        if (trim($html) === '') {
+            return [];
+        }
+
+        $tables = self::parseHtmlTables($html);
+        if ($tables === []) {
+            return [];
+        }
+
+        return [
+            'name' => $reportName,
+            'created_at' => now()->format('Y-m-d H:i:s'),
+            'source_url' => $url,
+            'source_mode' => 'backfill_range',
+            'tables' => $tables,
+        ];
     }
 
     private static function buildSnapshotEntry(string $reportName, array $report, string $error = ''): array
@@ -551,14 +686,18 @@ class CollabSourceService
         }
 
         $isCampus = in_array($reportName, ['Closing Kampus Regional', 'Herreg Kampus Regional'], true);
-        // "Follow Up BDC" is assumed to share "Closing/Herreg Personal Per
-        // Regional"'s layout (per-staff rows grouped under "(Korwil
-        // Regional N)" headers, day-of-month columns) per Ahmad Humaidi's
-        // instruction to treat it the same - not yet confirmed against the
-        // live page (cb.web.id is unreachable from this sandbox). If the
-        // first real sync ingests zero rows for it, the layout differs and
-        // this needs adjusting against the actual table.
-        $isPersonalRegional = in_array($reportName, ['Closing Personal Per Regional', 'Herreg Personal Per Regional', 'Follow Up BDC'], true);
+        // "Follow Up BDC", "Share FB Group", "Live Streaming", "Affiliator
+        // Mahasiswa" and "Affiliator Non Mahasiswa" all share "Closing/Herreg
+        // Personal Per Regional"'s layout (per-staff rows grouped under
+        // "(Korwil Regional N)" headers, day-of-month columns) - confirmed
+        // 2026-08-10 against real syncs of each source. "Canvasing" does NOT
+        // share this layout (leading row-number column, combined "NIK -
+        // Nama" cell, section headers missing the regional number) and is
+        // deliberately left out of DAILY_METRIC_REPORTS until that's built.
+        $isPersonalRegional = in_array($reportName, [
+            'Closing Personal Per Regional', 'Herreg Personal Per Regional', 'Follow Up BDC',
+            'Share FB Group', 'Live Streaming', 'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
+        ], true);
         $valueBase = $isCampus ? 4 : 5;
 
         $dayValueIndexes = [];

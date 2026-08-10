@@ -3,7 +3,7 @@
 <section class="mb-6 rounded-2xl glass-card p-5">
     <div class="mb-4">
         <h2 class="text-base font-semibold text-ink">Pencapaian per Regional</h2>
-        <span class="text-xs text-ink-muted">Registrasi: {{ $sources['registrasi']['label'] ?? 'Closing Collab' }} &middot; Herregistrasi: {{ $sources['herregistrasi']['label'] ?? 'Herreg Collab' }}</span>
+        <span class="text-xs text-ink-muted">Registrasi: {{ $sources['registrasi']['label'] ?? 'Closing Personal Per Regional' }} &middot; Herregistrasi: {{ $sources['herregistrasi']['label'] ?? 'Herreg Personal Per Regional' }}</span>
     </div>
 
     @if (empty($regionalSummary))

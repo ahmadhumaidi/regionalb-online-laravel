@@ -41,36 +41,44 @@
             <p class="py-6 text-center text-sm text-ink-muted">Belum ada data pada periode/filter ini.</p>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[980px] text-left text-sm">
+                <table class="min-w-[760px] text-left text-sm">
                     <thead>
-                        <tr class="border-b border-border text-xs text-ink-muted">
-                            <th class="py-2 pr-3 font-medium">Staff</th>
-                            <th class="py-2 pr-3 text-right font-medium">Registrasi Personal</th>
-                            <th class="py-2 pr-3 text-right font-medium">Herreg Personal</th>
-                            <th class="py-2 pr-3 text-right font-medium">Registrasi Kampus</th>
-                            <th class="py-2 pr-3 text-right font-medium">Herreg Kampus</th>
-                            <th class="py-2 pr-3 text-right font-medium">Laporan Iklan</th>
-                            <th class="py-2 pr-3 text-right font-medium">Realisasi Iklan</th>
-                            <th class="py-2 pr-3 text-right font-medium">Follow Up</th>
-                            <th class="py-2 pr-3 text-right font-medium">Leads</th>
-                            <th class="py-2 pr-3 text-right font-medium">Total Laporan</th>
-                            <th class="py-2 text-right font-medium">Hari Aktif</th>
+                        <tr class="border-b border-border text-xs leading-tight text-ink-muted">
+                            <th class="w-56 py-2 pr-3 font-medium">Staff</th>
+                            <th class="w-14 py-2 pr-3 text-center font-medium">Reg</th>
+                            <th class="w-14 py-2 pr-3 text-center font-medium">Herreg</th>
+                            <th class="w-16 py-2 pr-3 text-center font-medium">Reg<br>Kampus</th>
+                            <th class="w-16 py-2 pr-3 text-center font-medium">Herreg<br>Kampus</th>
+                            <th class="w-16 py-2 pr-3 text-center font-medium">Lap.<br>Iklan</th>
+                            <th class="w-20 py-2 pr-3 text-center font-medium">Realisasi<br>Iklan</th>
+                            <th class="w-10 py-2 pr-3 text-center font-medium">FU</th>
+                            <th class="w-14 py-2 pr-3 text-center font-medium">Leads</th>
+                            <th class="w-16 py-2 pr-3 text-center font-medium">Total<br>Lap.</th>
+                            <th class="w-14 py-2 pr-3 text-center font-medium">Aktif</th>
+                            <th class="w-16 py-2 pr-3 text-center font-medium">Share<br>FB</th>
+                            <th class="w-16 py-2 pr-3 text-center font-medium">Live<br>Stream</th>
+                            <th class="w-16 py-2 pr-3 text-center font-medium">Aff.<br>Mhs</th>
+                            <th class="w-16 py-2 text-center font-medium">Aff. Non<br>Mhs</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($rows as $row)
                             <tr class="border-b border-border/60">
                                 <td class="py-2 pr-3 font-medium text-ink whitespace-nowrap" title="{{ $row['wilayah'] }} · {{ $row['unit_name'] }}">{{ $row['name'] }}</td>
-                                <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['registrasi_personal'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['herregistrasi_personal'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['registrasi_kampus'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['herregistrasi_kampus'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['laporan_iklan'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['realisasi_iklan'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['follow_up_total'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['leads_total'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['laporan_total'], 0, ',', '.') }}</td>
-                                <td class="py-2 text-right text-ink">{{ number_format($row['hari_aktif'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['registrasi_personal'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['herregistrasi_personal'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['registrasi_kampus'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['herregistrasi_kampus'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['laporan_iklan'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['realisasi_iklan'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['follow_up_total'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['leads_total'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['laporan_total'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['hari_aktif'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['share_fb_group'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['live_streaming'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['affiliator_mahasiswa'], 0, ',', '.') }}</td>
+                                <td class="py-2 text-center text-ink">{{ number_format($row['affiliator_non_mahasiswa'], 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
                     </tbody>

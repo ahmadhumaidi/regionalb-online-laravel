@@ -38,11 +38,16 @@ class ScoringTableService
         $personalByName = collect($personalPerformance['rows'])->keyBy(fn (array $row) => mb_strtolower(trim((string) $row['name'])));
         $campusRegistrasi = self::campusIndex(CollabMetricsService::campusTotals($filters, $area, $user, 'Closing Kampus Regional'));
         $campusHerreg = self::campusIndex(CollabMetricsService::campusTotals($filters, $area, $user, 'Herreg Kampus Regional'));
+        $shareFbByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Share FB Group');
+        $liveStreamingByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Live Streaming');
+        $affMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Mahasiswa');
+        $affNonMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Non Mahasiswa');
 
         $rows = $roster
-            ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg) {
-                $indicator = $indicatorByName->get(mb_strtolower(trim((string) $staff->name)));
-                $personal = $personalByName->get(mb_strtolower(trim((string) $staff->name)));
+            ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg, $shareFbByName, $liveStreamingByName, $affMhsByName, $affNonMhsByName) {
+                $nameKey = mb_strtolower(trim((string) $staff->name));
+                $indicator = $indicatorByName->get($nameKey);
+                $personal = $personalByName->get($nameKey);
                 $unitName = (string) ($indicator['unit_name'] ?? $staff->campus_name ?? '');
                 $wilayah = (string) ($indicator['wilayah'] ?? $staff->regional ?? '');
 
@@ -60,6 +65,10 @@ class ScoringTableService
                     'leads_total' => (int) ($indicator['leads_total'] ?? 0),
                     'laporan_total' => (int) ($indicator['report_total'] ?? 0),
                     'hari_aktif' => (int) ($indicator['report_days'] ?? 0),
+                    'share_fb_group' => (float) ($shareFbByName->get($nameKey) ?? 0),
+                    'live_streaming' => (float) ($liveStreamingByName->get($nameKey) ?? 0),
+                    'affiliator_mahasiswa' => (float) ($affMhsByName->get($nameKey) ?? 0),
+                    'affiliator_non_mahasiswa' => (float) ($affNonMhsByName->get($nameKey) ?? 0),
                 ];
             })
             ->sortBy([['wilayah', 'asc'], ['name', 'asc']])
