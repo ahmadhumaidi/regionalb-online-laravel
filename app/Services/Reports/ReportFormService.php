@@ -97,7 +97,7 @@ class ReportFormService
     public static function adsEditFieldsForRole(string $role): array
     {
         return match ($role) {
-            RsmUser::ROLE_STAFF => ['campaign_name', 'ad_goal', 'realization_amount', 'cpl', 'campaign_link', 'ad_leads_file', 'insight_attachment_path', 'notes'],
+            RsmUser::ROLE_STAFF => ['campaign_name', 'ad_goal', 'realization_amount', 'cpl', 'campaign_link', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
             RsmUser::ROLE_KOORDINATOR => ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
             default => in_array($role, self::SENIOR_ROLES, true)
                 ? ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'budget_approved', 'attachment_path', 'ad_leads_file', 'notes']
