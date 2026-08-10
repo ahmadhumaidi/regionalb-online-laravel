@@ -30,9 +30,12 @@
     </article>
 
     <article class="rounded-2xl glass-card p-5">
-        <div class="mb-3">
-            <h2 class="text-base font-semibold text-ink">Pencapaian Staff Regional</h2>
-            <span class="text-xs text-ink-muted">Acuan: Closing Personal Per Regional</span>
+        <div class="mb-3 flex items-start justify-between gap-2">
+            <div>
+                <h2 class="text-base font-semibold text-ink">Pencapaian Staff Regional</h2>
+                <span class="text-xs text-ink-muted">Acuan: Closing Personal Per Regional</span>
+            </div>
+            <a href="{{ route('pencapaian') }}" class="shrink-0 text-xs font-semibold text-brand-600 underline">Lihat selengkapnya</a>
         </div>
         @if (empty($topStaffAchievement))
             <p class="py-6 text-center text-sm text-ink-muted">Belum ada data pencapaian staff pada periode/filter ini.</p>

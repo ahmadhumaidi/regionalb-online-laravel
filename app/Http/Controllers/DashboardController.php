@@ -196,7 +196,7 @@ class DashboardController extends Controller
 
         $maxValue = (float) ($rows->max('registrasi') ?? 0);
 
-        if (in_array($user->role, self::SENIOR_TIER, true)) {
+        if (in_array($user->role, [...self::SENIOR_TIER, 'staff'], true)) {
             $rows = $rows->take(5)->values();
         }
 
