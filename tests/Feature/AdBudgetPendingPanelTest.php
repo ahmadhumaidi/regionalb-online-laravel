@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\RsmAdLead;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\Artisan;
@@ -17,6 +18,7 @@ class AdBudgetPendingPanelTest extends TestCase
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
             'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
+            'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
         ]]);
     }
 
@@ -120,6 +122,39 @@ class AdBudgetPendingPanelTest extends TestCase
         $response->assertSee('Lengkapi');
 
         $partiallyDone->delete();
+        $staff->delete();
+    }
+
+    public function test_cpl_is_auto_computed_from_realization_and_lead_count(): void
+    {
+        $this->migrate();
+
+        $staff = RsmUser::create([
+            'id' => 900016, 'name' => 'Test Staff', 'username' => 'test_staff_900016',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff', 'status' => 'Disetujui',
+            'title' => 'CPL Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'CPL Campaign', 'budget_requested' => 500000,
+            'leads_count' => 5,
+        ]);
+        for ($i = 0; $i < 5; $i++) {
+            RsmAdLead::create(['report_id' => $report->id, 'lead_name' => "Lead {$i}"]);
+        }
+
+        $response = $this->actingAs($staff)->patch(route('reports.update', $report), [
+            'campaign_name' => 'CPL Campaign',
+            'realization_amount' => 500000,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertSame(100000.0, (float) $report->fresh()->cpl);
+
+        RsmAdLead::where('report_id', $report->id)->delete();
+        $report->delete();
         $staff->delete();
     }
 }

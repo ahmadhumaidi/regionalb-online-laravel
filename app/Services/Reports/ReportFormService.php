@@ -243,6 +243,16 @@ class ReportFormService
             throw ValidationException::withMessages(['unit_name' => 'Kampus tersebut bukan bagian dari wilayah Anda.']);
         }
 
+        // CPL is derived, not staff-entered: realisasi / jumlah data hasil
+        // iklan yang sudah diupload. leads_count reflects whatever was
+        // imported in an *earlier* request; if a new ad_leads_file is also
+        // uploaded in this same submission, AdLeadImportService::refreshCounts()
+        // recomputes both leads_count and cpl again afterwards with the
+        // fresh count, so this is just the best estimate available now.
+        $newRealizationAmount = (float) $posted('realization_amount', $existing->realization_amount);
+        $existingLeadsCount = (int) $existing->leads_count;
+        $computedCpl = $existingLeadsCount > 0 ? round($newRealizationAmount / $existingLeadsCount, 2) : 0.0;
+
         $base = [
             'area' => $user->area ?: 'Regional B',
             'report_type' => RsmReport::TYPE_ADS,
@@ -262,10 +272,10 @@ class ReportFormService
             'ad_goal' => $posted('ad_goal', $existing->ad_goal),
             'budget_requested' => (float) $posted('budget_requested', $existing->budget_requested),
             'budget_approved' => (float) $posted('budget_approved', $existing->budget_approved),
-            'realization_amount' => (float) $posted('realization_amount', $existing->realization_amount),
-            'leads_count' => (int) $existing->leads_count,
+            'realization_amount' => $newRealizationAmount,
+            'leads_count' => $existingLeadsCount,
             'closing_count' => (int) $existing->closing_count,
-            'cpl' => (float) $posted('cpl', $existing->cpl),
+            'cpl' => $computedCpl,
             'campaign_link' => $posted('campaign_link', $existing->campaign_link),
             'notes' => $posted('notes', $existing->notes),
         ];

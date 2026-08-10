@@ -170,7 +170,6 @@ class ReportFormController extends Controller
                 'campaign_name' => ['required', 'string', 'max:220'],
                 'ad_goal' => ['nullable', 'string', 'max:80'],
                 'realization_amount' => ['nullable', 'numeric', 'min:0'],
-                'cpl' => ['nullable', 'numeric', 'min:0'],
                 'campaign_link' => ['nullable', 'string', 'max:255'],
                 'attachment_path' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
                 'ad_leads_file' => ['nullable', 'file', 'max:5120', 'mimes:xls,xlsx'],
