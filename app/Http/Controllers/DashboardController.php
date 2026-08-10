@@ -69,7 +69,7 @@ class DashboardController extends Controller
 
         $regionalRecaps = array_map(
             fn (string $regional) => $this->regionalRecap($area, $filters, $user, $regional),
-            AreaRegionals::forArea($area)
+            $this->recapRegionals($area, $user)
         );
 
         [$topStaffAchievement, $topStaffMaxValue] = $this->topStaffAchievement($area, $user, $regionalStaffAchievement);
@@ -89,6 +89,22 @@ class DashboardController extends Controller
             'ranking' => $overview['ranking'],
             'dailyReports' => $overview['daily_reports'],
         ]);
+    }
+
+    /**
+     * Regionals to render a recap card for. Mirrors
+     * CollabMetricsService::allowedRegionals(): koordinator/staff only ever
+     * see their own regional's data regardless of which regional a card
+     * claims to be, so a staff/koordinator user only gets their own card
+     * instead of 4 identically-scoped cards under different labels.
+     */
+    private function recapRegionals(string $area, RsmUser $user): array
+    {
+        if (in_array($user->role, ['koordinator', 'staff'], true) && trim((string) $user->regional) !== '') {
+            return [$user->regional];
+        }
+
+        return AreaRegionals::forArea($area);
     }
 
     /**
