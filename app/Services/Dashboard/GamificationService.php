@@ -105,6 +105,21 @@ class GamificationService
         return ['level' => $level, 'level_progress' => $levelProgress, 'league' => $league];
     }
 
+    /**
+     * The raw per-staff indicator breakdown (report counts, leads, follow
+     * ups, registrasi/herreg, ad spend, etc.) behind build()/
+     * profileSummary(), without the points/leaderboard framing - used by
+     * ScoringTableService to lay every indicator out as its own column.
+     *
+     * @return Collection<int, array>
+     */
+    public static function indicatorRows(string $area, array $filters, RsmUser $user): Collection
+    {
+        [, $rows] = self::scoredRows($area, $filters, $user);
+
+        return $rows;
+    }
+
     /** @return array{0: Collection<int, RsmReport>, 1: Collection<int, array>} */
     private static function scoredRows(string $area, array $filters, RsmUser $user): array
     {
@@ -164,6 +179,8 @@ class GamificationService
                 return [
                     'user_id' => $first->user_id ?: null,
                     'name' => $label,
+                    'wilayah' => $first->wilayah,
+                    'unit_name' => $first->unit_name,
                     'report_total' => $groupReports->count(),
                     'report_days' => $groupReports->pluck('report_date')->filter()->map(fn ($date) => $date->toDateString())->unique()->count(),
                     'approved_reports' => $groupReports->whereIn('status', self::STATUS_APPROVED)->count(),

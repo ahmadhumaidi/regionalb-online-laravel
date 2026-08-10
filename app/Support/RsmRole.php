@@ -102,6 +102,12 @@ class RsmRole
         return $user?->role === 'koordinator' && $report->wilayah === $user->regional;
     }
 
+    /** "Scoring" menu: a supervisory tool (koordinator reviewing their wilayah, senior tier reviewing the whole area) - not meant for staff to browse their peers' indicators. */
+    public static function canViewScoringTable(?RsmUser $user): bool
+    {
+        return $user?->role !== 'staff';
+    }
+
     public static function canViewJadwalKoordinator(?RsmUser $user): bool
     {
         return $user?->role !== 'staff';

@@ -30,6 +30,9 @@ class Menu
                 'items' => array_values(array_filter([
                     ['key' => 'pencapaian', 'label' => 'Pencapaian Staff', 'icon' => 'chart-bar'],
                     ['key' => 'closing-kampus', 'label' => 'Pencapaian Kampus', 'icon' => 'chart-bar'],
+                    RsmRole::canViewScoringTable($user)
+                        ? ['key' => 'scoring', 'label' => 'Scoring', 'icon' => 'chart-bar']
+                        : null,
                     RsmRole::canViewJadwalKoordinator($user)
                         ? ['key' => 'jadwal-koordinator', 'label' => 'Jadwal Koordinator', 'icon' => 'calendar']
                         : null,
@@ -106,6 +109,7 @@ class Menu
             'sumber-collab' => 'Sumber Data Collab',
             'jadwal-personalia' => 'Jadwal Personalia',
             'closing-kampus' => 'Pencapaian Kampus',
+            'scoring' => 'Scoring',
         ];
     }
 
@@ -122,6 +126,7 @@ class Menu
             'targets', 'jadwal-personalia' => RsmRole::canManageTargets($user),
             'users' => RsmRole::canViewUsersPage($user),
             'sumber-collab' => RsmRole::canSyncCollab($user),
+            'scoring' => RsmRole::canViewScoringTable($user),
             default => true,
         };
     }
@@ -145,6 +150,7 @@ class Menu
             'bdc-users' => route('bdc-users'),
             'role' => route('role'),
             'closing-kampus' => route('closing-kampus'),
+            'scoring' => route('scoring'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };
