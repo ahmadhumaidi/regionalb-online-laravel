@@ -126,6 +126,12 @@
                                                     <button type="submit" title="Revisi" aria-label="Revisi" class="rounded-md border border-tone-amber p-1 text-tone-amber"><x-icon name="warning" class="h-3.5 w-3.5" /></button>
                                                 </form>
                                             @endif
+                                            @if ($row['can_complete'])
+                                                <form method="POST" action="{{ route('anggaran.selesai', $row['id']) }}" onsubmit="return confirm('Tandai laporan ini selesai?')">
+                                                    @csrf
+                                                    <button type="submit" title="Tandai Selesai" aria-label="Tandai Selesai" class="rounded-md border border-tone-purple p-1 text-tone-purple"><x-icon name="check" class="h-3.5 w-3.5" /></button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

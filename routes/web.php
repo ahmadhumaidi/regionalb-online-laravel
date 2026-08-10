@@ -50,6 +50,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/anggaran/{report}/setujui', [AdBudgetActionController::class, 'approve'])->name('anggaran.setujui');
     Route::post('/anggaran/{report}/tolak', [AdBudgetActionController::class, 'reject'])->name('anggaran.tolak');
     Route::post('/anggaran/{report}/revisi', [AdBudgetActionController::class, 'revise'])->name('anggaran.revisi');
+    Route::post('/anggaran/{report}/selesai', [AdBudgetActionController::class, 'complete'])->name('anggaran.selesai');
     Route::post('/anggaran/{report}/leads/upload', [AdLeadController::class, 'upload'])->name('anggaran.leads.upload');
     Route::post('/anggaran/{report}/leads', [AdLeadController::class, 'update'])->name('anggaran.leads.update');
     Route::get('/anggaran/leads/template', [AdLeadController::class, 'template'])->name('anggaran.leads.template');

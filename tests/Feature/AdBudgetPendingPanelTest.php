@@ -186,4 +186,41 @@ class AdBudgetPendingPanelTest extends TestCase
         $report->delete();
         $senior->delete();
     }
+
+    public function test_only_senior_manager_can_mark_ads_report_selesai(): void
+    {
+        $this->migrate();
+
+        $superUser = RsmUser::create([
+            'id' => 900018, 'name' => 'Test Super', 'username' => 'test_super_900018',
+            'password_hash' => 'x', 'role' => 'super_user', 'jabatan' => 'Super User',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $senior = RsmUser::create([
+            'id' => 900019, 'name' => 'Test Senior', 'username' => 'test_senior_900019',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff',
+            'status' => 'Dilaporkan Unit', 'title' => 'Complete Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Complete Campaign',
+            'budget_requested' => 100000,
+        ]);
+
+        // Even super_user - a role that outranks senior everywhere else in
+        // this app - is not allowed to mark a report "Selesai".
+        $this->actingAs($superUser)->post(route('anggaran.selesai', $report))->assertForbidden();
+        $this->assertSame('Dilaporkan Unit', $report->fresh()->status);
+
+        $this->actingAs($senior)->post(route('anggaran.selesai', $report))->assertRedirect();
+        $this->assertSame('Selesai', $report->fresh()->status);
+
+        // Once already "Selesai", even senior can't re-trigger it.
+        $this->actingAs($senior)->post(route('anggaran.selesai', $report))->assertStatus(422);
+
+        $report->delete();
+        $senior->delete();
+        $superUser->delete();
+    }
 }

@@ -62,6 +62,16 @@ class AdBudgetActionController extends Controller
         return back()->with('notice', 'Pengajuan dikembalikan untuk revisi.');
     }
 
+    /** Marking an ads report "Selesai" is reserved for Senior Manager specifically, not the wider canReviewAdBudgetRequest() tier. */
+    public function complete(Request $request, RsmReport $report): RedirectResponse
+    {
+        $this->authorizeComplete($report);
+
+        $this->transition($request, $report, 'Selesai', 'selesai');
+
+        return back()->with('notice', 'Laporan iklan ditandai selesai.');
+    }
+
     private function authorizeReview(RsmReport $report): void
     {
         /** @var RsmUser $user */
@@ -70,6 +80,16 @@ class AdBudgetActionController extends Controller
         abort_unless($report->report_type === RsmReport::TYPE_ADS, 404);
         abort_unless(RsmRole::canReviewAdBudgetRequest($user), 403);
         abort_unless(in_array($report->status, self::REVIEWABLE_STATUSES, true), 422, 'Status laporan sudah berubah, muat ulang halaman.');
+    }
+
+    private function authorizeComplete(RsmReport $report): void
+    {
+        /** @var RsmUser $user */
+        $user = Auth::user();
+
+        abort_unless($report->report_type === RsmReport::TYPE_ADS, 404);
+        abort_unless($user->role === RsmUser::ROLE_SENIOR, 403);
+        abort_if(in_array($report->status, ['Selesai', 'Ditolak'], true), 422, 'Status laporan sudah final.');
     }
 
     private function transition(Request $request, RsmReport $report, string $newStatus, string $action, ?string $note = null, ?callable $mutate = null): void

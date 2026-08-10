@@ -83,6 +83,9 @@ class AdBudgetReportsService
     {
         $status = (string) $report->status;
         $canReview = RsmRole::canReviewAdBudgetRequest($user) && in_array($status, ['Pengajuan', 'Revisi'], true);
+        // Only Senior Manager can mark a report "Selesai" - narrower than
+        // canReviewAdBudgetRequest()'s wider super_user/director/etc. tier.
+        $canComplete = $user->role === RsmUser::ROLE_SENIOR && ! in_array($status, ['Selesai', 'Ditolak'], true);
 
         return [
             'id' => $report->id,
@@ -100,6 +103,7 @@ class AdBudgetReportsService
             'has_insight_attachment' => filled($report->insight_attachment_path),
             'has_ad_leads' => (int) $report->leads_count > 0,
             'can_review' => $canReview,
+            'can_complete' => $canComplete,
             'can_edit' => ReportFormService::canEdit($report, $user),
             'can_delete' => ReportFormService::canDelete($report, $user),
         ];
