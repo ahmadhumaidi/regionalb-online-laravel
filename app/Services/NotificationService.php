@@ -13,6 +13,13 @@ use App\Support\RsmRole;
  */
 class NotificationService
 {
+    private const SENIOR_TIER_ROLES = [
+        RsmUser::ROLE_SUPER_USER,
+        RsmUser::ROLE_EXECUTIVE_DIRECTOR,
+        RsmUser::ROLE_DIRECTOR,
+        RsmUser::ROLE_SENIOR,
+    ];
+
     /** @return list<int> */
     public static function recipientIds(string $area, string $role, ?string $regional = null): array
     {
@@ -49,10 +56,17 @@ class NotificationService
     /** Staff melaporkan Kendala baru: beri tahu koordinator wilayah + semua Senior Manager di area itu. */
     public static function notifyKendala(RsmReport $report): void
     {
-        $recipients = array_merge(
-            self::recipientIds($report->area, RsmUser::ROLE_KOORDINATOR, $report->wilayah),
-            self::recipientIds($report->area, 'senior'),
-        );
+        $recipients = RsmUser::query()
+            ->where('area', $report->area)
+            ->where('is_active', true)
+            ->where(function ($query) use ($report) {
+                $query->where(function ($q) use ($report) {
+                    $q->where('role', RsmUser::ROLE_KOORDINATOR)
+                        ->where('regional', $report->wilayah);
+                })->orWhereIn('role', self::SENIOR_TIER_ROLES);
+            })
+            ->pluck('id')
+            ->all();
 
         self::notify(
             $recipients,
