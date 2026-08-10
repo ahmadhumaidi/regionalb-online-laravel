@@ -64,7 +64,7 @@ class ReportFormService
         }
         if ($report->report_type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_STAFF) {
             return in_array(mb_strtolower((string) $report->status), [
-                'disetujui', 'transfer-/-invoice', 'transfer / invoice', 'berjalan', 'dilaporkan-unit', 'dilaporkan unit', 'revisi',
+                'diverifikasi', 'disetujui', 'transfer-/-invoice', 'transfer / invoice', 'berjalan', 'dilaporkan-unit', 'dilaporkan unit', 'revisi',
             ], true);
         }
 

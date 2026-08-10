@@ -35,10 +35,19 @@ class AdBudgetPendingPanelTest extends TestCase
             'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff', 'status' => 'Disetujui',
             'title' => 'Approved Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Approved Campaign', 'budget_requested' => 100000,
         ]);
+        // Staff/koordinator can report evidence even while still awaiting
+        // final approval (Diverifikasi), not just after Disetujui.
         $verifying = RsmReport::create([
             'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
             'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff', 'status' => 'Diverifikasi',
             'title' => 'Verifying Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Verifying Campaign', 'budget_requested' => 200000,
+        ]);
+        // A report that's only just been drafted/submitted, not even
+        // through koordinator verification yet, still isn't reportable.
+        $draft = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff', 'status' => 'Draft',
+            'title' => 'Draft Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Draft Campaign', 'budget_requested' => 50000,
         ]);
 
         $response = $this->actingAs($staff)->get('/anggaran');
@@ -46,12 +55,15 @@ class AdBudgetPendingPanelTest extends TestCase
         $response->assertOk();
         $response->assertSee('Approved Campaign');
         $response->assertSee('Verifying Campaign');
+        $response->assertSee('Draft Campaign');
         $response->assertSee('Lapor realisasi');
         $response->assertSee('Menunggu persetujuan');
         $response->assertSee(route('reports.edit', $approved));
+        $response->assertSee(route('reports.edit', $verifying));
 
         $approved->delete();
         $verifying->delete();
+        $draft->delete();
         $staff->delete();
     }
 
