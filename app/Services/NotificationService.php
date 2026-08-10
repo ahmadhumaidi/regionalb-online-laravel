@@ -80,8 +80,12 @@ class NotificationService
     /** Korwil/Senior Manager mengeskalasi laporan kendala ke role lain. */
     public static function notifyEscalation(RsmReport $report, string $toRole, RsmUser $actor): void
     {
+        $recipientIds = in_array($toRole, self::SENIOR_TIER_ROLES, true)
+            ? self::seniorTierRecipientIds($report->area)
+            : self::recipientIds($report->area, $toRole);
+
         self::notify(
-            self::recipientIds($report->area, $toRole),
+            $recipientIds,
             $report,
             'eskalasi',
             'Eskalasi laporan kendala',
@@ -103,5 +107,16 @@ class NotificationService
             $newStatus === 'Selesai' ? 'Kendala Anda sudah selesai ditangani' : 'Kendala Anda sudah ditindaklanjuti',
             sprintf('Laporan "%s" sekarang berstatus %s.', $report->title, $newStatus)
         );
+    }
+
+    /** @return list<int> */
+    private static function seniorTierRecipientIds(string $area): array
+    {
+        return RsmUser::query()
+            ->where('area', $area)
+            ->where('is_active', true)
+            ->whereIn('role', self::SENIOR_TIER_ROLES)
+            ->pluck('id')
+            ->all();
     }
 }
