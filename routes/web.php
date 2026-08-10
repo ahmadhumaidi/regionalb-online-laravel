@@ -10,6 +10,8 @@ use App\Http\Controllers\ContentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\KegiatanController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ObstacleFollowUpController;
 use App\Http\Controllers\PlaceholderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportFormController;
@@ -107,6 +109,12 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/laporan/{report}/setujui', [ReportStatusController::class, 'approve'])->name('reports.setujui');
     Route::post('/laporan/{report}/tolak', [ReportStatusController::class, 'reject'])->name('reports.tolak');
     Route::post('/laporan/{report}/revisi', [ReportStatusController::class, 'revise'])->name('reports.revisi');
+
+    Route::post('/laporan/{report}/tindak-lanjut', [ObstacleFollowUpController::class, 'respond'])->name('reports.tindak-lanjut');
+    Route::post('/laporan/{report}/selesai-kendala', [ObstacleFollowUpController::class, 'complete'])->name('reports.selesai-kendala');
+
+    Route::get('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
 
     Route::get('/halaman/{key}', [PlaceholderController::class, 'show'])
         ->whereIn('key', [

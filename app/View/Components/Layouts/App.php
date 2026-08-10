@@ -2,6 +2,7 @@
 
 namespace App\View\Components\Layouts;
 
+use App\Models\RsmNotification;
 use App\Models\RsmUser;
 use App\Support\Menu;
 use App\Support\RsmRole;
@@ -19,6 +20,11 @@ class App extends Component
 
     public RsmUser $user;
 
+    public int $unreadNotificationCount;
+
+    /** @var \Illuminate\Support\Collection<int, RsmNotification> */
+    public $recentNotifications;
+
     public function __construct(
         public string $title,
         public string $active = '',
@@ -35,6 +41,8 @@ class App extends Component
                 ->where(fn ($q) => $q->where('area', $user->area)->orWhereNull('area')->orWhere('area', ''))
                 ->orderBy('regional')->orderBy('name')->get()
             : collect();
+        $this->unreadNotificationCount = RsmNotification::where('recipient_user_id', $user->id)->unread()->count();
+        $this->recentNotifications = RsmNotification::where('recipient_user_id', $user->id)->latest()->limit(10)->get();
     }
 
     public function render(): View

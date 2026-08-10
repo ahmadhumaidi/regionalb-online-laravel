@@ -103,9 +103,38 @@
                         <span><p class="text-sm font-semibold leading-tight text-white">{{ $user->name }}</p><p class="mt-0.5 text-[11px] text-slate-300">{{ $user->username }} · {{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) ($user->jabatan ?: \App\Support\RsmRole::label($user->role))) }}</p></span>
                     </div>
 
-                    <button type="button" class="rounded-xl border border-white/15 bg-white/10 p-2.5 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white" title="Notifikasi">
-                        <x-icon name="bell" class="h-5 w-5" />
-                    </button>
+                    <div x-data="{ open: false }" class="relative">
+                        <button type="button" @click="open = ! open" class="relative rounded-xl border border-white/15 bg-white/10 p-2.5 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white" title="Notifikasi">
+                            <x-icon name="bell" class="h-5 w-5" />
+                            @if ($unreadNotificationCount > 0)
+                                <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-tone-red px-1 text-[10px] font-bold text-white">{{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}</span>
+                            @endif
+                        </button>
+                        <div x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false" class="absolute right-0 z-50 mt-2 max-h-[70vh] w-80 overflow-y-auto rounded-2xl border border-border bg-surface p-2 text-left shadow-2xl">
+                            <div class="flex items-center justify-between px-2 py-1.5">
+                                <span class="text-sm font-semibold text-ink">Notifikasi</span>
+                                @if ($unreadNotificationCount > 0)
+                                    <form method="POST" action="{{ route('notifications.read-all') }}">
+                                        @csrf
+                                        <button type="submit" class="text-xs font-medium text-brand-600 hover:underline">Tandai semua terbaca</button>
+                                    </form>
+                                @endif
+                            </div>
+                            @if ($recentNotifications->isEmpty())
+                                <p class="px-2 py-6 text-center text-sm text-ink-muted">Belum ada notifikasi.</p>
+                            @else
+                                <div class="mt-1 grid gap-1">
+                                    @foreach ($recentNotifications as $notif)
+                                        <a href="{{ route('notifications.open', $notif) }}" class="block rounded-xl p-2.5 text-left {{ $notif->is_read ? 'hover:bg-surface-muted' : 'bg-brand-50' }}">
+                                            <span class="block text-xs font-semibold text-ink">{{ $notif->title }}</span>
+                                            <span class="mt-0.5 block text-xs text-ink-muted">{{ \Illuminate\Support\Str::limit((string) $notif->message, 90) }}</span>
+                                            <span class="mt-1 block text-[10px] text-ink-muted">{{ $notif->created_at->diffForHumans() }}</span>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    </div>
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf

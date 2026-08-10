@@ -7,6 +7,7 @@ use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\AdBudget\AdBudgetPeriods;
 use App\Services\Dashboard\ReportScope;
+use App\Services\NotificationService;
 use App\Support\RsmRole;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,7 @@ class ReportFormService
             RsmReport::TYPE_OTHER => [
                 'title' => 'Aktivitas Lain',
                 'label' => 'aktivitas',
-                'options' => ['Meeting internal', 'Briefing', 'Training', 'Koordinasi kampus', 'Koordinasi mitra', 'Pelayanan calon mahasiswa', 'Administrasi PMB', 'Follow up pembayaran', 'Herregistrasi', 'Lainnya'],
+                'options' => ['Meeting internal', 'Briefing', 'Training', 'Koordinasi kampus', 'Koordinasi mitra', 'Pelayanan calon mahasiswa', 'Administrasi PMB', 'Follow up pembayaran', 'Lainnya'],
                 'statuses' => ['Draft', 'Dikirim'],
                 'fields' => ['report_date', 'wilayah', 'unit_name', 'staff_name', 'category', 'title', 'result_text', 'obstacle_text', 'follow_up_text', 'attachment_path'],
             ],
@@ -119,6 +120,7 @@ class ReportFormService
             $report = RsmReport::create($normalized);
             self::storeAttachment($report, $attachment);
             self::log($report, $user, 'create_'.$type, null, $report->status);
+            self::notifyIfKendalaSubmitted($report, null);
 
             return $report->fresh();
         });
@@ -144,6 +146,7 @@ class ReportFormService
             self::storeAttachment($report, $attachment);
             self::storeInsightAttachment($report, $insightAttachment);
             self::log($report, $user, 'edit', $oldStatus, $report->status);
+            self::notifyIfKendalaSubmitted($report, $oldStatus);
 
             return $report->fresh();
         });
@@ -175,6 +178,21 @@ class ReportFormService
         $status = $type === RsmReport::TYPE_ADS ? 'Pengajuan' : ((string) ($data['status'] ?? 'Draft'));
         if ($existing && $user->role !== RsmUser::ROLE_STAFF) {
             $status = in_array($status, ['Draft', 'Revisi', 'Dikirim'], true) ? $status : $existing->status;
+        }
+
+        // "Aktivitas Lain" dengan Kendala terisi otomatis masuk antrian
+        // tindak lanjut korwil/Senior Manager begitu disimpan - staff tidak
+        // perlu (dan tidak bisa) memilih status manual untuk kasus ini.
+        // Guard ke Draft/Dikirim saja supaya laporan yang sudah masuk alur
+        // tindak-lanjut (Ditindak Lanjuti/Selesai) tidak ke-reset kalau
+        // diedit ulang oleh senior-tier. Lihat ObstacleFollowUpController
+        // untuk alur setelah "Dikirim".
+        if ($type === RsmReport::TYPE_OTHER) {
+            $obstacleText = trim((string) ($data['obstacle_text'] ?? $existing?->obstacle_text ?? ''));
+            $notYetInFollowUpFlow = $existing === null || in_array($existing->status, ['Draft', 'Dikirim'], true);
+            if ($obstacleText !== '' && $notYetInFollowUpFlow) {
+                $status = 'Dikirim';
+            }
         }
 
         // Laporan pengeluaran Senior Manager: dibuat dan langsung disetujui oleh
@@ -359,5 +377,21 @@ class ReportFormService
             'new_status' => $newStatus,
             'ip_address' => request()->ip(),
         ]);
+    }
+
+    /** Fires once per genuine transition into "Dikirim" with a Kendala filled in - not on every re-save while already Dikirim. */
+    private static function notifyIfKendalaSubmitted(RsmReport $report, ?string $oldStatus): void
+    {
+        if ($report->report_type !== RsmReport::TYPE_OTHER || $report->status !== 'Dikirim') {
+            return;
+        }
+        if ($oldStatus === 'Dikirim') {
+            return;
+        }
+        if (trim((string) $report->obstacle_text) === '') {
+            return;
+        }
+
+        NotificationService::notifyKendala($report);
     }
 }

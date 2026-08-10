@@ -5,7 +5,6 @@ namespace App\Services\Reports;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\ReportScope;
-use App\Services\Reports\ReportFormService;
 use App\Support\RsmRole;
 
 /**
@@ -22,12 +21,19 @@ use App\Support\RsmRole;
  * implied workflow order (koordinator verifies what's submitted, senior
  * approves what's verified) applied defensively, same reasoning already
  * used for the ads REVIEWABLE_STATUSES gate.
+ *
+ * "Aktivitas Lain" rows with a Kendala filled in skip this generic
+ * verify/approve machine entirely and use the dedicated
+ * tindak-lanjut/eskalasi flow instead (ObstacleFollowUpController) — see
+ * the has_kendala-gated flags below.
  */
 class ReportListService
 {
     private const KOORDINATOR_ACTIONABLE = ['Dikirim', 'Revisi'];
 
     private const SENIOR_ACTIONABLE = ['Diverifikasi', 'Revisi'];
+
+    private const SENIOR_ROLES = ['super_user', 'executive_director', 'director', 'senior'];
 
     /** @return list<array> */
     public static function build(string $reportType, string $area, RsmUser $user): array
@@ -43,13 +49,23 @@ class ReportListService
     private static function rowShape(RsmReport $report, RsmUser $user): array
     {
         $status = (string) $report->status;
+        $hasKendala = $report->report_type === RsmReport::TYPE_OTHER && trim((string) $report->obstacle_text) !== '';
 
-        $canKoordinatorAct = $user->role === 'koordinator'
+        $canKoordinatorAct = ! $hasKendala
+            && $user->role === 'koordinator'
             && $report->wilayah === $user->regional
             && in_array($status, self::KOORDINATOR_ACTIONABLE, true);
 
-        $canSeniorAct = RsmRole::canAction($user->role, 'setujui')
+        $canSeniorAct = ! $hasKendala
+            && RsmRole::canAction($user->role, 'setujui')
             && in_array($status, self::SENIOR_ACTIONABLE, true);
+
+        $escalatedToRole = $hasKendala ? $report->escalated_to_role : null;
+        $isResponsible = $hasKendala && (
+            in_array($user->role, self::SENIOR_ROLES, true)
+            || ($escalatedToRole === null && $user->role === 'koordinator' && $report->wilayah === $user->regional)
+            || ($escalatedToRole !== null && $user->role === $escalatedToRole)
+        );
 
         return [
             'id' => $report->id,
@@ -68,6 +84,12 @@ class ReportListService
             'can_senior_act' => $canSeniorAct,
             'can_edit' => ReportFormService::canEdit($report, $user),
             'can_delete' => ReportFormService::canDelete($report, $user),
+            'has_kendala' => $hasKendala,
+            'escalated_to_role' => $escalatedToRole,
+            'escalated_to_label' => $escalatedToRole ? RsmRole::label($escalatedToRole) : null,
+            'can_follow_up' => $isResponsible && $status === 'Dikirim',
+            'can_mark_selesai' => $isResponsible && in_array($status, ['Dikirim', 'Ditindak Lanjuti'], true),
+            'escalation_options' => $hasKendala ? RsmRole::escalationTargetsFor($user->role) : [],
         ];
     }
 }

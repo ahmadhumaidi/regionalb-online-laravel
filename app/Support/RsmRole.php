@@ -129,4 +129,23 @@ class RsmRole
     {
         return self::ROLE_LABELS[$role] ?? ucwords(str_replace('_', ' ', $role));
     }
+
+    /**
+     * Roles a Kendala-flow responder (ObstacleFollowUpController) can hand
+     * a laporan off to next, based on their own role: koordinator only to
+     * Senior Manager; Senior Manager to Mentor/Executive Director/Director;
+     * the other senior-tier roles get all four options. Mentor (and anyone
+     * not listed) can't escalate further.
+     *
+     * @return list<string>
+     */
+    public static function escalationTargetsFor(string $role): array
+    {
+        return match (true) {
+            $role === 'koordinator' => ['senior'],
+            $role === 'senior' => ['mentor', 'executive_director', 'director'],
+            in_array($role, ['super_user', 'executive_director', 'director'], true) => ['senior', 'mentor', 'executive_director', 'director'],
+            default => [],
+        };
+    }
 }

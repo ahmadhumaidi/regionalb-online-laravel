@@ -1,5 +1,18 @@
 @props(['rows', 'title'])
 
+@php
+    $statusTones = [
+        'draft' => 'slate',
+        'dikirim' => 'blue-light',
+        'diverifikasi' => 'blue',
+        'disetujui' => 'green',
+        'ditolak' => 'red',
+        'revisi' => 'orange',
+        'ditindak lanjuti' => 'amber',
+        'selesai' => 'purple',
+    ];
+@endphp
+
 <section class="rounded-2xl glass-card p-5">
     <h2 class="mb-4 text-base font-semibold text-ink">{{ $title }}</h2>
     @if (empty($rows))
@@ -32,7 +45,11 @@
                                 @endif
                             </td>
                             <td class="py-2 pr-3">
-                                <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
+                                @php $statusTone = $statusTones[mb_strtolower(trim((string) $row['status']))] ?? 'slate'; @endphp
+                                <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" style="background: color-mix(in srgb, var(--color-tone-{{ $statusTone }}) 18%, transparent); color: var(--color-tone-{{ $statusTone }})">{{ $row['status'] ?: '-' }}</span>
+                                @if (! empty($row['escalated_to_label']))
+                                    <span class="mt-1 block text-[10px] text-ink-muted">Dieskalasi ke {{ $row['escalated_to_label'] }}</span>
+                                @endif
                             </td>
                             <td class="py-2">
                                 <div class="flex flex-wrap items-center gap-1">
@@ -70,6 +87,30 @@
                                             @csrf
                                             <input type="hidden" name="note" value="">
                                             <button type="submit" class="rounded-md border border-tone-amber px-2 py-1 text-[11px] font-semibold text-tone-amber">Revisi</button>
+                                        </form>
+                                    @endif
+                                    @if ($row['can_follow_up'])
+                                        <details class="text-xs">
+                                            <summary class="cursor-pointer list-none rounded-md border border-tone-blue px-2 py-1 font-medium text-tone-blue hover:bg-surface-muted">Tindak Lanjuti</summary>
+                                            <form method="POST" action="{{ route('reports.tindak-lanjut', $row['id']) }}" class="mt-2 grid gap-1">
+                                                @csrf
+                                                <textarea name="saran_tindak_lanjut" placeholder="Saran tindak lanjut" rows="2" class="w-56 rounded border-border px-1 text-xs"></textarea>
+                                                @if ($row['escalation_options'] !== [])
+                                                    <select name="eskalasi_ke" class="rounded border-border text-xs">
+                                                        <option value="">-- Tidak eskalasi --</option>
+                                                        @foreach ($row['escalation_options'] as $option)
+                                                            <option value="{{ $option }}">Eskalasi ke {{ \App\Support\RsmRole::label($option) }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                @endif
+                                                <button type="submit" class="mt-1 rounded-md bg-brand-600 px-2 py-1 text-left text-xs font-semibold text-white">Kirim</button>
+                                            </form>
+                                        </details>
+                                    @endif
+                                    @if ($row['can_mark_selesai'])
+                                        <form method="POST" action="{{ route('reports.selesai-kendala', $row['id']) }}" onsubmit="return confirm('Tandai laporan ini selesai?')">
+                                            @csrf
+                                            <button type="submit" class="rounded-md bg-tone-purple px-2 py-1 text-[11px] font-semibold text-white">Selesai</button>
                                         </form>
                                     @endif
                                 </div>
