@@ -1,5 +1,32 @@
 @props(['groups'])
 
+@php
+    // 5 colors for up to 5 groups: Regional 4/5/6/7 plus "Regional B" itself
+    // (super_user-created "Pengeluaran Senior Manager" reports carry
+    // wilayah='Regional B', which sorts after 4-7 — see
+    // AdBudgetReportsService — so it shows up as a trailing 5th group here).
+    $toneNames = ['red', 'orange', 'blue-light', 'blue', 'blue-dark'];
+    $gradients = [
+        'linear-gradient(135deg, var(--color-tone-red) 0%, #991b1b 100%)',
+        'linear-gradient(135deg, var(--color-tone-orange) 0%, #9a3412 100%)',
+        'linear-gradient(135deg, var(--color-tone-blue-light) 0%, var(--color-tone-blue) 100%)',
+        'linear-gradient(135deg, var(--color-tone-blue) 0%, var(--color-tone-blue-dark) 100%)',
+        'linear-gradient(135deg, var(--color-tone-blue-dark) 0%, #0f172a 100%)',
+    ];
+
+    $statusTones = [
+        'draft' => 'slate',
+        'dikirim' => 'blue-light',
+        'pengajuan' => 'amber',
+        'revisi' => 'orange',
+        'disetujui' => 'green',
+        'transfer / invoice' => 'blue',
+        'transfer-/-invoice' => 'blue',
+        'selesai' => 'purple',
+        'ditolak' => 'red',
+    ];
+@endphp
+
 <section class="rounded-2xl glass-card p-5">
     <h2 class="mb-4 text-base font-semibold text-ink">Anggaran & Laporan Iklan</h2>
     @if (empty($groups))
@@ -21,46 +48,45 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($groups as $regional)
-                        <tr class="bg-brand-50/60">
-                            <td colspan="2" class="py-2 pr-3 font-semibold text-brand-700">
-                                Regional: {{ $regional['wilayah'] }} <span class="font-normal text-ink-muted">({{ $regional['subtotal']['count'] }} laporan)</span>
+                    @foreach ($groups as $i => $regional)
+                        @php $tone = $gradients[$i % 5]; $toneName = $toneNames[$i % 5]; @endphp
+                        <tr style="background: {{ $tone }}">
+                            <td colspan="2" class="py-2.5 pr-3 pl-3 font-bold text-white">
+                                Regional: {{ $regional['wilayah'] }} <span class="font-normal text-white/80">({{ $regional['subtotal']['count'] }} laporan)</span>
                             </td>
-                            <td class="py-2 pr-3 text-right font-semibold text-brand-700">{{ number_format($regional['subtotal']['requested'], 0, ',', '.') }}</td>
-                            <td class="py-2 pr-3 text-right font-semibold text-brand-700">{{ number_format($regional['subtotal']['realization'], 0, ',', '.') }}</td>
-                            <td class="py-2 pr-3 text-right font-semibold text-brand-700">{{ number_format($regional['subtotal']['leads'], 0, ',', '.') }}</td>
-                            <td class="py-2 pr-3 text-right font-semibold text-brand-700">{{ number_format($regional['subtotal']['closing'], 0, ',', '.') }}</td>
-                            <td class="py-2 pr-3 text-right font-semibold text-brand-700">{{ number_format($regional['subtotal']['cpl'], 0, ',', '.') }}</td>
-                            <td class="py-2"></td>
-                            <td class="py-2"></td>
+                            <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['requested'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['realization'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['leads'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['closing'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['cpl'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 pr-3"></td>
+                            <td class="py-2.5 pr-3"></td>
                         </tr>
                         @foreach ($regional['campuses'] as $campus)
-                            <tr class="bg-surface-muted/70">
-                                <td colspan="2" class="py-1.5 pr-3 pl-4 font-medium text-ink">
+                            <tr class="border-b border-l-4 border-border" style="border-left-color: var(--color-tone-{{ $toneName }}); background: color-mix(in srgb, var(--color-tone-{{ $toneName }}) 16%, var(--color-surface))">
+                                <td colspan="2" class="py-1.5 pr-3 pl-4 font-semibold text-ink">
                                     {{ $campus['label'] }} <span class="font-normal text-ink-muted">({{ $campus['subtotal']['count'] }})</span>
                                 </td>
-                                <td class="py-1.5 pr-3 text-right text-ink">{{ number_format($campus['subtotal']['requested'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 pr-3 text-right text-ink">{{ number_format($campus['subtotal']['realization'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 pr-3 text-right text-ink">{{ number_format($campus['subtotal']['leads'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 pr-3 text-right text-ink">{{ number_format($campus['subtotal']['closing'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 pr-3 text-right text-ink">{{ number_format($campus['subtotal']['cpl'], 0, ',', '.') }}</td>
+                                <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['requested'], 0, ',', '.') }}</td>
+                                <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['realization'], 0, ',', '.') }}</td>
+                                <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['leads'], 0, ',', '.') }}</td>
+                                <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['closing'], 0, ',', '.') }}</td>
+                                <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['cpl'], 0, ',', '.') }}</td>
                                 <td class="py-1.5"></td>
                                 <td class="py-1.5"></td>
                             </tr>
                             @foreach ($campus['rows'] as $row)
-                                <tr class="border-b border-border/60">
+                                <tr class="border-b border-border/60 bg-white">
                                     <td class="py-2 pr-3 pl-8 text-ink">{{ $row['campaign_name'] ?: '-' }} <span class="text-xs text-ink-muted">{{ $row['platform'] }}</span></td>
-                                    <td class="py-2 pr-3 text-ink-muted">{{ $row['report_date'] }}</td>
+                                    <td class="py-2 pr-3 text-xs whitespace-nowrap text-ink-muted">{{ $row['report_date'] }}</td>
                                     <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['budget_requested'], 0, ',', '.') }}</td>
                                     <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['realization_amount'], 0, ',', '.') }}</td>
                                     <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['leads_count'], 0, ',', '.') }}</td>
                                     <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['closing_count'], 0, ',', '.') }}</td>
                                     <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['cpl'], 0, ',', '.') }}</td>
+                                    @php $statusTone = $statusTones[mb_strtolower(trim((string) $row['status']))] ?? 'slate'; @endphp
                                     <td class="py-2 pr-3">
-                                        <span class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">{{ $row['status'] ?: '-' }}</span>
-                                        @if ($row['has_attachment'])
-                                            <x-icon name="clipboard" class="ml-1 inline h-3.5 w-3.5 text-ink-muted" />
-                                        @endif
+                                        <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" style="background: color-mix(in srgb, var(--color-tone-{{ $statusTone }}) 18%, transparent); color: var(--color-tone-{{ $statusTone }})">{{ $row['status'] ?: '-' }}</span>
                                     </td>
                                     <td class="py-2">
                                         <div class="flex flex-wrap items-center gap-1">
@@ -78,7 +104,7 @@
                                                 <a href="{{ route('reports.edit', $row['id']) }}" title="Edit" aria-label="Edit" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="edit" class="h-3.5 w-3.5" /></a>
                                             @endif
                                             @if ($row['can_delete'])
-                                                <form method="POST" action="{{ route('reports.destroy', $row['id']) }}" onsubmit="return confirm('Hapus laporan ini?')">
+                                                <form method="POST" action="{{ route('reports.destroy', $row['id']) }}" data-preserve-scroll onsubmit="return confirm('Hapus laporan ini?')">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" title="Hapus" aria-label="Hapus" class="rounded-md border border-tone-red p-1 text-tone-red"><x-icon name="trash" class="h-3.5 w-3.5" /></button>

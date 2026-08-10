@@ -157,4 +157,33 @@ class AdBudgetPendingPanelTest extends TestCase
         $report->delete();
         $staff->delete();
     }
+
+    public function test_grouped_table_renders_with_status_colors_for_senior(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900017, 'name' => 'Test Senior', 'username' => 'test_senior_900017',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+
+        $period = \App\Services\AdBudget\AdBudgetPeriods::default();
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff',
+            'status' => 'Disetujui', 'title' => 'Grouped Table Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Grouped Table Campaign',
+            'budget_requested' => 100000, 'ad_period' => $period,
+        ]);
+
+        $response = $this->actingAs($senior)->get('/anggaran?ad_period='.urlencode($period));
+
+        $response->assertOk();
+        $response->assertSee('Grouped Table Campaign');
+        $response->assertSee('Regional: Regional 6');
+        $response->assertSee('Disetujui');
+
+        $report->delete();
+        $senior->delete();
+    }
 }
