@@ -441,4 +441,49 @@ class AdBudgetPendingPanelTest extends TestCase
         $report->delete();
         $senior->delete();
     }
+
+    public function test_normalize_legacy_ads_statuses_command_migrates_draft_and_transfer_invoice(): void
+    {
+        $this->migrate();
+
+        $draftReport = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 4', 'unit_name' => 'Legacy Campus', 'staff_name' => 'Legacy Staff', 'created_by_role' => 'staff',
+            'status' => 'Draft', 'title' => 'Legacy Draft Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Legacy Draft Campaign',
+            'budget_requested' => 500000,
+        ]);
+        $transferReport = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 5', 'unit_name' => 'Legacy Campus 2', 'staff_name' => 'Legacy Staff', 'created_by_role' => 'staff',
+            'status' => 'Transfer / Invoice', 'title' => 'Legacy Transfer Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Legacy Transfer Campaign',
+            'budget_requested' => 200000,
+        ]);
+        // Untouched - not one of the retired statuses.
+        $unrelatedReport = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff',
+            'status' => 'Pengajuan', 'title' => 'Current Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Current Campaign',
+            'budget_requested' => 100000,
+        ]);
+
+        $this->artisan('rsm:normalize-legacy-ads-statuses', ['--dry-run' => true])->assertSuccessful();
+        $this->assertSame('Draft', $draftReport->fresh()->status);
+        $this->assertSame('Transfer / Invoice', $transferReport->fresh()->status);
+
+        $this->artisan('rsm:normalize-legacy-ads-statuses')->assertSuccessful();
+        $this->assertSame('Disetujui', $draftReport->fresh()->status);
+        $this->assertSame('Dilaporkan Unit', $transferReport->fresh()->status);
+        $this->assertSame('Pengajuan', $unrelatedReport->fresh()->status);
+
+        $this->assertDatabaseHas('rsm_activity_logs', [
+            'report_id' => $draftReport->id,
+            'old_status' => 'Draft',
+            'new_status' => 'Disetujui',
+            'actor_role' => 'system',
+        ]);
+
+        $draftReport->delete();
+        $transferReport->delete();
+        $unrelatedReport->delete();
+    }
 }
