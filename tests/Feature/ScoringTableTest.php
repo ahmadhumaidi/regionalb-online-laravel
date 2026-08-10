@@ -39,7 +39,7 @@ class ScoringTableTest extends TestCase
         $staff->delete();
     }
 
-    public function test_senior_sees_every_staff_indicator_row_on_scoring_table(): void
+    public function test_senior_sees_every_staff_in_roster_even_without_reports(): void
     {
         $this->migrate();
 
@@ -48,6 +48,19 @@ class ScoringTableTest extends TestCase
             'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
             'area' => 'Regional B', 'is_active' => true,
         ]);
+        $activeStaff = RsmUser::create([
+            'id' => 900035, 'name' => 'Scoring Staff', 'username' => 'test_scoring_staff_900035',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+        // No reports at all this period - must still appear in the table,
+        // not silently disappear like it used to before the roster fix.
+        $idleStaff = RsmUser::create([
+            'id' => 900036, 'name' => 'Idle Staff', 'username' => 'test_idle_staff_900036',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 4', 'campus_name' => 'Kampus Lain', 'is_active' => true,
+        ]);
+
         $report = RsmReport::create([
             'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
             'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Scoring Staff', 'created_by_role' => 'staff',
@@ -64,9 +77,15 @@ class ScoringTableTest extends TestCase
         $response->assertSee('Scoring Staff');
         $response->assertSee('Regional 6');
         $response->assertSee('STIESIA Surabaya');
+        // The idle staff member has zero reports for the period but is
+        // still a roster row.
+        $response->assertSee('Idle Staff');
+        $response->assertSee('Regional 4');
 
         RsmAdLead::where('report_id', $report->id)->delete();
         $report->delete();
+        $activeStaff->delete();
+        $idleStaff->delete();
         $senior->delete();
     }
 
@@ -79,17 +98,15 @@ class ScoringTableTest extends TestCase
             'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
             'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
         ]);
-        $ownReport = RsmReport::create([
-            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
-            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Own Wilayah Staff', 'created_by_role' => 'staff',
-            'status' => 'Disetujui', 'title' => 'Own Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Own Campaign',
-            'budget_requested' => 100000,
+        $ownStaff = RsmUser::create([
+            'id' => 900037, 'name' => 'Own Wilayah Staff', 'username' => 'test_own_staff_900037',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
         ]);
-        $otherReport = RsmReport::create([
-            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
-            'wilayah' => 'Regional 4', 'unit_name' => 'Other Campus', 'staff_name' => 'Other Wilayah Staff', 'created_by_role' => 'staff',
-            'status' => 'Disetujui', 'title' => 'Other Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Other Campaign',
-            'budget_requested' => 100000,
+        $otherStaff = RsmUser::create([
+            'id' => 900038, 'name' => 'Other Wilayah Staff', 'username' => 'test_other_staff_900038',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 4', 'campus_name' => 'Other Campus', 'is_active' => true,
         ]);
 
         $response = $this->actingAs($koordinator)->get(route('scoring').'?date_from='.now()->toDateString().'&date_to='.now()->addDay()->toDateString());
@@ -98,8 +115,32 @@ class ScoringTableTest extends TestCase
         $response->assertSee('Own Wilayah Staff');
         $response->assertDontSee('Other Wilayah Staff');
 
-        $ownReport->delete();
-        $otherReport->delete();
+        $ownStaff->delete();
+        $otherStaff->delete();
         $koordinator->delete();
+    }
+
+    public function test_inactive_staff_excluded_from_roster(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900039, 'name' => 'Test Senior', 'username' => 'test_senior_900039',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $inactiveStaff = RsmUser::create([
+            'id' => 900040, 'name' => 'Nonaktif Staff', 'username' => 'test_inactive_staff_900040',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($senior)->get(route('scoring'));
+
+        $response->assertOk();
+        $response->assertDontSee('Nonaktif Staff');
+
+        $inactiveStaff->delete();
+        $senior->delete();
     }
 }

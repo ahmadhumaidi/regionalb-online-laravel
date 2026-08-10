@@ -13,36 +13,45 @@ use Illuminate\Support\Collection;
  * into a single row per staff member - no point weighting yet, that's a
  * separate follow-up (per Ahmad Humaidi: build the table first, decide
  * indicator weights afterward in a dedicated config screen).
+ *
+ * The row set is the full staff roster (RsmUser), not just staff who
+ * happen to have report data for the current filter - a staff member with
+ * zero activity this period still shows up, with every indicator at 0,
+ * instead of silently disappearing from the table.
  */
 class ScoringTableService
 {
     /** @return array{rows: list<array>, synced_at: ?string} */
     public static function build(string $area, array $filters, RsmUser $user): array
     {
-        $indicatorRows = GamificationService::indicatorRows($area, $filters, $user);
+        $roster = self::staffRoster($area, $user);
+
+        $indicatorByName = GamificationService::indicatorRows($area, $filters, $user)
+            ->keyBy(fn (array $row) => mb_strtolower(trim((string) $row['name'])));
 
         $campusRegistrasi = self::campusIndex(CollabMetricsService::campusTotals($filters, $area, $user, 'Closing Kampus Regional'));
         $campusHerreg = self::campusIndex(CollabMetricsService::campusTotals($filters, $area, $user, 'Herreg Kampus Regional'));
 
-        $rows = $indicatorRows
-            ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-')
-            ->map(function (array $row) use ($campusRegistrasi, $campusHerreg) {
-                $unitName = (string) ($row['unit_name'] ?? '');
+        $rows = $roster
+            ->map(function (RsmUser $staff) use ($indicatorByName, $campusRegistrasi, $campusHerreg) {
+                $indicator = $indicatorByName->get(mb_strtolower(trim((string) $staff->name)));
+                $unitName = (string) ($indicator['unit_name'] ?? $staff->campus_name ?? '');
+                $wilayah = (string) ($indicator['wilayah'] ?? $staff->regional ?? '');
 
                 return [
-                    'name' => $row['name'],
-                    'wilayah' => $row['wilayah'] ?: '-',
-                    'unit_name' => $unitName ?: '-',
-                    'registrasi_personal' => (float) $row['closing_for_points'],
-                    'herregistrasi_personal' => (float) $row['herreg_for_points'],
+                    'name' => $staff->name,
+                    'wilayah' => $wilayah !== '' ? $wilayah : '-',
+                    'unit_name' => $unitName !== '' ? $unitName : '-',
+                    'registrasi_personal' => (float) ($indicator['closing_for_points'] ?? 0),
+                    'herregistrasi_personal' => (float) ($indicator['herreg_for_points'] ?? 0),
                     'registrasi_kampus' => self::lookupCampus($unitName, $campusRegistrasi),
                     'herregistrasi_kampus' => self::lookupCampus($unitName, $campusHerreg),
-                    'laporan_iklan' => (int) $row['uploaded_ad_reports'],
-                    'realisasi_iklan' => (float) $row['spend_total'],
-                    'follow_up_total' => (int) $row['follow_up_total'],
-                    'leads_total' => (int) $row['leads_total'],
-                    'laporan_total' => (int) $row['report_total'],
-                    'hari_aktif' => (int) $row['report_days'],
+                    'laporan_iklan' => (int) ($indicator['uploaded_ad_reports'] ?? 0),
+                    'realisasi_iklan' => (float) ($indicator['spend_total'] ?? 0),
+                    'follow_up_total' => (int) ($indicator['follow_up_total'] ?? 0),
+                    'leads_total' => (int) ($indicator['leads_total'] ?? 0),
+                    'laporan_total' => (int) ($indicator['report_total'] ?? 0),
+                    'hari_aktif' => (int) ($indicator['report_days'] ?? 0),
                 ];
             })
             ->sortBy([['wilayah', 'asc'], ['name', 'asc']])
@@ -52,6 +61,28 @@ class ScoringTableService
             'rows' => $rows->all(),
             'synced_at' => CollabMetricsService::syncedAt(),
         ];
+    }
+
+    /**
+     * Every active staff account in scope: koordinator sees their own
+     * wilayah, everyone else who can reach this page (senior tier, mentor -
+     * canViewScoringTable() already blocks plain staff) sees the whole
+     * area, mirroring ReportScope::apply()'s per-role widening rules.
+     *
+     * @return Collection<int, RsmUser>
+     */
+    private static function staffRoster(string $area, RsmUser $user): Collection
+    {
+        $query = RsmUser::query()
+            ->where('role', RsmUser::ROLE_STAFF)
+            ->where('area', $area)
+            ->where('is_active', true);
+
+        if ($user->role === RsmUser::ROLE_KOORDINATOR && trim((string) $user->regional) !== '') {
+            $query->where('regional', $user->regional);
+        }
+
+        return $query->orderBy('regional')->orderBy('name')->get();
     }
 
     /** @param array{rows: array} $campusTotals @return array<string, float> keyed by lowercased campus label */
