@@ -192,6 +192,11 @@ class DashboardController extends Controller
                 return $row;
             })
             ->filter(fn (array $row) => ! in_array($row['user_role'], self::NON_STAFF_ROLES, true))
+            // personalPerformance() sorts regional-first (then registrasi
+            // desc within each regional), so it isn't a true ranking once
+            // more than one regional is in play - re-sort purely by
+            // registrasi so "top 5" actually means the 5 highest overall.
+            ->sortByDesc('registrasi')
             ->values();
 
         $maxValue = (float) ($rows->max('registrasi') ?? 0);
