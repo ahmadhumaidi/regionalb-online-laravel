@@ -7,6 +7,7 @@ use App\Services\Dashboard\CollabMetricsService;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\DashboardNumbers;
 use App\Services\Dashboard\ReferenceOptionsService;
+use App\Services\Dashboard\StaffProfileMatcher;
 use App\Services\Dashboard\TargetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -65,6 +66,21 @@ class AchievementController extends Controller
             return $row;
         })->all();
 
+        // Cross-reference each collab row against rsm_users (same matcher the
+        // Rekap "Laporan Pencapaian" panel uses) so this page shows the same
+        // cleaned name, photo, and campus/unit instead of the raw external
+        // scrape — rsm_collab_daily_metrics has no foreign key to rsm_users,
+        // only a loosely-matching name/nik.
+        $profileIndex = StaffProfileMatcher::index($area);
+        $rows = collect($performance['rows'])->map(function (array $row) use ($profileIndex) {
+            $row['name'] = StaffProfileMatcher::cleanName((string) $row['name']);
+            $matchedUser = StaffProfileMatcher::find($profileIndex, $row['name'], (string) ($row['nik'] ?? ''));
+            $row['photo'] = $matchedUser?->photoUrl();
+            $row['campus_name'] = $matchedUser?->campus_name;
+
+            return $row;
+        })->all();
+
         return view('pencapaian.index', [
             'active' => 'pencapaian',
             'filters' => $filters,
@@ -72,7 +88,7 @@ class AchievementController extends Controller
             'summaryCards' => $summaryCards,
             'sources' => $performance['sources'],
             'regionalSummary' => $regionalSummary,
-            'rows' => $performance['rows'],
+            'rows' => $rows,
         ]);
     }
 }

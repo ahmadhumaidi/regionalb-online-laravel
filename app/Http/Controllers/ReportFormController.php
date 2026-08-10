@@ -80,10 +80,9 @@ class ReportFormController extends Controller
     public function destroy(RsmReport $report): RedirectResponse
     {
         $user = Auth::user();
-        $type = $report->report_type;
         ReportFormService::delete($report, $user);
 
-        return redirect()->route($this->pageRoute($type))->with('notice', 'Laporan dihapus.');
+        return redirect()->back()->with('notice', 'Laporan dihapus.');
     }
 
     public function attachment(RsmReport $report)
@@ -193,6 +192,10 @@ class ReportFormController extends Controller
 
         if (in_array($user->role, ['super_user', 'executive_director', 'director', 'senior'], true)) {
             $rules['budget_approved'] = ['nullable', 'numeric', 'min:0'];
+        }
+
+        if (in_array($user->role, ['super_user', 'executive_director', 'director', 'senior', RsmUser::ROLE_KOORDINATOR], true)) {
+            $rules['status'] = ['nullable', Rule::in(ReportFormService::ADS_STATUSES)];
         }
 
         return $rules;

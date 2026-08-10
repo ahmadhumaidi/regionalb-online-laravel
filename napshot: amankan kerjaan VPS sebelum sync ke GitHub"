@@ -1,0 +1,38 @@
+[1mdiff --git a/app/Services/Dashboard/AchievementReportService.php b/app/Services/Dashboard/AchievementReportService.php[m
+[1mindex efbf658..8686e70 100644[m
+[1m--- a/app/Services/Dashboard/AchievementReportService.php[m
+[1m+++ b/app/Services/Dashboard/AchievementReportService.php[m
+[36m@@ -103,7 +103,7 @@[m [mpublic static function build(string $area, array $filters, RsmUser $user): array[m
+             if ($registrasi <= 0) {[m
+                 continue;[m
+             }[m
+[31m-            $name = self::cleanStaffName((string) $row['name']);[m
+[32m+[m[32m            $name = StaffProfileMatcher::cleanName((string) $row['name']);[m
+             $nik = trim((string) ($row['nik'] ?? ''));[m
+             if ($user->role === 'staff') {[m
+                 $rowName = mb_strtolower($name);[m
+[36m@@ -213,23 +213,10 @@[m [mpublic static function build(string $area, array $filters, RsmUser $user): array[m
+                 'registrasi' => $visibleTotal,[m
+             ],[m
+             'regionals' => $regionalCards,[m
+[32m+[m[32m            'note' => 'Semua regional, unit yang tampil hanya yang memiliki closing',[m
+         ];[m
+     }[m
+ [m
+[31m-    /**[m
+[31m-     * The "Closing Personal Per Regional" source appends a "Tim Terpilih"[m
+[31m-     * suffix to some staff_name values (a cohort tag from cb.web.id, not[m
+[31m-     * part of the person's actual name) — strip it before it reaches[m
+[31m-     * display, self-matching, or the rsm_users name lookup.[m
+[31m-     */[m
+[31m-    private static function cleanStaffName(string $name): string[m
+[31m-    {[m
+[31m-        $name = trim($name);[m
+[31m-        $stripped = preg_replace('/\s+Tim Terpilih$/i', '', $name);[m
+[31m-[m
+[31m-        return trim($stripped ?? $name);[m
+[31m-    }[m
+[31m-[m
+     /** A campus row's own label, translated through CAMPUS_ALIASES if it's a merge source. */[m
+     private static function canonicalCampusLabel(string $label): string[m
+     {[m

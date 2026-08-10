@@ -6,6 +6,27 @@ window.Alpine = Alpine;
 Alpine.start();
 
 /**
+ * Keeps the scroll position stable across a full-page reload triggered by a
+ * "Hapus" (delete) form — the controller redirects back to the same URL
+ * (same filters), but a fresh page load still starts at the top by default.
+ */
+const SCROLL_KEY_PREFIX = 'preserveScroll:';
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (form instanceof HTMLFormElement && form.hasAttribute('data-preserve-scroll')) {
+        sessionStorage.setItem(SCROLL_KEY_PREFIX + location.pathname + location.search, String(window.scrollY));
+    }
+});
+window.addEventListener('DOMContentLoaded', () => {
+    const key = SCROLL_KEY_PREFIX + location.pathname + location.search;
+    const savedY = sessionStorage.getItem(key);
+    if (savedY !== null) {
+        sessionStorage.removeItem(key);
+        window.scrollTo(0, parseInt(savedY, 10));
+    }
+});
+
+/**
  * Client-side snapshot of the "Laporan Pencapaian" panel — avoids the
  * server-side headless-Chromium route, which is blocked by snap
  * confinement on the VPS (see AchievementWhatsappService history). Uses

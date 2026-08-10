@@ -17,6 +17,12 @@ class ReportFormService
 {
     private const SENIOR_ROLES = ['super_user', 'executive_director', 'director', 'senior'];
 
+    /** All valid ads status values, incl. 'Transfer / Invoice' which is only ever set automatically (see normalizeAds()) — used for validation, not for the manual dropdown. */
+    public const ADS_STATUSES = ['Pengajuan', 'Revisi', 'Disetujui', 'Transfer / Invoice', 'Selesai', 'Ditolak'];
+
+    /** Manual status override options, senior-tier edit only — see adsEditFieldsForRole()/normalizeAds(). Excludes 'Transfer / Invoice': that's an automatic outcome of uploading bukti transfer, not something to hand-pick. */
+    public const ADS_STATUS_OPTIONS = ['Pengajuan', 'Revisi', 'Disetujui', 'Selesai', 'Ditolak'];
+
     public static function config(string $type): array
     {
         return match ($type) {
@@ -98,9 +104,9 @@ class ReportFormService
     {
         return match ($role) {
             RsmUser::ROLE_STAFF => ['campaign_name', 'ad_goal', 'realization_amount', 'cpl', 'campaign_link', 'ad_leads_file', 'insight_attachment_path', 'notes'],
-            RsmUser::ROLE_KOORDINATOR => ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
+            RsmUser::ROLE_KOORDINATOR => ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'status', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
             default => in_array($role, self::SENIOR_ROLES, true)
-                ? ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'budget_approved', 'attachment_path', 'ad_leads_file', 'notes']
+                ? ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'budget_approved', 'status', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes']
                 : [],
         };
     }
@@ -290,12 +296,16 @@ class ReportFormService
                 'budget_approved' => (float) $existing->budget_approved,
                 'realization_amount' => (float) $existing->realization_amount,
                 'cpl' => (float) $existing->cpl,
-                'status' => $attachmentUploaded && $wasDisetujui ? 'Transfer / Invoice' : $existing->status,
+                'status' => in_array($data['status'] ?? null, self::ADS_STATUSES, true)
+                    ? $data['status']
+                    : ($attachmentUploaded && $wasDisetujui ? 'Transfer / Invoice' : $existing->status),
             ]),
             in_array($user->role, self::SENIOR_ROLES, true) => array_merge($base, [
                 'realization_amount' => (float) $existing->realization_amount,
                 'cpl' => (float) $existing->cpl,
-                'status' => $attachmentUploaded && $wasDisetujui ? 'Transfer / Invoice' : $existing->status,
+                'status' => in_array($data['status'] ?? null, self::ADS_STATUSES, true)
+                    ? $data['status']
+                    : ($attachmentUploaded && $wasDisetujui ? 'Transfer / Invoice' : $existing->status),
             ]),
             default => $base,
         };
