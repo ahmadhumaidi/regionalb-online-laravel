@@ -75,4 +75,46 @@ class NotificationOpenReportActionTest extends TestCase
         $report->delete();
         $koordinator->delete();
     }
+
+    public function test_aktivitas_follow_up_action_uses_modal_instead_of_inline_row_form(): void
+    {
+        $this->migrate();
+
+        $koordinator = RsmUser::create([
+            'id' => 920002,
+            'name' => 'Korwil Modal Test',
+            'username' => 'korwil_modal_test',
+            'password_hash' => 'x',
+            'role' => RsmUser::ROLE_KOORDINATOR,
+            'jabatan' => 'Koordinator Wilayah',
+            'regional' => 'Regional 6',
+            'area' => 'Regional B',
+            'is_active' => true,
+        ]);
+
+        $report = RsmReport::create([
+            'area' => 'Regional B',
+            'report_type' => RsmReport::TYPE_OTHER,
+            'report_date' => now(),
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Fuad',
+            'created_by_name' => 'Fuad',
+            'created_by_role' => RsmUser::ROLE_STAFF,
+            'status' => 'Dikirim',
+            'title' => 'Kendala modal test',
+            'obstacle_text' => 'Butuh modal tindak lanjut',
+        ]);
+
+        $response = $this->actingAs($koordinator)->get(route('aktivitas'));
+
+        $response->assertOk();
+        $response->assertSee('Tindak Lanjuti');
+        $response->assertSee('Tindak Lanjuti Kendala');
+        $response->assertSee('fixed inset-0 z-50', false);
+        $response->assertDontSee('<details', false);
+
+        $report->delete();
+        $koordinator->delete();
+    }
 }
