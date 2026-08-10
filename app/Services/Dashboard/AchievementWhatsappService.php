@@ -63,7 +63,7 @@ class AchievementWhatsappService
         $lines[] = '___________________________________________';
         $lines[] = '';
         $leader = $payload['leader'];
-        $lines[] = '*'.$leader['label'].': '.$leader['name'].' - '.number_format($leader['registrasi'], 0, ',', '.').' closing*';
+        $lines[] = '*'.$leader['label'].': '.$leader['name'].' - '.number_format($leader['registrasi'], 0, ',', '.').'*';
         $lines[] = '';
 
         foreach ($payload['regionals'] as $regional) {
@@ -78,10 +78,10 @@ class AchievementWhatsappService
                     $lines[] = '  ('.implode(' / ', $parts).')';
                 }
                 foreach ($unit['staff'] as $staff) {
-                    $lines[] = '- '.$staff['name'].': '.number_format($staff['registrasi'], 0, ',', '.').' closing staff';
+                    $lines[] = '- '.$staff['name'].': '.number_format($staff['registrasi'], 0, ',', '.');
                 }
                 if (($unit['non_staff_registrasi'] ?? 0) > 0) {
-                    $lines[] = '- CS: '.number_format($unit['non_staff_registrasi'], 0, ',', '.').' closing';
+                    $lines[] = '- CS: '.number_format($unit['non_staff_registrasi'], 0, ',', '.');
                 }
             }
             $lines[] = '';
