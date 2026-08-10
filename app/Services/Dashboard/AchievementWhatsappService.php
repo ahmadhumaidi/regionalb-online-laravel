@@ -3,15 +3,17 @@
 namespace App\Services\Dashboard;
 
 use App\Models\RsmUser;
-use App\Support\AreaRegionals;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Ports the "Bahan WhatsApp Otomatis" generator on the Rekap page
- * (rsm_generate_achievement_whatsapp_artifact/rsm_achievement_whatsapp_text,
- * rsm_db.php:6191-6403). Text-only, matching the already-established pattern
- * for the coordinator schedule WhatsApp report — the legacy image rendering
- * (headless-browser screenshot with a GD fallback) is out of scope.
+ * Ports the "Bahan WhatsApp Otomatis" text generator on the Rekap page
+ * (rsm_achievement_whatsapp_text, rsm_db.php:6191-6403), reusing the same
+ * regional/unit grouping as the "Laporan Pencapaian" panel
+ * (AchievementReportService). The accompanying image is captured
+ * client-side from that panel (see resources/js/app.js
+ * captureAchievementSnapshot) rather than server-rendered — a headless-
+ * Chromium screenshot was attempted first but is blocked by snap
+ * confinement on this VPS regardless of invoking user/context.
  */
 class AchievementWhatsappService
 {
@@ -23,69 +25,16 @@ class AchievementWhatsappService
         9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
     ];
 
-    public static function generate(string $area, RsmUser $actor): array
+    public static function generate(string $area, array $filters, RsmUser $actor): array
     {
-        $today = now('Asia/Jakarta')->toDateString();
-        $filters = ['date_from' => $today, 'date_to' => $today, 'wilayah' => '', 'unit_name' => '', 'staff_name' => ''];
-
-        $performance = CollabMetricsService::personalPerformance($area, $filters, $actor);
-
-        $usersByName = RsmUser::query()->where('is_active', true)
-            ->get(['name', 'regional', 'campus_name'])
-            ->keyBy(fn (RsmUser $user) => mb_strtolower(trim($user->name)));
-
-        $regionalUnits = [];
-        foreach ($performance['rows'] as $row) {
-            if ((float) $row['registrasi'] <= 0) {
-                continue;
-            }
-            $user = $usersByName->get(mb_strtolower(trim((string) $row['name'])));
-            $regional = $row['regional'] ?: ($user->regional ?? 'Tanpa Regional');
-            $unit = trim((string) ($user->campus_name ?? '')) ?: 'Unit belum diatur';
-
-            $regionalUnits[$regional][$unit]['unit'] ??= $unit;
-            $regionalUnits[$regional][$unit]['registrasi'] = ($regionalUnits[$regional][$unit]['registrasi'] ?? 0) + $row['registrasi'];
-            $regionalUnits[$regional][$unit]['staff'][] = ['name' => $row['name'], 'registrasi' => $row['registrasi']];
-        }
-
-        $koordinators = RsmUser::query()->where('role', 'koordinator')->where('is_active', true)
-            ->get(['name', 'regional'])->keyBy('regional');
-
-        $regionalCards = [];
-        $visibleTotal = 0.0;
-        foreach (AreaRegionals::forArea($area) as $regional) {
-            $units = collect($regionalUnits[$regional] ?? [])
-                ->map(function (array $unit) {
-                    usort($unit['staff'], fn (array $a, array $b) => $b['registrasi'] <=> $a['registrasi']);
-
-                    return $unit;
-                })
-                ->sortByDesc('registrasi')
-                ->values()
-                ->all();
-
-            $regionalTotal = array_sum(array_column($units, 'registrasi'));
-            $visibleTotal += $regionalTotal;
-
-            $regionalCards[] = [
-                'regional' => $regional,
-                'registrasi' => $regionalTotal,
-                'korwil_name' => $koordinators->get($regional)?->name ?: 'Korwil belum diatur',
-                'units' => $units,
-            ];
-        }
-
-        $leaderLabel = match ($actor->role) {
-            'staff' => 'Staff',
-            'koordinator' => 'Korwil',
-            default => 'Senior Manager',
-        };
-
-        $text = self::buildText($today, $leaderLabel, $actor->name, $visibleTotal, $regionalCards);
+        $payload = AchievementReportService::build($area, $filters, $actor);
+        $generatedAt = now('Asia/Jakarta');
+        $text = self::buildText($filters['date_from'], $filters['date_to'], $generatedAt, $payload);
 
         $artifact = [
             'text' => $text,
-            'generated_at' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'generated_at' => $generatedAt->format('Y-m-d H:i:s'),
+            'period' => ['date_from' => $filters['date_from'], 'date_to' => $filters['date_to']],
         ];
         Storage::disk('local')->put(self::CACHE_KEY, json_encode($artifact, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
@@ -102,17 +51,22 @@ class AchievementWhatsappService
         return is_array($decoded) ? $decoded : null;
     }
 
-    private static function buildText(string $date, string $leaderLabel, string $leaderName, float $total, array $regionalCards): string
+    private static function buildText(string $dateFrom, string $dateTo, \Illuminate\Support\Carbon $generatedAt, array $payload): string
     {
+        $periodText = $dateFrom === $dateTo
+            ? self::formatDateLong($dateFrom)
+            : self::formatDateLong($dateFrom).' s/d '.self::formatDateLong($dateTo);
+
         $lines = ['*Laporan Pencapaian Regional B*'];
-        $lines[] = 'Periode : '.self::formatDateLong($date);
-        $lines[] = 'Sinkron : '.now()->timezone('Asia/Jakarta')->format('H:i:s');
+        $lines[] = 'Periode : '.$periodText;
+        $lines[] = 'Sinkron : '.$generatedAt->format('H:i:s');
         $lines[] = '___________________________________________';
         $lines[] = '';
-        $lines[] = '*'.$leaderLabel.': '.$leaderName.' - '.number_format($total, 0, ',', '.').' closing*';
+        $leader = $payload['leader'];
+        $lines[] = '*'.$leader['label'].': '.$leader['name'].' - '.number_format($leader['registrasi'], 0, ',', '.').' closing*';
         $lines[] = '';
 
-        foreach ($regionalCards as $regional) {
+        foreach ($payload['regionals'] as $regional) {
             $lines[] = '*'.$regional['regional'].' - '.$regional['korwil_name'].' = '.number_format($regional['registrasi'], 0, ',', '.').'*';
             if ($regional['units'] === []) {
                 $lines[] = '- Belum ada unit closing';
@@ -122,6 +76,9 @@ class AchievementWhatsappService
                 foreach ($unit['staff'] as $staff) {
                     $lines[] = '- '.$staff['name'].': '.number_format($staff['registrasi'], 0, ',', '.').' closing staff';
                 }
+            }
+            if (($regional['non_staff_registrasi'] ?? 0) > 0) {
+                $lines[] = '- Non-staff (kemungkinan CS): '.number_format($regional['non_staff_registrasi'], 0, ',', '.').' closing';
             }
             $lines[] = '';
         }

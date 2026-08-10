@@ -6,6 +6,7 @@ use App\Exports\AdsRekapExport;
 use App\Exports\RekapExport;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\Dashboard\AchievementReportService;
 use App\Services\Dashboard\AchievementWhatsappService;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\ReferenceOptionsService;
@@ -25,11 +26,11 @@ class ReportRecapController extends Controller
         $user = Auth::user();
         $area = $user->area ?: 'Regional B';
         $type = (string) $request->query('rekap_type', 'all');
-        if (! in_array($type, ['all', RsmReport::TYPE_MARKETING, RsmReport::TYPE_ADS, RsmReport::TYPE_OTHER], true)) {
+        if (! in_array($type, ['all', RsmReport::TYPE_MARKETING, RsmReport::TYPE_ADS, RsmReport::TYPE_OTHER, 'pencapaian'], true)) {
             $type = 'all';
         }
         $filters = DashboardFilters::fromRequest($request, 'rekap');
-        $recap = ReportRecapService::build($area, $filters, $type, $user);
+        $recap = $type === 'pencapaian' ? null : ReportRecapService::build($area, $filters, $type, $user);
 
         return view('rekap.index', [
             'active' => 'rekap',
@@ -38,6 +39,7 @@ class ReportRecapController extends Controller
             'recap' => $recap,
             'references' => ReferenceOptionsService::build($area, $user),
             'whatsappArtifact' => AchievementWhatsappService::latest(),
+            'achievementReport' => $type === 'pencapaian' ? AchievementReportService::build($area, $filters, $user) : null,
         ]);
     }
 
@@ -46,7 +48,8 @@ class ReportRecapController extends Controller
         $user = $request->user();
         abort_unless($user->role === 'super_user', 403);
 
-        AchievementWhatsappService::generate($user->area ?: 'Regional B', $user);
+        $filters = DashboardFilters::fromRequest($request, 'rekap');
+        AchievementWhatsappService::generate($user->area ?: 'Regional B', $filters, $user);
 
         return back()->with('status', 'Bahan WhatsApp pencapaian terbaru berhasil dibuat.');
     }
