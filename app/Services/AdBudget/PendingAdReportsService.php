@@ -39,12 +39,27 @@ class PendingAdReportsService
                 continue;
             }
 
-            if ($status === 'dilaporkan unit' && ((float) $report->realization_amount <= 0 || blank($report->attachment_path))) {
+            if ($status === 'dilaporkan unit' && ! self::isComplete($report)) {
                 $belumTuntas[] = self::rowShape($report, $user);
             }
         }
 
         return ['belum_dilaporkan' => $belumDilaporkan, 'belum_tuntas' => $belumTuntas];
+    }
+
+    /**
+     * "Selesai" requires all three: bukti invoice (attachment_path), bukti
+     * insight (insight_attachment_path), and data hasil iklan (at least one
+     * imported ad_leads row) - realization_amount alone used to be treated
+     * as enough, which let a report drop off "Belum Tuntas Dilaporkan" while
+     * insight/data hasil were still missing.
+     */
+    private static function isComplete(RsmReport $report): bool
+    {
+        return (float) $report->realization_amount > 0
+            && filled($report->attachment_path)
+            && filled($report->insight_attachment_path)
+            && $report->adLeads()->exists();
     }
 
     /** Matches the columns render_ads_pending_report_panel() actually shows (dashboard.php:2279-2321). */
@@ -59,6 +74,8 @@ class PendingAdReportsService
             'budget_approved' => (float) ($report->budget_approved ?: $report->budget_requested),
             'realization_amount' => (float) $report->realization_amount,
             'has_attachment' => filled($report->attachment_path),
+            'has_insight' => filled($report->insight_attachment_path),
+            'has_result_data' => $report->adLeads()->exists(),
             'status' => $report->status,
             // Not every "belum dilaporkan" status is actually editable yet
             // (e.g. "Diverifikasi" is still awaiting final approval) - only

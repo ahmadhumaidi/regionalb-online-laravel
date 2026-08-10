@@ -48,7 +48,9 @@
                             <th class="py-2 pr-3 font-medium">Tanggal</th>
                             <th class="py-2 pr-3 font-medium">Platform/Campaign</th>
                             <th class="py-2 pr-3 text-right font-medium">Realisasi</th>
-                            <th class="py-2 pr-3 font-medium">Bukti</th>
+                            <th class="py-2 pr-3 font-medium">Invoice</th>
+                            <th class="py-2 pr-3 font-medium">Insight</th>
+                            <th class="py-2 pr-3 font-medium">Data Hasil</th>
                             <th class="py-2 pr-3 font-medium">Status</th>
                             <th class="py-2 font-medium">Aksi</th>
                         </tr>
@@ -61,6 +63,20 @@
                                 <td class="py-2 pr-3 text-right text-ink">Rp {{ number_format($row['realization_amount'], 0, ',', '.') }}</td>
                                 <td class="py-2 pr-3">
                                     @if ($row['has_attachment'])
+                                        <span class="rounded-full bg-tone-green/10 px-2 py-0.5 text-[11px] font-medium text-tone-green">Ada</span>
+                                    @else
+                                        <span class="rounded-full bg-tone-red/10 px-2 py-0.5 text-[11px] font-medium text-tone-red">Belum ada</span>
+                                    @endif
+                                </td>
+                                <td class="py-2 pr-3">
+                                    @if ($row['has_insight'])
+                                        <span class="rounded-full bg-tone-green/10 px-2 py-0.5 text-[11px] font-medium text-tone-green">Ada</span>
+                                    @else
+                                        <span class="rounded-full bg-tone-red/10 px-2 py-0.5 text-[11px] font-medium text-tone-red">Belum ada</span>
+                                    @endif
+                                </td>
+                                <td class="py-2 pr-3">
+                                    @if ($row['has_result_data'])
                                         <span class="rounded-full bg-tone-green/10 px-2 py-0.5 text-[11px] font-medium text-tone-green">Ada</span>
                                     @else
                                         <span class="rounded-full bg-tone-red/10 px-2 py-0.5 text-[11px] font-medium text-tone-red">Belum ada</span>
