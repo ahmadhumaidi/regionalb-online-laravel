@@ -73,12 +73,16 @@ class AchievementWhatsappService
             }
             foreach ($regional['units'] as $unit) {
                 $lines[] = '> - '.$unit['unit'].': '.number_format($unit['registrasi'], 0, ',', '.');
+                if (! empty($unit['campus_breakdown'])) {
+                    $parts = array_map(fn (array $b) => $b['label'].': '.number_format($b['total'], 0, ',', '.'), $unit['campus_breakdown']);
+                    $lines[] = '  ('.implode(' / ', $parts).')';
+                }
                 foreach ($unit['staff'] as $staff) {
                     $lines[] = '- '.$staff['name'].': '.number_format($staff['registrasi'], 0, ',', '.').' closing staff';
                 }
-            }
-            if (($regional['non_staff_registrasi'] ?? 0) > 0) {
-                $lines[] = '- Non-staff (kemungkinan CS): '.number_format($regional['non_staff_registrasi'], 0, ',', '.').' closing';
+                if (($unit['non_staff_registrasi'] ?? 0) > 0) {
+                    $lines[] = '- Non-staff (kemungkinan CS): '.number_format($unit['non_staff_registrasi'], 0, ',', '.').' closing';
+                }
             }
             $lines[] = '';
         }

@@ -61,8 +61,11 @@
                                 <div class="rounded-lg border border-border p-3">
                                     <div class="flex items-center justify-between gap-2">
                                         <strong class="text-sm text-ink">{{ $unit['unit'] }}</strong>
-                                        <span class="text-xs text-ink-muted">{{ number_format($unit['registrasi'], 0, ',', '.') }} closing staff</span>
+                                        <span class="text-base font-bold text-ink">{{ number_format($unit['registrasi'], 0, ',', '.') }}</span>
                                     </div>
+                                    @if ($unit['campus_breakdown'])
+                                        <p class="mt-0.5 text-[11px] text-ink-muted">{{ collect($unit['campus_breakdown'])->map(fn ($b) => $b['label'].': '.number_format($b['total'], 0, ',', '.'))->implode(' · ') }}</p>
+                                    @endif
                                     <div class="mt-2 flex flex-wrap gap-2">
                                         @foreach ($unit['staff'] as $staff)
                                             <div class="flex items-center gap-1.5 rounded-full border border-border bg-surface-muted/60 py-1 pr-2 pl-1">
@@ -76,6 +79,12 @@
                                                 <span class="text-xs text-ink">{{ $staff['name'] }} <span class="text-ink-muted">· {{ number_format($staff['registrasi'], 0, ',', '.') }}</span></span>
                                             </div>
                                         @endforeach
+                                        @if (($unit['non_staff_registrasi'] ?? 0) > 0)
+                                            <div class="flex items-center gap-1.5 rounded-full border border-tone-amber/40 bg-tone-amber/10 py-1 pr-2 pl-1" title="Selisih dari Closing Kampus Regional yang belum teratribusi ke staff mana pun">
+                                                <span class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-tone-amber text-[10px] font-semibold text-white">CS</span>
+                                                <span class="text-xs text-ink">CS <span class="text-ink-muted">· {{ number_format($unit['non_staff_registrasi'], 0, ',', '.') }}</span></span>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
