@@ -4,6 +4,7 @@ namespace App\Services\Dashboard;
 
 use App\Models\RsmUser;
 use App\Support\AreaRegionals;
+use App\Support\CampusMatcher;
 
 /**
  * "Laporan Pencapaian" panel on the Rekap page — ports
@@ -25,26 +26,6 @@ use App\Support\AreaRegionals;
 class AchievementReportService
 {
     private const SENIOR_ROLES = ['super_user', 'executive_director', 'director', 'senior'];
-
-    /**
-     * Campus labels that should collapse into one unit card even though
-     * they don't share a substring/parenthetical relation, keyed by
-     * lowercased source label, valued by the display label of the target
-     * they merge into:
-     *  - "same real campus, spelled differently" (found by diffing every
-     *    distinct rsm_users.campus_name against every distinct
-     *    "Closing Kampus Regional" campus_name, 2026-08-10)
-     *  - "different campuses administratively reported together" (one
-     *    staff member covers both — confirmed by user, 2026-08-10:
-     *    Ahmad Wirda Burhanudin Mubarroq handles both IKIP and STIE
-     *    Widya Darma)
-     */
-    private const CAMPUS_ALIASES = [
-        'sekolah tinggi bahasa asing lia yogyakarta (stba lia)' => 'STBA Lia Yogyakarta',
-        'institut teknologi dan bisnis stikom bali' => 'ITB STIKOM Bali',
-        'ikip widya darma' => 'IKIP Widya Darma / STIE Widya Darma',
-        'stie widya darma' => 'IKIP Widya Darma / STIE Widya Darma',
-    ];
 
     public static function build(string $area, array $filters, RsmUser $user): array
     {
@@ -230,12 +211,6 @@ class AchievementReportService
         return trim($stripped ?? $name);
     }
 
-    /** A campus row's own label, translated through CAMPUS_ALIASES if it's a merge source. */
-    private static function canonicalCampusLabel(string $label): string
-    {
-        return self::CAMPUS_ALIASES[mb_strtolower(trim($label))] ?? trim($label);
-    }
-
     /**
      * Campus rows grouped by (regional, canonical label) so aliased rows —
      * e.g. "IKIP Widya Darma" and "STIE Widya Darma", administratively one
@@ -255,7 +230,7 @@ class AchievementReportService
                 continue;
             }
             $regional = (string) ($row['regional'] ?: 'Tanpa Regional');
-            $canonical = self::canonicalCampusLabel($label);
+            $canonical = CampusMatcher::canonicalLabel($label);
             $key = mb_strtolower($regional).'|'.mb_strtolower($canonical);
             $rows[$key] ??= ['regional' => $regional, 'label' => $canonical, 'total' => 0.0, 'breakdown' => []];
             $rows[$key]['total'] += $value;
@@ -268,74 +243,15 @@ class AchievementReportService
     /** @param list<array{regional: string, label: string, total: float, breakdown: list<array{label: string, total: float}>}> $campusRows */
     private static function matchCampusRow(array $campusRows, string $regional, string $unitLabel): ?array
     {
-        $candidates = self::unitMatchKeys($unitLabel);
-        if ($candidates === []) {
-            return null;
-        }
-
         foreach ($campusRows as $index => $row) {
             if (mb_strtolower($row['regional']) !== mb_strtolower($regional)) {
                 continue;
             }
-            $rowKeys = self::unitMatchKeys($row['label']);
-            if (array_intersect($candidates, $rowKeys) !== []) {
+            if (CampusMatcher::matches($unitLabel, $row['label'])) {
                 return ['index' => $index, 'label' => $row['label'], 'total' => $row['total'], 'breakdown' => $row['breakdown']];
             }
         }
 
         return null;
-    }
-
-    /**
-     * Candidate match keys for a campus/unit label: the label itself, its
-     * "plain" form with parenthetical content stripped, any parenthetical
-     * content alone — covers "Full Name (ABBR)" vs "ABBR"-only naming
-     * across rsm_users.campus_name and the collab "Closing Kampus Regional"
-     * source — and, for a combined "A / B" display label (two real
-     * campuses merged into one card via CAMPUS_ALIASES), each side alone,
-     * so a raw unit label matching just "A" still finds the merged row.
-     *
-     * @return list<string>
-     */
-    private static function unitMatchKeys(string $label): array
-    {
-        $label = trim($label);
-        if ($label === '') {
-            return [];
-        }
-
-        $keys = [mb_strtolower($label)];
-
-        $plain = trim((string) preg_replace('/\s+/', ' ', (string) preg_replace('/\s*[\(\[].*?[\)\]]\s*/', ' ', $label)));
-        if ($plain !== '' && ! in_array(mb_strtolower($plain), $keys, true)) {
-            $keys[] = mb_strtolower($plain);
-        }
-
-        if (preg_match_all('/[\(\[]([^\)\]]+)[\)\]]/', $label, $matches)) {
-            foreach ($matches[1] as $paren) {
-                $parenKey = mb_strtolower(trim($paren));
-                if ($parenKey !== '' && ! in_array($parenKey, $keys, true)) {
-                    $keys[] = $parenKey;
-                }
-            }
-        }
-
-        if (str_contains($label, '/')) {
-            foreach (explode('/', $label) as $segment) {
-                $segmentKey = mb_strtolower(trim($segment));
-                if ($segmentKey !== '' && ! in_array($segmentKey, $keys, true)) {
-                    $keys[] = $segmentKey;
-                }
-            }
-        }
-
-        if (isset(self::CAMPUS_ALIASES[$keys[0]])) {
-            $aliasKey = mb_strtolower(self::CAMPUS_ALIASES[$keys[0]]);
-            if (! in_array($aliasKey, $keys, true)) {
-                $keys[] = $aliasKey;
-            }
-        }
-
-        return $keys;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services\Dashboard;
 use App\Models\RsmCollabDailyMetric;
 use App\Models\RsmUser;
 use App\Support\AreaRegionals;
+use App\Support\CampusMatcher;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -42,9 +43,19 @@ class CollabMetricsService
                 'regional' => $row->regional,
                 'unit' => $row->campus_name,
                 'registrasi' => (float) $row->total_value,
-            ])
-            ->sortByDesc('registrasi')
-            ->values();
+            ]);
+
+        // No explicit unit_name filter (the staff filter-bar box is
+        // read-only display only, never actually submitted) — auto-scope to
+        // the staff member's own campus, fuzzy-matched via CampusMatcher
+        // since rsm_users.campus_name and this Collab source don't always
+        // spell the same campus identically.
+        $ownCampus = trim((string) $user->campus_name);
+        if ($user->role === 'staff' && $filters['unit_name'] === '' && $ownCampus !== '') {
+            $rows = $rows->filter(fn (array $row) => CampusMatcher::matches((string) $row['unit'], $ownCampus))->values();
+        }
+
+        $rows = $rows->sortByDesc('registrasi')->values();
 
         return [
             'rows' => $rows->all(),

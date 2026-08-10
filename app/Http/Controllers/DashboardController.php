@@ -122,7 +122,7 @@ class DashboardController extends Controller
         $herregPersonal = CollabMetricsService::personalTotal($regionalFilters, $area, $user, 'Herreg Personal Per Regional');
         $realisasiIklan = (float) DashboardOverviewService::build($area, $regionalFilters, $user)['budget']['spend'];
         $pmb = CollabSourceService::pmbRegionalTotals([$regional]);
-        $bdc = BdcReportUsersService::regionalTotals($regional);
+        $bdc = BdcReportUsersService::regionalTotals($regional, $user->role === 'staff' ? $user->campus_name : null);
         $koordinator = RsmUser::query()->where('area', $area)->where('role', 'koordinator')->where('regional', $regional)->where('is_active', true)->first();
 
         return [

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Support\AreaRegionals;
+use App\Support\CampusMatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -160,15 +161,29 @@ class BdcReportUsersService
     /**
      * Sums the /bdc-users report columns (Total, Baru, FU Hari Ini, Closing,
      * Wawancara, Belum Herreg) across every staff row whose wilayah matches
-     * the given regional. Used by the Dashboard's per-regional recap card.
+     * the given regional (and, if given, whose kampus matches $campus —
+     * fuzzy via CampusMatcher, same as CollabMetricsService::campusTotals()'s
+     * staff auto-scope, since the API's campus spelling doesn't always
+     * agree with rsm_users.campus_name). Used by the Dashboard's
+     * per-regional recap card.
      *
      * @return array{total: float, data_baru: float, fu_hari_ini: float, closing: float, wawancara: float, belum_herreg: float}
      */
-    public static function regionalTotals(string $regional): array
+    public static function regionalTotals(string $regional, ?string $campus = null): array
     {
+        $campus = trim((string) $campus);
         $rows = array_filter(
             (array) (self::snapshot()['listdata'] ?? []),
-            fn ($row) => is_array($row) && (string) ($row['wilayah'] ?? '') === $regional
+            function ($row) use ($regional, $campus) {
+                if (! is_array($row) || (string) ($row['wilayah'] ?? '') !== $regional) {
+                    return false;
+                }
+                if ($campus === '') {
+                    return true;
+                }
+
+                return CampusMatcher::matches((string) ($row['kampus'] ?? $row['campus_name'] ?? ''), $campus);
+            }
         );
 
         $sum = fn (string $key): float => array_sum(array_map(fn ($row) => self::numberValue($row[$key] ?? 0), $rows));
