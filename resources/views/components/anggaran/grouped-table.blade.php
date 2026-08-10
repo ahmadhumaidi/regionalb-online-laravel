@@ -18,6 +18,7 @@
         'draft' => 'slate',
         'dikirim' => 'blue-light',
         'pengajuan' => 'amber',
+        'diverifikasi' => 'blue-light',
         'revisi' => 'orange',
         'disetujui' => 'green',
         'transfer / invoice' => 'blue',
@@ -108,6 +109,12 @@
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" title="Hapus" aria-label="Hapus" class="rounded-md border border-tone-red p-1 text-tone-red"><x-icon name="trash" class="h-3.5 w-3.5" /></button>
+                                                </form>
+                                            @endif
+                                            @if ($row['can_verify'])
+                                                <form method="POST" action="{{ route('anggaran.verifikasi', $row['id']) }}" onsubmit="return confirm('Verifikasi pengajuan ini?')">
+                                                    @csrf
+                                                    <button type="submit" title="Verifikasi" aria-label="Verifikasi" class="rounded-md border border-tone-blue-light p-1 text-tone-blue-light"><x-icon name="shield" class="h-3.5 w-3.5" /></button>
                                                 </form>
                                             @endif
                                             @if ($row['can_review'])

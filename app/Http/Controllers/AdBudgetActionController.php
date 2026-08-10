@@ -21,7 +21,24 @@ use Illuminate\Support\Facades\Auth;
  */
 class AdBudgetActionController extends Controller
 {
-    private const REVIEWABLE_STATUSES = ['Pengajuan', 'Revisi'];
+    private const REVIEWABLE_STATUSES = ['Pengajuan', 'Diverifikasi', 'Revisi'];
+
+    private const VERIFIABLE_STATUSES = ['Pengajuan'];
+
+    public function verify(Request $request, RsmReport $report): RedirectResponse
+    {
+        $this->markVerified($request, $report);
+
+        return back()->with('notice', 'Pengajuan anggaran diverifikasi.');
+    }
+
+    /** Shared by the dedicated "Verifikasi" action above and the ads edit form's optional verify checkbox (ReportFormController::update()). */
+    public function markVerified(Request $request, RsmReport $report): void
+    {
+        $this->authorizeVerify($report);
+
+        $this->transition($request, $report, 'Diverifikasi', 'verifikasi');
+    }
 
     public function approve(Request $request, RsmReport $report): RedirectResponse
     {
@@ -86,6 +103,16 @@ class AdBudgetActionController extends Controller
         abort_unless($report->report_type === RsmReport::TYPE_ADS, 404);
         abort_unless(RsmRole::canReviewAdBudgetRequest($user), 403);
         abort_unless(in_array($report->status, self::REVIEWABLE_STATUSES, true), 422, 'Status laporan sudah berubah, muat ulang halaman.');
+    }
+
+    private function authorizeVerify(RsmReport $report): void
+    {
+        /** @var RsmUser $user */
+        $user = Auth::user();
+
+        abort_unless($report->report_type === RsmReport::TYPE_ADS, 404);
+        abort_unless(RsmRole::canVerifyAdBudgetRequest($report, $user), 403);
+        abort_unless(in_array($report->status, self::VERIFIABLE_STATUSES, true), 422, 'Status laporan sudah berubah, muat ulang halaman.');
     }
 
     private function authorizeComplete(RsmReport $report): void

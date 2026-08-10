@@ -76,6 +76,15 @@ class ReportFormController extends Controller
 
         if (
             $report->report_type === RsmReport::TYPE_ADS
+            && $request->boolean('mark_verified')
+            && \App\Support\RsmRole::canVerifyAdBudgetRequest($report->fresh(), $user)
+            && $report->fresh()->status === 'Pengajuan'
+        ) {
+            app(AdBudgetActionController::class)->markVerified($request, $report->fresh());
+        }
+
+        if (
+            $report->report_type === RsmReport::TYPE_ADS
             && $request->boolean('mark_selesai')
             && \App\Support\RsmRole::canManageAdBudget($user)
             && ! in_array($report->fresh()->status, ['Selesai', 'Ditolak'], true)

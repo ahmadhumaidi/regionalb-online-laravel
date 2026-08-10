@@ -47,6 +47,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/anggaran/limit', [AdBudgetController::class, 'storeLimit'])->name('anggaran.limit.store');
     Route::get('/anggaran/create', fn () => app(ReportFormController::class)->create('ads'))->name('anggaran.create');
     Route::post('/anggaran', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'ads'))->name('anggaran.store');
+    Route::post('/anggaran/{report}/verifikasi', [AdBudgetActionController::class, 'verify'])->name('anggaran.verifikasi');
     Route::post('/anggaran/{report}/setujui', [AdBudgetActionController::class, 'approve'])->name('anggaran.setujui');
     Route::post('/anggaran/{report}/tolak', [AdBudgetActionController::class, 'reject'])->name('anggaran.tolak');
     Route::post('/anggaran/{report}/revisi', [AdBudgetActionController::class, 'revise'])->name('anggaran.revisi');

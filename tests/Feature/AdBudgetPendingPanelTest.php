@@ -277,4 +277,83 @@ class AdBudgetPendingPanelTest extends TestCase
         $staff->delete();
         $senior->delete();
     }
+
+    public function test_koordinator_and_senior_can_verify_own_ads_pengajuan(): void
+    {
+        $this->migrate();
+
+        $koordinatorR6 = RsmUser::create([
+            'id' => 900023, 'name' => 'Korwil R6', 'username' => 'test_korwil_900023',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
+        ]);
+        $koordinatorR4 = RsmUser::create([
+            'id' => 900024, 'name' => 'Korwil R4', 'username' => 'test_korwil_900024',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 4', 'is_active' => true,
+        ]);
+        $senior = RsmUser::create([
+            'id' => 900025, 'name' => 'Test Senior', 'username' => 'test_senior_900025',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'koordinator',
+            'status' => 'Pengajuan', 'title' => 'Verify Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Verify Campaign',
+            'budget_requested' => 300000,
+        ]);
+
+        // A koordinator from a different wilayah can't verify this request.
+        $this->actingAs($koordinatorR4)->post(route('anggaran.verifikasi', $report))->assertForbidden();
+        $this->assertSame('Pengajuan', $report->fresh()->status);
+
+        // The koordinator who owns Regional 6 can.
+        $this->actingAs($koordinatorR6)->post(route('anggaran.verifikasi', $report))->assertRedirect();
+        $this->assertSame('Diverifikasi', $report->fresh()->status);
+
+        // Once verified, Setujui/Tolak/Revisi still work for the senior tier.
+        $this->actingAs($senior)->post(route('anggaran.setujui', $report), ['budget_approved' => 300000])->assertRedirect();
+        $this->assertSame('Disetujui', $report->fresh()->status);
+
+        $report->delete();
+        $senior->delete();
+        $koordinatorR4->delete();
+        $koordinatorR6->delete();
+    }
+
+    public function test_mark_verified_checkbox_on_edit_form_transitions_status(): void
+    {
+        $this->migrate();
+
+        $koordinator = RsmUser::create([
+            'id' => 900026, 'name' => 'Korwil R6', 'username' => 'test_korwil_900026',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
+        ]);
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'koordinator',
+            'status' => 'Pengajuan', 'title' => 'Verify Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Verify Campaign',
+            'budget_requested' => 300000, 'ad_period' => \App\Services\AdBudget\AdBudgetPeriods::default(),
+        ]);
+
+        $this->actingAs($koordinator)->get(route('reports.edit', $report))
+            ->assertOk()
+            ->assertSee('name="mark_verified"', false);
+
+        $this->actingAs($koordinator)->patch(route('reports.update', $report), [
+            'report_date' => now()->toDateString(),
+            'ad_period' => $report->ad_period,
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'platform' => 'Meta Ads',
+            'budget_requested' => 300000,
+            'mark_verified' => '1',
+        ])->assertRedirect();
+        $this->assertSame('Diverifikasi', $report->fresh()->status);
+
+        $report->delete();
+        $koordinator->delete();
+    }
 }

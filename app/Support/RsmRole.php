@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\RsmReport;
 use App\Models\RsmUser;
 
 /**
@@ -82,6 +83,21 @@ class RsmRole
     public static function canReviewAdBudgetRequest(?RsmUser $user): bool
     {
         return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior'], true);
+    }
+
+    /**
+     * The lightweight "Verifikasi" step (Pengajuan → Diverifikasi) ahead of
+     * the Setujui/Tolak/Revisi decision: open to Korwil (their own wilayah's
+     * requests only, mirroring REPORT_ACTIONS's koordinator => 'verifikasi')
+     * and to canManageAdBudget()'s super_user/senior pairing.
+     */
+    public static function canVerifyAdBudgetRequest(RsmReport $report, ?RsmUser $user): bool
+    {
+        if (self::canManageAdBudget($user)) {
+            return true;
+        }
+
+        return $user?->role === 'koordinator' && $report->wilayah === $user->regional;
     }
 
     public static function canViewJadwalKoordinator(?RsmUser $user): bool

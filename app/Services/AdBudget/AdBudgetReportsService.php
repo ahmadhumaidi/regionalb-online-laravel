@@ -82,7 +82,8 @@ class AdBudgetReportsService
     private static function rowShape(RsmReport $report, RsmUser $user): array
     {
         $status = (string) $report->status;
-        $canReview = RsmRole::canReviewAdBudgetRequest($user) && in_array($status, ['Pengajuan', 'Revisi'], true);
+        $canVerify = RsmRole::canVerifyAdBudgetRequest($report, $user) && $status === 'Pengajuan';
+        $canReview = RsmRole::canReviewAdBudgetRequest($user) && in_array($status, ['Pengajuan', 'Diverifikasi', 'Revisi'], true);
         // Marking "Selesai" is narrower than canReviewAdBudgetRequest()'s
         // super_user/executive_director/director/senior tier - just the
         // super_user/senior pairing canManageAdBudget() already codifies.
@@ -103,6 +104,7 @@ class AdBudgetReportsService
             'has_attachment' => filled($report->attachment_path),
             'has_insight_attachment' => filled($report->insight_attachment_path),
             'has_ad_leads' => (int) $report->leads_count > 0,
+            'can_verify' => $canVerify,
             'can_review' => $canReview,
             'can_complete' => $canComplete,
             'can_edit' => ReportFormService::canEdit($report, $user),
