@@ -20,8 +20,8 @@
 @endphp
 <dl class="mt-5 grid gap-4 text-sm md:grid-cols-3">@foreach ($fields as [$label,$value])<div><dt class="text-xs text-ink-muted">{{ $label }}</dt><dd class="mt-1 text-ink">{{ $value ?: '-' }}</dd></div>@endforeach</dl>@if ($report->attachment_path || $report->insight_attachment_path)<div class="mt-5 flex flex-wrap gap-2">@if ($report->attachment_path)<a href="{{ route('reports.attachment', $report) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg border border-l-4 border-border border-l-tone-blue bg-surface-muted/50 px-3 py-2 text-sm font-semibold text-tone-blue hover:bg-surface-muted"><x-icon name="document" class="h-4 w-4" />Lihat lampiran</a>@endif @if ($report->insight_attachment_path)<a href="{{ route('reports.insight-attachment', $report) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg border border-l-4 border-border border-l-tone-orange bg-surface-muted/50 px-3 py-2 text-sm font-semibold text-tone-orange hover:bg-surface-muted"><x-icon name="bolt" class="h-4 w-4" />Lihat bukti insight</a>@endif</div>@endif</section>
 @if ($leaderFollowUpText !== '')
-    <section class="rounded-2xl glass-card p-5">
-        <h2 class="text-base font-semibold text-ink">Tindak lanjut dari pimpinan</h2>
+    <section class="rounded-2xl border border-l-4 border-brand-200 border-l-brand-600 bg-brand-50 p-5 shadow-sm">
+        <h2 class="text-base font-semibold text-brand-700">Tindak lanjut dari pimpinan</h2>
         <p class="mt-2 text-sm text-ink">{{ $leaderFollowUpText }}</p>
     </section>
 @endif
