@@ -7,6 +7,7 @@ use App\Models\RsmUser;
 use App\Support\Menu;
 use App\Support\RsmRole;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 
@@ -41,8 +42,13 @@ class App extends Component
                 ->where(fn ($q) => $q->where('area', $user->area)->orWhereNull('area')->orWhere('area', ''))
                 ->orderBy('regional')->orderBy('name')->get()
             : collect();
-        $this->unreadNotificationCount = RsmNotification::where('recipient_user_id', $user->id)->unread()->count();
-        $this->recentNotifications = RsmNotification::where('recipient_user_id', $user->id)->latest()->limit(10)->get();
+        if (Schema::hasTable('rsm_notifications')) {
+            $this->unreadNotificationCount = RsmNotification::where('recipient_user_id', $user->id)->unread()->count();
+            $this->recentNotifications = RsmNotification::where('recipient_user_id', $user->id)->latest()->limit(10)->get();
+        } else {
+            $this->unreadNotificationCount = 0;
+            $this->recentNotifications = collect();
+        }
     }
 
     public function render(): View

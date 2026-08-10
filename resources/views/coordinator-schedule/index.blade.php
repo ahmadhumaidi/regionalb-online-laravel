@@ -37,7 +37,7 @@
     </section>
 
     <section class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        @foreach ($regionals as $regional)
+        @foreach ($summaryRegionals as $regional)
             @php $row = $summary[$regional] ?? ['total' => 0, 'Fisik' => 0, 'Zoom' => 0, 'Telepon' => 0, 'Selesai' => 0]; @endphp
             <div class="rounded-2xl glass-card p-4">
                 <p class="text-xs text-ink-muted">{{ $regional }}</p>
@@ -47,7 +47,7 @@
         @endforeach
     </section>
 
-    @if ($canManage)
+    @if ($canManage && auth()->user()->role !== 'koordinator')
         <section class="mt-5 rounded-2xl glass-card p-5">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-base font-semibold text-ink">Tambah Agenda Kunjungan</h2>
@@ -117,32 +117,90 @@
                                         </td>
                                         <td class="py-2 pr-5">
                                             @if ($canManage)
-                                                <div class="flex flex-col gap-1">
+                                                <div class="flex flex-col items-start gap-1">
                                                     <details class="text-xs">
-                                                        <summary class="cursor-pointer font-medium text-brand-600 underline">Edit</summary>
+                                                        <summary class="cursor-pointer list-none rounded-md border border-border px-2 py-1 font-medium text-ink hover:bg-surface-muted">Edit</summary>
                                                         <form method="POST" action="{{ route('jadwal-koordinator.update', $row) }}" class="mt-2 grid gap-1">
                                                             @csrf @method('PATCH')
                                                             <input name="unit_name" value="{{ $row->unit_name }}" required class="w-44 rounded border-border px-1 text-xs">
                                                             <select name="visit_type" class="rounded border-border text-xs"><option @selected($row->visit_type === 'Fisik')>Fisik</option><option @selected($row->visit_type === 'Zoom')>Zoom</option><option @selected($row->visit_type === 'Telepon')>Telepon</option></select>
                                                             <input name="agenda" value="{{ $row->agenda }}" required class="w-56 rounded border-border px-1 text-xs">
-                                                            <button class="text-left font-medium text-brand-600 underline">Simpan</button>
+                                                            <button class="mt-1 rounded-md bg-brand-600 px-2 py-1 text-left text-xs font-semibold text-white">Simpan</button>
                                                         </form>
                                                     </details>
-                                                    <details class="text-xs">
-                                                        <summary class="cursor-pointer font-medium text-brand-600 underline">Laporan</summary>
-                                                        <form method="POST" enctype="multipart/form-data" action="{{ route('jadwal-koordinator.report', $row) }}" class="mt-2 grid gap-1">
-                                                            @csrf @method('PATCH')
-                                                            <select name="status" class="rounded border-border text-xs">@foreach (['Rencana', 'Dijadwalkan', 'Selesai', 'Reschedule'] as $status)<option @selected($row->status === $status)>{{ $status }}</option>@endforeach</select>
-                                                            <textarea name="result_text" placeholder="Hasil kunjungan" rows="2" class="w-56 rounded border-border px-1 text-xs">{{ $row->result_text }}</textarea>
-                                                            <textarea name="next_action" placeholder="Follow up berikutnya" rows="2" class="w-56 rounded border-border px-1 text-xs">{{ $row->next_action }}</textarea>
-                                                            <input type="file" name="attachment" accept="image/jpeg,image/png,image/webp,application/pdf" class="text-xs">
-                                                            <button class="text-left font-medium text-brand-600 underline">Simpan Laporan</button>
+                                                    @php
+                                                        $savedChecklist = json_decode((string) $row->checklist_json, true);
+                                                        $savedChecklist = is_array($savedChecklist) ? $savedChecklist : [];
+                                                        $checklistState = [];
+                                                        foreach ($jobdeskItems as $itemKey => $itemLabel) {
+                                                            $entry = $savedChecklist[$itemKey] ?? null;
+                                                            $checklistState[$itemKey] = is_array($entry)
+                                                                ? ['checked' => ! empty($entry['checked']), 'note' => trim((string) ($entry['note'] ?? ''))]
+                                                                : ['checked' => ! empty($entry), 'note' => ''];
+                                                        }
+                                                    @endphp
+                                                    <div x-data="{ open: false }" class="inline-block">
+                                                        <button type="button" @click="open = true" class="rounded-md border border-brand-600 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50">Laporan</button>
+                                                        <div x-show="open" x-cloak @keydown.escape.window="open = false" class="fixed inset-0 z-40 flex items-center justify-center p-4" style="background: rgba(15,23,42,0.45)">
+                                                            <div @click.outside="open = false" class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-2xl">
+                                                                <div class="mb-4 flex items-start justify-between gap-3">
+                                                                    <div>
+                                                                        <h2 class="text-base font-semibold text-ink">Laporan Hasil Kunjungan</h2>
+                                                                        <p class="mt-0.5 text-xs text-ink-muted">{{ $row->unit_name }} — {{ $row->schedule_date->format('d M Y') }}</p>
+                                                                    </div>
+                                                                    <button type="button" @click="open = false" class="rounded-md border border-border px-2 py-1 text-xs text-ink-muted hover:text-ink">Tutup</button>
+                                                                </div>
+                                                                <form method="POST" enctype="multipart/form-data" action="{{ route('jadwal-koordinator.report', $row) }}" class="grid gap-4">
+                                                                    @csrf @method('PATCH')
+                                                                    <label class="grid gap-1 text-sm">Status<select name="status" class="rounded-lg border-border bg-surface-muted">@foreach (['Rencana', 'Dijadwalkan', 'Selesai', 'Reschedule'] as $status)<option @selected($row->status === $status)>{{ $status }}</option>@endforeach</select></label>
+
+                                                                    <div class="rounded-xl border border-border bg-surface-muted/40 p-3">
+                                                                        <p class="mb-2 text-sm font-semibold text-ink">Jobdesk Selama Kunjungan dan Supervisi</p>
+                                                                        <div class="grid gap-3">
+                                                                            @foreach ($jobdeskItems as $itemKey => $itemLabel)
+                                                                                @php $entry = $checklistState[$itemKey]; @endphp
+                                                                                <div x-data="{ checked: {{ $entry['checked'] ? 'true' : 'false' }} }" class="rounded-lg border border-border/60 bg-surface p-2">
+                                                                                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                                                                        <span class="flex-1 font-medium text-ink">{{ $itemKey }}. {{ $itemLabel }}</span>
+                                                                                        <div class="flex items-center gap-3">
+                                                                                            <label class="flex items-center gap-1 text-[11px] font-semibold" :style="checked ? 'color: var(--color-tone-green)' : 'color: var(--color-ink-muted)'">
+                                                                                                <input type="checkbox" :checked="checked" @change="checked = true" class="h-3.5 w-3.5">
+                                                                                                Lengkap
+                                                                                            </label>
+                                                                                            <label class="flex items-center gap-1 text-[11px] font-semibold" :style="! checked ? 'color: var(--color-tone-red)' : 'color: var(--color-ink-muted)'">
+                                                                                                <input type="checkbox" :checked="! checked" @change="checked = false" class="h-3.5 w-3.5">
+                                                                                                Belum Lengkap
+                                                                                            </label>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <input type="hidden" name="checklist_{{ $itemKey }}" :value="checked ? '1' : '0'">
+                                                                                    <input type="text" name="checklist_note_{{ $itemKey }}" value="{{ $entry['note'] }}" placeholder="Catatan kecil (opsional)" maxlength="200" class="mt-1.5 w-full rounded-md border-border px-2 py-1 text-xs">
+                                                                                </div>
+                                                                            @endforeach
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <label class="grid gap-1 text-sm">Catatan hasil<textarea name="result_text" rows="3" placeholder="Hasil kunjungan" class="rounded-lg border-border bg-surface-muted">{{ $row->result_text }}</textarea></label>
+                                                                    <label class="grid gap-1 text-sm">Follow up berikutnya<textarea name="next_action" rows="3" placeholder="Follow up berikutnya" class="rounded-lg border-border bg-surface-muted">{{ $row->next_action }}</textarea></label>
+                                                                    <label class="grid gap-1 text-sm">Upload dokumentasi aktivitas<input type="file" name="schedule_attachment" accept="image/jpeg,image/png,image/webp,application/pdf" class="rounded-lg border-border bg-surface-muted text-xs"><span class="text-xs text-ink-muted">JPG, PNG, WEBP, atau PDF. Maksimal 5 MB.</span></label>
+                                                                    @if ($row->attachment_path)
+                                                                        <a href="{{ route('jadwal-koordinator.attachment', $row) }}" target="_blank" rel="noopener" class="text-xs font-medium text-brand-600 underline">Lihat dokumentasi saat ini</a>
+                                                                    @endif
+
+                                                                    <div class="flex justify-end gap-2 pt-1">
+                                                                        <button type="button" @click="open = false" class="rounded-lg border border-border px-3 py-2 text-sm">Batal</button>
+                                                                        <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Simpan Laporan</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    @if (auth()->user()->role !== 'koordinator')
+                                                        <form method="POST" action="{{ route('jadwal-koordinator.destroy', $row) }}" onsubmit="return confirm('Hapus jadwal ini?')">
+                                                            @csrf @method('DELETE')
+                                                            <button class="rounded-md border border-tone-red px-2 py-1 text-xs font-medium text-tone-red hover:bg-tone-red/10">Hapus</button>
                                                         </form>
-                                                    </details>
-                                                    <form method="POST" action="{{ route('jadwal-koordinator.destroy', $row) }}" onsubmit="return confirm('Hapus jadwal ini?')">
-                                                        @csrf @method('DELETE')
-                                                        <button class="font-medium text-tone-red underline">Hapus</button>
-                                                    </form>
+                                                    @endif
                                                 </div>
                                             @else
                                                 <span class="text-xs text-ink-muted">Lihat saja</span>

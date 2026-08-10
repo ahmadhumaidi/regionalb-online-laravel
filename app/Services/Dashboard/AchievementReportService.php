@@ -84,7 +84,7 @@ class AchievementReportService
             if ($registrasi <= 0) {
                 continue;
             }
-            $name = (string) $row['name'];
+            $name = StaffProfileMatcher::cleanName((string) $row['name']);
             $nik = trim((string) ($row['nik'] ?? ''));
             if ($user->role === 'staff') {
                 $rowName = mb_strtolower($name);
@@ -194,6 +194,7 @@ class AchievementReportService
                 'registrasi' => $visibleTotal,
             ],
             'regionals' => $regionalCards,
+            'note' => 'Semua regional, unit yang tampil hanya yang memiliki closing',
         ];
     }
 

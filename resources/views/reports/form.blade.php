@@ -94,8 +94,13 @@
                     @endforeach
                 @endunless
                 @if ($config['label'] === 'anggaran')
-                    <label class="grid gap-1 text-sm">Platform<select name="platform" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih platform</option>@foreach ($config['options'] as $option)<option @selected(old('platform', $report->platform) === $option)>{{ $option }}</option>@endforeach</select></label>
-                    <label class="grid gap-1 text-sm">Nama campaign<input name="campaign_name" required value="{{ old('campaign_name', $report->campaign_name) }}" class="rounded-lg border-border bg-surface-muted"></label>
+                    @php
+                        $platformOptions = $isSeniorExpenseForm
+                            ? array_merge(array_slice($config['options'], 0, -1), ['Operasional'], array_slice($config['options'], -1))
+                            : $config['options'];
+                    @endphp
+                    <label class="grid gap-1 text-sm">{{ $isSeniorExpenseForm ? 'Platform/Jenis pengeluaran' : 'Platform' }}<select name="platform" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih platform</option>@foreach ($platformOptions as $option)<option @selected(old('platform', $report->platform) === $option)>{{ $option }}</option>@endforeach</select></label>
+                    <label class="grid gap-1 text-sm">{{ $isSeniorExpenseForm ? 'Nama campaign/keterangan' : 'Nama campaign' }}<input name="campaign_name" required value="{{ old('campaign_name', $report->campaign_name) }}" class="rounded-lg border-border bg-surface-muted"></label>
                     <label class="grid gap-1 text-sm">Tujuan iklan<select name="ad_goal" class="rounded-lg border-border bg-surface-muted">@foreach (['Leads','Awareness','Traffic','Conversion'] as $option)<option @selected(old('ad_goal', $report->ad_goal ?: 'Leads') === $option)>{{ $option }}</option>@endforeach</select></label>
                     <label class="grid gap-1 text-sm">Anggaran<input type="number" min="0.01" step="0.01" name="budget_requested" required value="{{ old('budget_requested', $report->budget_requested) }}" class="rounded-lg border-border bg-surface-muted"></label>
                 @elseif ($config['label'] === 'kegiatan')

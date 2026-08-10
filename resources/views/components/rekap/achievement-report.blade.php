@@ -1,16 +1,21 @@
 @props(['report'])
 
 @php
+    // Same 4-color progression as the Anggaran grouped-table's first 4
+    // slots (Regional 4-7), so a regional's color stays consistent between
+    // the two features. Anggaran additionally has a 5th "navy" slot for
+    // the "Regional B" catch-all group, which doesn't apply here.
     $gradients = [
-        'linear-gradient(135deg, var(--color-tone-green) 0%, #15803d 100%)',
+        'linear-gradient(135deg, var(--color-tone-red) 0%, #991b1b 100%)',
+        'linear-gradient(135deg, var(--color-tone-orange) 0%, #9a3412 100%)',
         'linear-gradient(135deg, var(--color-tone-blue-light) 0%, var(--color-tone-blue) 100%)',
-        'linear-gradient(135deg, #92400e 0%, var(--color-tone-orange) 100%)',
-        'linear-gradient(135deg, var(--color-tone-purple) 0%, #a78bfa 100%)',
+        'linear-gradient(135deg, var(--color-tone-blue) 0%, var(--color-tone-blue-dark) 100%)',
     ];
 @endphp
 
 <div class="@container">
     <h2 class="text-base font-semibold text-ink">Laporan Pencapaian</h2>
+    <p class="mt-1 text-sm text-ink-muted">{{ $report['note'] }}</p>
 
     <div class="mt-4 rounded-xl border border-tone-green/30 bg-tone-green/5 p-4">
         <div class="flex items-center gap-3">

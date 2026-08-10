@@ -47,13 +47,21 @@ class ReportScope
             $query->where(function (Builder $q) use ($col, $campus) {
                 $q->where($col('unit_name'), $campus)
                     ->orWhereIn($col('partner_campus_id'), function ($sub) use ($campus) {
+                        $driver = $sub->getConnection()->getDriverName();
+                        $displayContains = $driver === 'sqlite'
+                            ? '? LIKE (\'%\' || display_name || \'%\')'
+                            : '? LIKE CONCAT(\'%\', display_name, \'%\')';
+                        $nameContains = $driver === 'sqlite'
+                            ? '? LIKE (\'%\' || name || \'%\')'
+                            : '? LIKE CONCAT(\'%\', name, \'%\')';
+
                         $sub->select('id')->from('partner_campuses')
                             ->where('display_name', $campus)
                             ->orWhere('name', $campus)
                             ->orWhere('display_name', 'like', "%{$campus}%")
                             ->orWhere('name', 'like', "%{$campus}%")
-                            ->orWhereRaw('? LIKE CONCAT(\'%\', display_name, \'%\')', [$campus])
-                            ->orWhereRaw('? LIKE CONCAT(\'%\', name, \'%\')', [$campus]);
+                            ->orWhereRaw($displayContains, [$campus])
+                            ->orWhereRaw($nameContains, [$campus]);
                     });
             });
         }

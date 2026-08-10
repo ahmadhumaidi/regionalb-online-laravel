@@ -7,6 +7,7 @@ use App\Services\Dashboard\CollabMetricsService;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\DashboardNumbers;
 use App\Services\Dashboard\ReferenceOptionsService;
+use App\Services\Dashboard\StaffProfileMatcher;
 use App\Services\Dashboard\TargetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -78,9 +79,18 @@ class AchievementController extends Controller
             return $row;
         })->all();
 
-        $staffByName = RsmUser::query()->where('area', $area)->get()->keyBy(fn (RsmUser $u) => mb_strtolower(trim($u->name)));
+        $profileIndex = StaffProfileMatcher::index($area);
         $rows = collect($performance['rows'])
-            ->reject(fn (array $row) => in_array($staffByName->get(mb_strtolower(trim($row['name'])))?->role, self::NON_STAFF_ROLES, true))
+            ->map(function (array $row) use ($profileIndex) {
+                $row['name'] = StaffProfileMatcher::cleanName((string) $row['name']);
+                $matchedUser = StaffProfileMatcher::find($profileIndex, $row['name'], (string) ($row['nik'] ?? ''));
+                $row['photo'] = $matchedUser?->photoUrl();
+                $row['campus_name'] = $matchedUser?->campus_name;
+                $row['matched_role'] = $matchedUser?->role;
+
+                return $row;
+            })
+            ->reject(fn (array $row) => in_array($row['matched_role'] ?? null, self::NON_STAFF_ROLES, true))
             ->values()
             ->all();
 

@@ -43,7 +43,7 @@ class ProfileGamificationTest extends TestCase
         $report = RsmReport::create([
             'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
             'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff Gamif', 'created_by_role' => 'staff',
-            'status' => 'Disetujui', 'title' => 'Gamif Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Gamif Campaign',
+            'status' => 'Diverifikasi', 'title' => 'Gamif Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Gamif Campaign',
             'budget_requested' => 500000, 'realization_amount' => 500000,
         ]);
         for ($i = 0; $i < 3; $i++) {
@@ -90,7 +90,7 @@ class ProfileGamificationTest extends TestCase
             $report = RsmReport::create([
                 'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
                 'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => $name, 'created_by_role' => 'staff',
-                'status' => 'Disetujui', 'title' => "Campaign {$name}", 'platform' => 'Meta Ads', 'campaign_name' => "Campaign {$name}",
+                'status' => 'Diverifikasi', 'title' => "Campaign {$name}", 'platform' => 'Meta Ads', 'campaign_name' => "Campaign {$name}",
                 'budget_requested' => 100000, 'realization_amount' => 100000,
             ]);
             for ($i = 0; $i < 2; $i++) {
