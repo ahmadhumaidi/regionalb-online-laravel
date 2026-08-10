@@ -64,15 +64,15 @@
                                     </td>
                                     <td class="py-2">
                                         <div class="flex flex-wrap items-center gap-1">
-                                            <a href="{{ route('reports.show', $row['id']) }}" title="Lihat" aria-label="Lihat" class="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-semibold text-ink-muted hover:bg-surface-muted hover:text-ink"><x-icon name="eye" class="h-3.5 w-3.5" />Lihat</a>
+                                            <a href="{{ route('reports.show', $row['id']) }}" title="Lihat" aria-label="Lihat" class="rounded-md border border-border p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"><x-icon name="eye" class="h-3.5 w-3.5" /></a>
                                             @if ($row['has_attachment'])
-                                                <a href="{{ route('reports.attachment', $row['id']) }}" target="_blank" rel="noopener" title="Lihat invoice/bukti transfer" aria-label="Lihat invoice" class="inline-flex items-center gap-1 rounded-md border border-l-2 border-border border-l-tone-blue px-2 py-1 text-[11px] font-semibold text-tone-blue hover:bg-surface-muted"><x-icon name="document" class="h-3.5 w-3.5" />Invoice</a>
+                                                <a href="{{ route('reports.attachment', $row['id']) }}" target="_blank" rel="noopener" title="Lihat invoice/bukti transfer" aria-label="Lihat invoice" class="rounded-md border border-l-2 border-border border-l-tone-blue p-1 text-tone-blue hover:bg-surface-muted"><x-icon name="document" class="h-3.5 w-3.5" /></a>
                                             @endif
                                             @if ($row['has_insight_attachment'])
-                                                <a href="{{ route('reports.insight-attachment', $row['id']) }}" target="_blank" rel="noopener" title="Lihat bukti insight/pengeluaran iklan" aria-label="Lihat insight" class="inline-flex items-center gap-1 rounded-md border border-l-2 border-border border-l-tone-orange px-2 py-1 text-[11px] font-semibold text-tone-orange hover:bg-surface-muted"><x-icon name="bolt" class="h-3.5 w-3.5" />Insight</a>
+                                                <a href="{{ route('reports.insight-attachment', $row['id']) }}" target="_blank" rel="noopener" title="Lihat bukti insight/pengeluaran iklan" aria-label="Lihat insight" class="rounded-md border border-l-2 border-border border-l-tone-orange p-1 text-tone-orange hover:bg-surface-muted"><x-icon name="bolt" class="h-3.5 w-3.5" /></a>
                                             @endif
                                             @if ($row['has_ad_leads'])
-                                                <a href="{{ route('reports.show', $row['id']) }}#data-hasil-iklan" title="Lihat data hasil iklan" aria-label="Lihat data hasil iklan" class="inline-flex items-center gap-1 rounded-md border border-l-2 border-border border-l-tone-green px-2 py-1 text-[11px] font-semibold text-tone-green hover:bg-surface-muted"><x-icon name="chart-bar" class="h-3.5 w-3.5" />Data</a>
+                                                <a href="{{ route('reports.show', $row['id']) }}#data-hasil-iklan" title="Lihat data hasil iklan" aria-label="Lihat data hasil iklan" class="rounded-md border border-l-2 border-border border-l-tone-green p-1 text-tone-green hover:bg-surface-muted"><x-icon name="chart-bar" class="h-3.5 w-3.5" /></a>
                                             @endif
                                             @if ($row['can_edit'])
                                                 <a href="{{ route('reports.edit', $row['id']) }}" title="Edit" aria-label="Edit" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="edit" class="h-3.5 w-3.5" /></a>
@@ -87,17 +87,17 @@
                                             @if ($row['can_review'])
                                                 <form method="POST" action="{{ route('anggaran.setujui', $row['id']) }}" class="flex items-center gap-1" onsubmit="return confirm('Setujui pengajuan ini?')">
                                                     @csrf
-                                                    <input type="number" name="budget_approved" value="{{ number_format($row['budget_requested'], 2, '.', '') }}" min="0" step="0.01" class="w-24 rounded-md border border-border px-1.5 py-1 text-xs text-ink">
-                                                    <button type="submit" class="rounded-md bg-tone-green px-2 py-1 text-[11px] font-semibold text-white">Setujui</button>
+                                                    <input type="number" name="budget_approved" value="{{ number_format($row['budget_requested'], 2, '.', '') }}" min="0" step="0.01" class="w-20 rounded-md border border-border px-1.5 py-1 text-xs text-ink">
+                                                    <button type="submit" title="Setujui" aria-label="Setujui" class="rounded-md border border-tone-green p-1 text-tone-green"><x-icon name="check" class="h-3.5 w-3.5" /></button>
                                                 </form>
                                                 <form method="POST" action="{{ route('anggaran.tolak', $row['id']) }}" onsubmit="return confirm('Tolak pengajuan ini?')">
                                                     @csrf
-                                                    <button type="submit" class="rounded-md border border-tone-red px-2 py-1 text-[11px] font-semibold text-tone-red">Tolak</button>
+                                                    <button type="submit" title="Tolak" aria-label="Tolak" class="rounded-md border border-tone-red p-1 text-tone-red"><x-icon name="close" class="h-3.5 w-3.5" /></button>
                                                 </form>
                                                 <form method="POST" action="{{ route('anggaran.revisi', $row['id']) }}" onsubmit="const note = prompt('Catatan revisi (wajib diisi):'); if (!note) { return false; } this.querySelector('[name=note]').value = note; return true;">
                                                     @csrf
                                                     <input type="hidden" name="note" value="">
-                                                    <button type="submit" class="rounded-md border border-tone-amber px-2 py-1 text-[11px] font-semibold text-tone-amber">Revisi</button>
+                                                    <button type="submit" title="Revisi" aria-label="Revisi" class="rounded-md border border-tone-amber p-1 text-tone-amber"><x-icon name="warning" class="h-3.5 w-3.5" /></button>
                                                 </form>
                                             @endif
                                         </div>
