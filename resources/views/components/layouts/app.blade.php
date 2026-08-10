@@ -110,7 +110,7 @@
                                 <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-tone-red px-1 text-[10px] font-bold text-white">{{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}</span>
                             @endif
                         </button>
-                        <div x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false" class="absolute right-0 z-50 mt-2 max-h-[70vh] w-80 overflow-y-auto rounded-2xl border border-border bg-surface p-2 text-left shadow-2xl">
+                        <div x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false" class="fixed max-h-[70vh] max-w-sm overflow-y-auto rounded-2xl border border-border bg-surface p-2 text-left shadow-2xl" style="right: 0.75rem; top: 4.25rem; z-index: 100; width: calc(100vw - 1.5rem);">
                             <div class="flex items-center justify-between px-2 py-1.5">
                                 <span class="text-sm font-semibold text-ink">Notifikasi</span>
                                 @if ($unreadNotificationCount > 0)
