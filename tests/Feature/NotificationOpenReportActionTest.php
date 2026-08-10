@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\RsmNotification;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Models\RsmActivityLog;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
@@ -13,10 +14,12 @@ class NotificationOpenReportActionTest extends TestCase
     private function migrate(): void
     {
         Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105946_create_partner_campuses_table.php',
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
             'database/migrations/2026_08_11_090000_add_escalated_to_role_to_rsm_reports_table.php',
+            'database/migrations/2026_08_11_090002_add_leader_follow_up_text_to_rsm_reports_table.php',
             'database/migrations/2026_08_11_090001_create_rsm_notifications_table.php',
         ]]);
     }
@@ -116,5 +119,61 @@ class NotificationOpenReportActionTest extends TestCase
 
         $report->delete();
         $koordinator->delete();
+    }
+
+    public function test_staff_report_detail_separates_leader_follow_up_from_staff_follow_up(): void
+    {
+        $this->migrate();
+
+        $staff = RsmUser::create([
+            'id' => 920003,
+            'name' => 'Ilham Khusaini',
+            'username' => 'ilham_staff_test',
+            'password_hash' => 'x',
+            'role' => RsmUser::ROLE_STAFF,
+            'jabatan' => 'Staff Unit',
+            'regional' => 'Regional 5',
+            'campus_name' => 'UBY',
+            'area' => 'Regional B',
+            'is_active' => true,
+        ]);
+        $report = RsmReport::create([
+            'area' => 'Regional B',
+            'report_type' => RsmReport::TYPE_OTHER,
+            'report_date' => now(),
+            'user_id' => $staff->id,
+            'wilayah' => 'Regional 5',
+            'unit_name' => 'UBY',
+            'staff_name' => 'Ilham Khusaini',
+            'created_by_name' => 'Ilham Khusaini',
+            'created_by_role' => RsmUser::ROLE_STAFF,
+            'status' => 'Ditindak Lanjuti',
+            'title' => 'Rapat Konsolidasi',
+            'obstacle_text' => 'minimnya data',
+            'follow_up_text' => 'gunakan iklan meta ads dengan tujuan CTWA dan Prospek',
+        ]);
+        $log = RsmActivityLog::create([
+            'report_id' => $report->id,
+            'area' => 'Regional B',
+            'actor_user_id' => 1,
+            'actor_role' => RsmUser::ROLE_SUPER_USER,
+            'actor_name' => 'Ahmad Humaidi',
+            'action_name' => 'tindak_lanjut',
+            'old_status' => 'Dikirim',
+            'new_status' => 'Ditindak Lanjuti',
+            'note' => 'gunakan iklan meta ads dengan tujuan CTWA dan Prospek',
+        ]);
+
+        $response = $this->actingAs($staff)->get(route('reports.show', $report));
+
+        $response->assertOk();
+        $response->assertSee('Tindak lanjut staff');
+        $response->assertSee('Tindak lanjut dari pimpinan');
+        $response->assertSee('gunakan iklan meta ads dengan tujuan CTWA dan Prospek');
+        $response->assertDontSee('Tindak lanjut staff</dt><dd class="mt-1 text-ink">gunakan iklan meta ads', false);
+
+        $log->delete();
+        $report->delete();
+        $staff->delete();
     }
 }

@@ -42,6 +42,11 @@ class ReportFormController extends Controller
     {
         $user = Auth::user();
         abort_unless(ReportFormService::visible($report, $user), 404);
+        $logs = $report->logs()->latest('id')->get();
+        $leaderFollowUpText = trim((string) $report->leader_follow_up_text);
+        if ($leaderFollowUpText === '') {
+            $leaderFollowUpText = trim((string) optional($logs->firstWhere('action_name', 'tindak_lanjut'))->note);
+        }
 
         return view('reports.show', [
             'active' => ReportFormService::config($report->report_type)['label'],
@@ -49,7 +54,8 @@ class ReportFormController extends Controller
             'canEdit' => ReportFormService::canEdit($report, $user),
             'canDelete' => ReportFormService::canDelete($report, $user),
             'actionRow' => ReportListService::shape($report, $user),
-            'logs' => $report->logs()->latest('id')->get(),
+            'leaderFollowUpText' => $leaderFollowUpText,
+            'logs' => $logs,
             'adLeads' => $report->report_type === RsmReport::TYPE_ADS ? $report->adLeads()->orderBy('id')->get() : collect(),
         ]);
     }

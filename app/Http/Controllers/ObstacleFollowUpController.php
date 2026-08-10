@@ -57,7 +57,7 @@ class ObstacleFollowUpController extends Controller
         }
 
         $this->transition($request, $report, 'Ditindak Lanjuti', 'tindak_lanjut', $saran, function () use ($report, $saran) {
-            $report->follow_up_text = $saran;
+            $report->leader_follow_up_text = $saran;
             $report->escalated_to_role = null;
         });
         NotificationService::notifyStaffClosed($report, 'Ditindak Lanjuti');
