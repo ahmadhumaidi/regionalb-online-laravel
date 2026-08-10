@@ -24,9 +24,11 @@
                             <span class="text-xs font-normal text-ink-muted">/ {{ number_format($row['target_registrasi'], 0, ',', '.') }}</span>
                         @endif
                     </p>
-                    <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface">
-                        <div class="h-full rounded-full" style="width: {{ max(2, $regRate) }}%; background-color: var(--color-tone-{{ $tone }})"></div>
-                    </div>
+                    @if ($row['target_registrasi'] > 0)
+                        <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface">
+                            <div class="h-full rounded-full" style="width: {{ max(4, $regRate) }}%; background-color: var(--color-tone-{{ $tone }})"></div>
+                        </div>
+                    @endif
                     <p class="mt-3 text-xs text-ink-muted">Herregistrasi</p>
                     <p class="text-sm font-semibold text-ink">{{ number_format($row['herregistrasi'], 0, ',', '.') }}
                         @if ($row['target_herregistrasi'] > 0)
