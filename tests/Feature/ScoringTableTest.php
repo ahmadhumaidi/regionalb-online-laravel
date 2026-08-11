@@ -258,4 +258,57 @@ class ScoringTableTest extends TestCase
         $staff->delete();
         $senior->delete();
     }
+
+    public function test_arena_performa_leaderboard_uses_total_score(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900045, 'name' => 'Test Senior Arena', 'username' => 'test_senior_arena_900045',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900046, 'name' => 'Arena Staff', 'username' => 'test_arena_staff_900046',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
+            'entity_key' => 'arena-staff-1', 'staff_name' => 'Arena Staff', 'regional' => 'Regional 6', 'value' => 5,
+        ]);
+
+        RsmMonthlyTarget::create([
+            'area' => 'Regional B',
+            'target_month' => now()->format('Y-m'),
+            'scope_type' => 'staff',
+            'scope_key' => 'staff:arena staff',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Arena Staff',
+            'indicator_targets' => [
+                'reg' => ['target' => 10, 'weight' => 20],
+            ],
+        ]);
+
+        $arena = \App\Services\Dashboard\GamificationService::build(
+            'Regional B',
+            [
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+                'wilayah' => '',
+                'unit_name' => '',
+                'staff_name' => '',
+            ],
+            $senior->fresh()
+        );
+
+        $this->assertSame('Arena Staff', $arena['leaderboard'][0]['name']);
+        $this->assertSame(10.0, $arena['leaderboard'][0]['points']);
+        $this->assertSame(10.0, $arena['leaderboard'][0]['total_score']);
+
+        $staff->delete();
+        $senior->delete();
+    }
 }

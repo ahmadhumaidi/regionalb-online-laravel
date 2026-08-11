@@ -34,14 +34,24 @@ class GamificationService
     public static function build(string $area, array $filters, RsmUser $user): array
     {
         [, $scoredRows] = self::scoredRows($area, $filters, $user);
+        $badgesByName = $scoredRows->keyBy(fn (array $row) => mb_strtolower(trim((string) $row['name'])));
 
-        $leaderboard = $scoredRows
+        $leaderboard = collect(ScoringTableService::build($area, $filters, $user)['rows'])
             ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-')
-            ->sortBy([['points', 'desc'], ['name', 'asc']])
+            ->filter(fn (array $row) => (float) ($row['total_weight'] ?? 0) > 0)
+            ->map(function (array $row) use ($badgesByName) {
+                $legacy = $badgesByName->get(mb_strtolower(trim((string) $row['name'])));
+
+                return array_merge($row, [
+                    'points' => (float) ($row['total_score'] ?? 0),
+                    'badges' => $legacy['badges'] ?? ['On Progress'],
+                ]);
+            })
+            ->sortBy([['total_score', 'desc'], ['name', 'asc']])
             ->values();
 
-        $myRank = $scoredRows->first(fn (array $row) => $row['user_id'] === $user->id)
-            ?? $scoredRows->first(fn (array $row) => mb_strtolower(trim($row['name'])) === mb_strtolower(trim((string) $user->name)));
+        $myRank = $leaderboard->first(fn (array $row) => ($row['user_id'] ?? null) === $user->id)
+            ?? $leaderboard->first(fn (array $row) => mb_strtolower(trim($row['name'])) === mb_strtolower(trim((string) $user->name)));
 
         return [
             'leaderboard' => $leaderboard->take(5)->values()->all(),

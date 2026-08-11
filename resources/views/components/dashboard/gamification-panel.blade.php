@@ -3,13 +3,13 @@
 <section class="mb-6 rounded-2xl glass-card p-5">
     <div class="mb-4">
         <h2 class="text-base font-semibold text-ink">Arena Performa Staff</h2>
-        <span class="text-xs text-ink-muted">Leaderboard poin berdasarkan aktivitas &amp; pencapaian</span>
+        <span class="text-xs text-ink-muted">Leaderboard berdasarkan total skor target &amp; bobot</span>
     </div>
 
     @if ($gamification['my_rank'])
         <div class="mb-4 flex items-center justify-between rounded-xl bg-brand-50 px-4 py-3">
             <div><strong class="text-sm font-semibold text-brand-700">{{ $gamification['my_rank']['name'] }}</strong> <span class="text-xs text-brand-700/70">Skor Anda</span></div>
-            <strong class="text-lg font-bold text-brand-700">{{ number_format($gamification['my_rank']['points']) }} pts</strong>
+            <strong class="text-lg font-bold text-brand-700">{{ number_format((float) $gamification['my_rank']['points'], 2, ',', '.') }} skor</strong>
         </div>
     @endif
 
@@ -28,7 +28,7 @@
                             @endforeach
                         </div>
                     </div>
-                    <strong class="shrink-0 text-sm font-semibold text-ink">{{ number_format($row['points']) }} pts</strong>
+                    <strong class="shrink-0 text-sm font-semibold text-ink">{{ number_format((float) $row['points'], 2, ',', '.') }} skor</strong>
                 </div>
             @endforeach
         </div>

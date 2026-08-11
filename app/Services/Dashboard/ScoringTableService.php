@@ -54,6 +54,7 @@ class ScoringTableService
                 $wilayah = (string) ($indicator['wilayah'] ?? $staff->regional ?? '');
 
                 $row = [
+                    'user_id' => $staff->id,
                     'name' => $staff->name,
                     'wilayah' => $wilayah !== '' ? $wilayah : '-',
                     'unit_name' => $unitName !== '' ? $unitName : '-',
@@ -101,6 +102,9 @@ class ScoringTableService
 
         if ($user->role === RsmUser::ROLE_KOORDINATOR && trim((string) $user->regional) !== '') {
             $query->where('regional', $user->regional);
+        }
+        if ($user->role === RsmUser::ROLE_STAFF) {
+            $query->where('id', $user->id);
         }
 
         return $query->orderBy('regional')->orderBy('name')->get();
