@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\RsmAdLead;
+use App\Models\RsmMonthlyTarget;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\Artisan;
@@ -21,6 +22,8 @@ class ScoringTableTest extends TestCase
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
             'database/migrations/2026_08_05_110009_create_rsm_collab_daily_metrics_table.php',
+            'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
+            'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
         ]]);
     }
 
@@ -177,7 +180,13 @@ class ScoringTableTest extends TestCase
 
         $table = \App\Services\Dashboard\ScoringTableService::build(
             'Regional B',
-            \App\Services\Dashboard\DashboardFilters::allTime(),
+            [
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+                'wilayah' => '',
+                'unit_name' => '',
+                'staff_name' => '',
+            ],
             $senior->fresh()
         );
 
@@ -188,6 +197,63 @@ class ScoringTableTest extends TestCase
         $this->assertSame(17.0, $row['herregistrasi_personal']);
         $this->assertSame(99.0, $row['registrasi_kampus']);
         $this->assertSame(0.0, $row['herregistrasi_kampus']);
+
+        $staff->delete();
+        $senior->delete();
+    }
+
+    public function test_total_score_uses_monthly_indicator_target_and_weight(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900043, 'name' => 'Test Senior Score', 'username' => 'test_senior_score_900043',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900044, 'name' => 'Weighted Staff', 'username' => 'test_weighted_staff_900044',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
+            'entity_key' => 'weighted-staff-1', 'staff_name' => 'Weighted Staff', 'regional' => 'Regional 6', 'value' => 5,
+        ]);
+
+        RsmMonthlyTarget::create([
+            'area' => 'Regional B',
+            'target_month' => now()->format('Y-m'),
+            'scope_type' => 'staff',
+            'scope_key' => 'staff:weighted staff',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Weighted Staff',
+            'indicator_targets' => [
+                'reg' => ['target' => 10, 'weight' => 20],
+                'herreg' => ['target' => 4, 'weight' => 10],
+            ],
+        ]);
+
+        $table = \App\Services\Dashboard\ScoringTableService::build(
+            'Regional B',
+            [
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+                'wilayah' => '',
+                'unit_name' => '',
+                'staff_name' => '',
+            ],
+            $senior->fresh()
+        );
+
+        $row = collect($table['rows'])->firstWhere('name', 'Weighted Staff');
+
+        $this->assertNotNull($row);
+        $this->assertSame(10.0, $row['total_score']);
+        $this->assertSame(30.0, $row['total_weight']);
+        $this->assertSame(10.0, $row['score_details']['reg']['score']);
 
         $staff->delete();
         $senior->delete();

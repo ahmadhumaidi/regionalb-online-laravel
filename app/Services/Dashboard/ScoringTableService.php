@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboard;
 
+use App\Models\RsmMonthlyTarget;
 use App\Models\RsmUser;
 use App\Support\CampusMatcher;
 use Illuminate\Support\Collection;
@@ -10,9 +11,8 @@ use Illuminate\Support\Collection;
  * "Scoring" menu: one wide table collecting every assessment indicator
  * already tracked elsewhere in the system (personal registrasi/herreg,
  * campus registrasi/herreg, ad reports, follow ups, leads, report volume)
- * into a single row per staff member - no point weighting yet, that's a
- * separate follow-up (per Ahmad Humaidi: build the table first, decide
- * indicator weights afterward in a dedicated config screen).
+ * into a single row per staff member, then scoring it against the configured
+ * monthly target and weight per indicator.
  *
  * The row set is the full staff roster (RsmUser), not just staff who
  * happen to have report data for the current filter - a staff member with
@@ -25,6 +25,8 @@ class ScoringTableService
     public static function build(string $area, array $filters, RsmUser $user): array
     {
         $roster = self::staffRoster($area, $user);
+        $indicators = (array) config('scoring_indicators.indicators', []);
+        $targetsByName = self::monthlyTargetsByName($area, $filters, $user, $roster);
 
         $indicatorByName = GamificationService::indicatorRows($area, $filters, $user)
             ->keyBy(fn (array $row) => mb_strtolower(trim((string) $row['name'])));
@@ -44,14 +46,14 @@ class ScoringTableService
         $affNonMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Non Mahasiswa');
 
         $rows = $roster
-            ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg, $shareFbByName, $liveStreamingByName, $affMhsByName, $affNonMhsByName) {
+            ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg, $shareFbByName, $liveStreamingByName, $affMhsByName, $affNonMhsByName, $indicators, $targetsByName) {
                 $nameKey = mb_strtolower(trim((string) $staff->name));
                 $indicator = $indicatorByName->get($nameKey);
                 $personal = $personalByName->get($nameKey);
                 $unitName = (string) ($indicator['unit_name'] ?? $staff->campus_name ?? '');
                 $wilayah = (string) ($indicator['wilayah'] ?? $staff->regional ?? '');
 
-                return [
+                $row = [
                     'name' => $staff->name,
                     'wilayah' => $wilayah !== '' ? $wilayah : '-',
                     'unit_name' => $unitName !== '' ? $unitName : '-',
@@ -70,8 +72,10 @@ class ScoringTableService
                     'affiliator_mahasiswa' => (float) ($affMhsByName->get($nameKey) ?? 0),
                     'affiliator_non_mahasiswa' => (float) ($affNonMhsByName->get($nameKey) ?? 0),
                 ];
+
+                return self::withScore($row, $indicators, $targetsByName->get($nameKey));
             })
-            ->sortBy([['wilayah', 'asc'], ['name', 'asc']])
+            ->sortBy([['total_score', 'desc'], ['wilayah', 'asc'], ['name', 'asc']])
             ->values();
 
         return [
@@ -100,6 +104,85 @@ class ScoringTableService
         }
 
         return $query->orderBy('regional')->orderBy('name')->get();
+    }
+
+    /** @param Collection<int, RsmUser> $roster */
+    private static function monthlyTargetsByName(string $area, array $filters, RsmUser $user, Collection $roster): Collection
+    {
+        $targetMonth = substr($filters['date_from'] ?: now()->toDateString(), 0, 7);
+        $staffNames = $roster->pluck('name')->filter()->values()->all();
+
+        $query = RsmMonthlyTarget::query()
+            ->where('area', $area)
+            ->where('target_month', $targetMonth)
+            ->where('scope_type', 'staff')
+            ->whereIn('staff_name', $staffNames);
+
+        if ($user->role === RsmUser::ROLE_KOORDINATOR && trim((string) $user->regional) !== '') {
+            $query->where('wilayah', $user->regional);
+        }
+        if ($filters['wilayah'] !== '') {
+            $query->where('wilayah', $filters['wilayah']);
+        }
+        if ($filters['unit_name'] !== '') {
+            $query->where('unit_name', $filters['unit_name']);
+        }
+        if ($filters['staff_name'] !== '') {
+            $query->where('staff_name', $filters['staff_name']);
+        }
+
+        return $query->get()->keyBy(fn (RsmMonthlyTarget $target) => mb_strtolower(trim((string) $target->staff_name)));
+    }
+
+    private static function withScore(array $row, array $indicators, ?RsmMonthlyTarget $target): array
+    {
+        $targetRows = self::targetRows($target);
+        $scoreDetails = [];
+        $totalScore = 0.0;
+        $totalWeight = 0.0;
+
+        foreach ($indicators as $key => $meta) {
+            $metricKey = (string) ($meta['metric_key'] ?? '');
+            $actual = (float) ($row[$metricKey] ?? 0);
+            $hasTargetRow = array_key_exists($key, $targetRows);
+            $targetValue = $hasTargetRow ? (float) ($targetRows[$key]['target'] ?? 0) : 0.0;
+            $weight = $hasTargetRow ? (float) ($targetRows[$key]['weight'] ?? $meta['default_weight'] ?? 0) : 0.0;
+            $score = $targetValue > 0 && $weight > 0 ? min($actual / $targetValue, 1.0) * $weight : 0.0;
+
+            $scoreDetails[$key] = [
+                'actual' => $actual,
+                'target' => $targetValue,
+                'weight' => $weight,
+                'score' => $score,
+            ];
+            $totalScore += $score;
+            $totalWeight += $weight;
+        }
+
+        $row['score_details'] = $scoreDetails;
+        $row['total_score'] = round($totalScore, 2);
+        $row['total_weight'] = round($totalWeight, 2);
+        $row['target_month'] = $target?->target_month;
+
+        return $row;
+    }
+
+    private static function targetRows(?RsmMonthlyTarget $target): array
+    {
+        if (! $target) {
+            return [];
+        }
+        if (is_array($target->indicator_targets) && $target->indicator_targets !== []) {
+            return $target->indicator_targets;
+        }
+
+        return [
+            'reg' => ['target' => (float) $target->target_registrasi],
+            'herreg' => ['target' => (float) $target->target_herregistrasi],
+            'fu' => ['target' => (float) $target->target_follow_up],
+            'leads' => ['target' => (float) $target->target_leads],
+            'realisasi_iklan' => ['target' => (float) $target->target_anggaran],
+        ];
     }
 
     /** @param array{rows: array} $campusTotals @return array<string, float> keyed by lowercased campus label */

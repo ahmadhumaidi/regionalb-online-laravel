@@ -52,6 +52,7 @@
                     <thead>
                         <tr class="border-b border-border text-xs leading-tight text-ink-muted">
                             <th class="w-56 py-2 pr-3 font-medium">Staff</th>
+                            <th class="w-20 py-2 pr-3 text-center font-medium">Total<br>Skor</th>
                             @foreach ($indicators as $indicator)
                                 <th class="w-16 py-2 pr-3 text-center font-medium">{{ $indicator['label'] ?? '-' }}</th>
                             @endforeach
@@ -61,6 +62,7 @@
                         @foreach ($rows as $row)
                             <tr class="border-b border-border/60">
                                 <td class="py-2 pr-3 font-medium text-ink whitespace-nowrap" title="{{ $row['wilayah'] }} - {{ $row['unit_name'] }}">{{ $row['name'] }}</td>
+                                <td class="py-2 pr-3 text-center font-bold text-brand-700" title="Dari total bobot {{ number_format((float) ($row['total_weight'] ?? 0), 2, ',', '.') }}">{{ number_format((float) ($row['total_score'] ?? 0), 2, ',', '.') }}</td>
                                 @foreach ($indicators as $indicator)
                                     @php($metricKey = (string) ($indicator['metric_key'] ?? ''))
                                     <td class="py-2 pr-3 text-center text-ink">{{ number_format((float) ($row[$metricKey] ?? 0), 0, ',', '.') }}</td>
