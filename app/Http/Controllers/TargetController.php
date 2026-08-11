@@ -13,23 +13,6 @@ class TargetController extends Controller
 {
     private const TARGETABLE_ROLES = ['staff', 'koordinator'];
 
-    private const INDICATORS = [
-        'reg' => ['label' => 'Reg', 'group' => 'Hasil PMB', 'default_weight' => 10],
-        'herreg' => ['label' => 'Herreg', 'group' => 'Hasil PMB', 'default_weight' => 15],
-        'reg_kampus' => ['label' => 'Reg Kampus', 'group' => 'Hasil Kampus', 'default_weight' => 8],
-        'herreg_kampus' => ['label' => 'Herreg Kampus', 'group' => 'Hasil Kampus', 'default_weight' => 12],
-        'lap_iklan' => ['label' => 'Lap. Iklan', 'group' => 'Iklan', 'default_weight' => 5],
-        'realisasi_iklan' => ['label' => 'Realisasi Iklan', 'group' => 'Iklan', 'default_weight' => 7],
-        'fu' => ['label' => 'FU', 'group' => 'Aktivitas', 'default_weight' => 10],
-        'leads' => ['label' => 'Leads', 'group' => 'Iklan', 'default_weight' => 8],
-        'total_lap' => ['label' => 'Total Lap.', 'group' => 'Aktivitas', 'default_weight' => 5],
-        'aktif' => ['label' => 'Aktif', 'group' => 'Aktivitas', 'default_weight' => 5],
-        'share_fb' => ['label' => 'Share FB', 'group' => 'Digital', 'default_weight' => 4],
-        'live_stream' => ['label' => 'Live Stream', 'group' => 'Digital', 'default_weight' => 6],
-        'aff_mhs' => ['label' => 'Aff. Mhs', 'group' => 'Afiliasi', 'default_weight' => 3],
-        'aff_non_mhs' => ['label' => 'Aff. Non Mhs', 'group' => 'Afiliasi', 'default_weight' => 2],
-    ];
-
     public function index(Request $request)
     {
         $user = $request->user();
@@ -37,7 +20,7 @@ class TargetController extends Controller
         $area = $user->area ?: 'Regional B';
         $references = $this->references($area);
         $targets = RsmMonthlyTarget::query()->where('area', $area)->where('scope_type', 'staff')->orderByDesc('target_month')->orderBy('wilayah')->orderBy('unit_name')->orderBy('staff_name')->limit(80)->get();
-        $indicators = self::INDICATORS;
+        $indicators = $this->indicators();
 
         return view('targets.index', compact('area', 'references', 'targets', 'indicators'));
     }
@@ -52,7 +35,7 @@ class TargetController extends Controller
             'wilayah' => ['nullable', 'string', 'max:120'], 'unit_name' => ['nullable', 'string', 'max:160'], 'staff_name' => ['nullable', 'string', 'max:160'],
             'target_leads' => ['nullable', 'integer', 'min:0'], 'target_follow_up' => ['nullable', 'integer', 'min:0'], 'target_registrasi' => ['nullable', 'integer', 'min:0'], 'target_herregistrasi' => ['nullable', 'integer', 'min:0'], 'target_anggaran' => ['nullable', 'numeric', 'min:0'], 'notes' => ['nullable', 'string', 'max:1000'],
         ];
-        foreach (array_keys(self::INDICATORS) as $key) {
+        foreach (array_keys($this->indicators()) as $key) {
             $rules["indicator_targets.$key.target"] = ['nullable', 'numeric', 'min:0'];
             $rules["indicator_targets.$key.weight"] = ['nullable', 'numeric', 'min:0', 'max:100'];
         }
@@ -88,7 +71,7 @@ class TargetController extends Controller
         ];
 
         $targets = [];
-        foreach (self::INDICATORS as $key => $meta) {
+        foreach ($this->indicators() as $key => $meta) {
             $row = is_array($submitted[$key] ?? null) ? $submitted[$key] : [];
             $target = $row['target'] ?? $legacyTargets[$key] ?? 0;
             $weight = $row['weight'] ?? $meta['default_weight'];
@@ -101,6 +84,11 @@ class TargetController extends Controller
         }
 
         return $targets;
+    }
+
+    private function indicators(): array
+    {
+        return (array) config('scoring_indicators.indicators', []);
     }
 
     private function references(string $area): array

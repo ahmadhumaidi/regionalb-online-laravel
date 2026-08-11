@@ -36,6 +36,7 @@ class ScoringController extends Controller
             'active' => 'scoring',
             'filters' => $filters,
             'referenceOptions' => $referenceOptions,
+            'indicators' => (array) config('scoring_indicators.indicators', []),
             'rows' => $table['rows'],
             'syncedAt' => $table['synced_at'],
         ]);

@@ -29,8 +29,8 @@
     <section class="rounded-2xl glass-card p-5">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
             <div>
-                <h2 class="text-base font-semibold text-ink">Scoring — Semua Indikator Penilaian</h2>
-                <p class="mt-1 text-xs text-ink-muted">Kumpulan indikator mentah per staff. Bobot poin per indikator belum diterapkan di sini.</p>
+                <h2 class="text-base font-semibold text-ink">Scoring - Semua Indikator Penilaian</h2>
+                <p class="mt-1 text-xs text-ink-muted">Kumpulan indikator mentah per staff berdasarkan konfigurasi indikator scoring.</p>
             </div>
             @if ($syncedAt)
                 <span class="text-xs text-ink-muted">Sumber Collab tersinkron: {{ \Illuminate\Support\Carbon::parse($syncedAt)->format('d M Y') }}</span>
@@ -45,40 +45,19 @@
                     <thead>
                         <tr class="border-b border-border text-xs leading-tight text-ink-muted">
                             <th class="w-56 py-2 pr-3 font-medium">Staff</th>
-                            <th class="w-14 py-2 pr-3 text-center font-medium">Reg</th>
-                            <th class="w-14 py-2 pr-3 text-center font-medium">Herreg</th>
-                            <th class="w-16 py-2 pr-3 text-center font-medium">Reg<br>Kampus</th>
-                            <th class="w-16 py-2 pr-3 text-center font-medium">Herreg<br>Kampus</th>
-                            <th class="w-16 py-2 pr-3 text-center font-medium">Lap.<br>Iklan</th>
-                            <th class="w-20 py-2 pr-3 text-center font-medium">Realisasi<br>Iklan</th>
-                            <th class="w-10 py-2 pr-3 text-center font-medium">FU</th>
-                            <th class="w-14 py-2 pr-3 text-center font-medium">Leads</th>
-                            <th class="w-16 py-2 pr-3 text-center font-medium">Total<br>Lap.</th>
-                            <th class="w-14 py-2 pr-3 text-center font-medium">Aktif</th>
-                            <th class="w-16 py-2 pr-3 text-center font-medium">Share<br>FB</th>
-                            <th class="w-16 py-2 pr-3 text-center font-medium">Live<br>Stream</th>
-                            <th class="w-16 py-2 pr-3 text-center font-medium">Aff.<br>Mhs</th>
-                            <th class="w-16 py-2 text-center font-medium">Aff. Non<br>Mhs</th>
+                            @foreach ($indicators as $indicator)
+                                <th class="w-16 py-2 pr-3 text-center font-medium">{{ $indicator['label'] ?? '-' }}</th>
+                            @endforeach
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($rows as $row)
                             <tr class="border-b border-border/60">
-                                <td class="py-2 pr-3 font-medium text-ink whitespace-nowrap" title="{{ $row['wilayah'] }} · {{ $row['unit_name'] }}">{{ $row['name'] }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['registrasi_personal'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['herregistrasi_personal'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['registrasi_kampus'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['herregistrasi_kampus'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['laporan_iklan'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['realisasi_iklan'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['follow_up_total'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['leads_total'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['laporan_total'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['hari_aktif'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['share_fb_group'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['live_streaming'], 0, ',', '.') }}</td>
-                                <td class="py-2 pr-3 text-center text-ink">{{ number_format($row['affiliator_mahasiswa'], 0, ',', '.') }}</td>
-                                <td class="py-2 text-center text-ink">{{ number_format($row['affiliator_non_mahasiswa'], 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 font-medium text-ink whitespace-nowrap" title="{{ $row['wilayah'] }} - {{ $row['unit_name'] }}">{{ $row['name'] }}</td>
+                                @foreach ($indicators as $indicator)
+                                    @php($metricKey = (string) ($indicator['metric_key'] ?? ''))
+                                    <td class="py-2 pr-3 text-center text-ink">{{ number_format((float) ($row[$metricKey] ?? 0), 0, ',', '.') }}</td>
+                                @endforeach
                             </tr>
                         @endforeach
                     </tbody>
