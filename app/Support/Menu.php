@@ -57,9 +57,6 @@ class Menu
             [
                 'title' => 'Administrasi',
                 'items' => array_values(array_filter([
-                    RsmRole::canManageTargets($user)
-                        ? ['key' => 'targets', 'label' => 'Target Bulanan', 'icon' => 'flag']
-                        : null,
                     RsmRole::canViewUsersPage($user)
                         ? ['key' => 'users', 'label' => 'Kelola User', 'icon' => 'user-group']
                         : null,

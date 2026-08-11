@@ -139,7 +139,7 @@ class AuthorizationTest extends TestCase
             'target_anggaran' => 100000,
         ]);
 
-        $response->assertRedirect('/targets');
+        $response->assertRedirect('/scoring/targets');
         $target = RsmMonthlyTarget::where('staff_name', 'Baharuddin Muslim')->first();
         $this->assertNotNull($target);
         $this->assertSame('Kaltim', $target->wilayah);
@@ -183,7 +183,7 @@ class AuthorizationTest extends TestCase
             ],
         ]);
 
-        $response->assertRedirect('/targets');
+        $response->assertRedirect('/scoring/targets');
         $target = RsmMonthlyTarget::where('staff_name', 'Test Staff Indicator')->first();
         $this->assertNotNull($target);
         $this->assertSame(12, (int) $target->target_registrasi);
@@ -196,6 +196,29 @@ class AuthorizationTest extends TestCase
 
         $target->delete();
         $staff->delete();
+        $superUser->delete();
+    }
+
+    public function test_target_and_weight_page_is_available_inside_scoring(): void
+    {
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
+            'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
+        ]]);
+
+        $superUser = RsmUser::create([
+            'id' => 900011, 'name' => 'Test Super Scoring Target', 'username' => 'test_super_scoring_target_900011',
+            'password_hash' => 'x', 'role' => 'super_user', 'jabatan' => 'Super User',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($superUser)->get('/scoring/targets');
+
+        $response->assertOk();
+        $response->assertSee('Target &amp; Bobot', false);
+        $response->assertSee('Hasil Scoring');
+
         $superUser->delete();
     }
 }

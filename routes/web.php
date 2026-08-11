@@ -93,6 +93,8 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/role', [RoleController::class, 'index'])->name('role');
     Route::get('/closing-kampus', [ClosingCampusController::class, 'index'])->name('closing-kampus');
     Route::get('/scoring', [ScoringController::class, 'index'])->name('scoring');
+    Route::get('/scoring/targets', [TargetController::class, 'index'])->name('scoring.targets');
+    Route::post('/scoring/targets', [TargetController::class, 'store'])->name('scoring.targets.store');
     Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');

@@ -56,7 +56,7 @@ class TargetController extends Controller
             $key = $scope === 'staff' ? 'staff:' . mb_strtolower(trim($item['staff_name'])) : ($scope === 'unit' ? 'unit:' . mb_strtolower(trim($item['unit_name'])) : ($scope === 'wilayah' ? 'wilayah:' . mb_strtolower(trim($item['wilayah'])) : 'regional'));
             RsmMonthlyTarget::updateOrCreate(['area' => $area, 'target_month' => $data['target_month'], 'scope_key' => $key], ['scope_type' => $scope, 'wilayah' => $item['wilayah'] ?: null, 'unit_name' => $item['unit_name'] ?: null, 'staff_name' => $item['staff_name'] ?: null, 'target_leads' => (int) ($indicatorTargets['leads']['target'] ?? 0), 'target_follow_up' => (int) ($indicatorTargets['fu']['target'] ?? 0), 'target_registrasi' => (int) ($indicatorTargets['reg']['target'] ?? 0), 'target_herregistrasi' => (int) ($indicatorTargets['herreg']['target'] ?? 0), 'target_anggaran' => (float) ($indicatorTargets['realisasi_iklan']['target'] ?? 0), 'indicator_targets' => $indicatorTargets, 'notes' => trim((string) ($data['notes'] ?? '')) ?: null, 'created_by_user_id' => $user->id, 'created_by_name' => $user->name]);
         }
-        return redirect()->route('targets')->with('status', 'Target bulanan berhasil disimpan.');
+        return redirect()->route('scoring.targets')->with('status', 'Target bulanan berhasil disimpan.');
     }
 
     private function indicatorTargets(array $data): array

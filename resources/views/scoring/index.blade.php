@@ -26,6 +26,13 @@
         </div>
     </form>
 
+    <div class="mb-4 flex flex-wrap gap-2">
+        <a href="{{ route('scoring') }}" class="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white">Hasil Scoring</a>
+        @if (\App\Support\RsmRole::canManageTargets($user))
+            <a href="{{ route('scoring.targets') }}" class="rounded-lg border border-border px-3 py-2 text-sm font-semibold text-ink-muted hover:bg-surface-muted">Target & Bobot</a>
+        @endif
+    </div>
+
     <section class="rounded-2xl glass-card p-5">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
             <div>
