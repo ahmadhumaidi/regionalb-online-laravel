@@ -11,6 +11,8 @@ use Illuminate\Validation\Rule;
 
 class TargetController extends Controller
 {
+    private const TARGETABLE_ROLES = ['staff', 'koordinator'];
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -37,7 +39,7 @@ class TargetController extends Controller
         if (! $all && $scope === 'unit' && $unit === '') return back()->withErrors(['unit_name' => 'Unit/Kampus wajib dipilih.'])->withInput();
         if (! $all && $scope === 'staff' && $staff === '') return back()->withErrors(['staff_name' => 'Staff wajib dipilih.'])->withInput();
         if ($scope === 'staff' && $staff !== '') {
-            $selected = RsmUser::query()->where('area', $area)->where('role', 'staff')->where('is_active', true)->whereRaw('LOWER(name) = ?', [mb_strtolower($staff)])->first();
+            $selected = RsmUser::query()->where('area', $area)->whereIn('role', self::TARGETABLE_ROLES)->where('is_active', true)->whereRaw('LOWER(name) = ?', [mb_strtolower($staff)])->first();
             if ($selected) { $wilayah = $selected->regional ?: $wilayah; $unit = $selected->campus_name ?: $unit; $staff = $selected->name; }
         }
         $items = $all && $scope !== 'regional' ? $this->bulkItems($area, $scope) : [['wilayah' => $wilayah, 'unit_name' => $unit, 'staff_name' => $staff]];
@@ -51,14 +53,14 @@ class TargetController extends Controller
 
     private function references(string $area): array
     {
-        $staff = RsmUser::query()->where('area', $area)->where('role', 'staff')->where('is_active', true)->orderBy('regional')->orderBy('campus_name')->orderBy('name')->get(['name', 'regional', 'campus_name']);
+        $staff = RsmUser::query()->where('area', $area)->whereIn('role', self::TARGETABLE_ROLES)->where('is_active', true)->orderBy('regional')->orderBy('campus_name')->orderBy('name')->get(['name', 'regional', 'campus_name']);
         return ['regionals' => AreaRegionals::forArea($area), 'campuses' => $staff->pluck('campus_name')->filter()->unique()->values(), 'staff' => $staff];
     }
 
     private function bulkItems(string $area, string $scope): array
     {
         if ($scope === 'wilayah') return array_map(fn ($value) => ['wilayah' => $value, 'unit_name' => '', 'staff_name' => ''], AreaRegionals::forArea($area));
-        $staff = RsmUser::query()->where('area', $area)->where('role', 'staff')->where('is_active', true)->get(['name', 'regional', 'campus_name']);
+        $staff = RsmUser::query()->where('area', $area)->whereIn('role', self::TARGETABLE_ROLES)->where('is_active', true)->get(['name', 'regional', 'campus_name']);
         if ($scope === 'staff') return $staff->map(fn ($row) => ['wilayah' => $row->regional ?: '', 'unit_name' => $row->campus_name ?: '', 'staff_name' => $row->name])->all();
         return $staff->filter(fn ($row) => trim((string) $row->campus_name) !== '')->unique(fn ($row) => mb_strtolower($row->campus_name))->map(fn ($row) => ['wilayah' => $row->regional ?: '', 'unit_name' => $row->campus_name, 'staff_name' => ''])->values()->all();
     }

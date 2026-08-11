@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\RsmActivityLog;
+use App\Models\RsmMonthlyTarget;
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
@@ -105,5 +106,46 @@ class AuthorizationTest extends TestCase
         $ownLog->delete();
         $otherLog->delete();
         $staff->delete();
+    }
+
+    public function test_koordinator_campus_is_used_when_creating_personal_monthly_target(): void
+    {
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
+        ]]);
+
+        $superUser = RsmUser::create([
+            'id' => 900007, 'name' => 'Test Super Target', 'username' => 'test_super_target_900007',
+            'password_hash' => 'x', 'role' => 'super_user', 'jabatan' => 'Super User',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $koordinator = RsmUser::create([
+            'id' => 900008, 'name' => 'Baharuddin Muslim', 'username' => 'test_baharuddin_900008',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator',
+            'area' => 'Regional B', 'regional' => 'Kaltim', 'campus_name' => 'UNU Kaltim',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($superUser)->post('/targets', [
+            'target_month' => '2026-08',
+            'scope_type' => 'staff',
+            'staff_name' => 'Baharuddin Muslim',
+            'target_leads' => 10,
+            'target_follow_up' => 8,
+            'target_registrasi' => 3,
+            'target_herregistrasi' => 1,
+            'target_anggaran' => 100000,
+        ]);
+
+        $response->assertRedirect('/targets');
+        $target = RsmMonthlyTarget::where('staff_name', 'Baharuddin Muslim')->first();
+        $this->assertNotNull($target);
+        $this->assertSame('Kaltim', $target->wilayah);
+        $this->assertSame('UNU Kaltim', $target->unit_name);
+
+        $target->delete();
+        $koordinator->delete();
+        $superUser->delete();
     }
 }
