@@ -21,6 +21,7 @@ class RsmMonthlyTarget extends Model
         'target_registrasi',
         'target_herregistrasi',
         'target_anggaran',
+        'indicator_targets',
         'notes',
         'created_by_user_id',
         'created_by_name',
@@ -30,6 +31,7 @@ class RsmMonthlyTarget extends Model
     {
         return [
             'target_anggaran' => 'decimal:2',
+            'indicator_targets' => 'array',
         ];
     }
 }

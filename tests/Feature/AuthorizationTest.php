@@ -113,6 +113,7 @@ class AuthorizationTest extends TestCase
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
+            'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
         ]]);
 
         $superUser = RsmUser::create([
@@ -146,6 +147,55 @@ class AuthorizationTest extends TestCase
 
         $target->delete();
         $koordinator->delete();
+        $superUser->delete();
+    }
+
+    public function test_monthly_target_stores_indicator_targets_and_weights(): void
+    {
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
+            'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
+        ]]);
+
+        $superUser = RsmUser::create([
+            'id' => 900009, 'name' => 'Test Super Indicator', 'username' => 'test_super_indicator_900009',
+            'password_hash' => 'x', 'role' => 'super_user', 'jabatan' => 'Super User',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900010, 'name' => 'Test Staff Indicator', 'username' => 'test_staff_indicator_900010',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 7', 'campus_name' => 'Universitas Test',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($superUser)->post('/targets', [
+            'target_month' => '2026-08',
+            'scope_type' => 'staff',
+            'staff_name' => 'Test Staff Indicator',
+            'indicator_targets' => [
+                'reg' => ['target' => 12, 'weight' => 10],
+                'herreg' => ['target' => 8, 'weight' => 15],
+                'leads' => ['target' => 40, 'weight' => 8],
+                'fu' => ['target' => 25, 'weight' => 10],
+                'realisasi_iklan' => ['target' => 1500000, 'weight' => 7],
+            ],
+        ]);
+
+        $response->assertRedirect('/targets');
+        $target = RsmMonthlyTarget::where('staff_name', 'Test Staff Indicator')->first();
+        $this->assertNotNull($target);
+        $this->assertSame(12, (int) $target->target_registrasi);
+        $this->assertSame(8, (int) $target->target_herregistrasi);
+        $this->assertSame(40, (int) $target->target_leads);
+        $this->assertSame(25, (int) $target->target_follow_up);
+        $this->assertSame(1500000.0, (float) $target->target_anggaran);
+        $this->assertSame(10.0, (float) $target->indicator_targets['reg']['weight']);
+        $this->assertSame('Herreg Kampus', $target->indicator_targets['herreg_kampus']['label']);
+
+        $target->delete();
+        $staff->delete();
         $superUser->delete();
     }
 }
