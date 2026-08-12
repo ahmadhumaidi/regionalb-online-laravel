@@ -53,6 +53,10 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/forum/posts', [ForumController::class, 'storePost'])->name('forum.posts.store');
     Route::post('/forum/posts/{post}/like', [ForumController::class, 'toggleLike'])->name('forum.posts.like');
     Route::post('/forum/posts/{post}/comments', [ForumController::class, 'storeComment'])->name('forum.posts.comments.store');
+    Route::patch('/forum/posts/{post}', [ForumController::class, 'updatePost'])->name('forum.posts.update');
+    Route::delete('/forum/posts/{post}', [ForumController::class, 'destroyPost'])->name('forum.posts.destroy');
+    Route::patch('/forum/comments/{comment}', [ForumController::class, 'updateComment'])->name('forum.comments.update');
+    Route::delete('/forum/comments/{comment}', [ForumController::class, 'destroyComment'])->name('forum.comments.destroy');
     Route::get('/anggaran', [AdBudgetController::class, 'index'])->name('anggaran');
     Route::post('/anggaran/limit', [AdBudgetController::class, 'storeLimit'])->name('anggaran.limit.store');
     Route::get('/anggaran/create', fn () => app(ReportFormController::class)->create('ads'))->name('anggaran.create');

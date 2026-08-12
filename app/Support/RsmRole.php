@@ -130,6 +130,12 @@ class RsmRole
         return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior'], true);
     }
 
+    /** Forum Diskusi moderation (edit/delete any post or comment) - super_user only, not the wider senior tier. */
+    public static function canModerateForum(?RsmUser $user): bool
+    {
+        return $user?->role === 'super_user';
+    }
+
     public static function label(string $role): string
     {
         return self::ROLE_LABELS[$role] ?? ucwords(str_replace('_', ' ', $role));

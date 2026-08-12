@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\RsmForumComment;
 use App\Models\RsmForumLike;
 use App\Models\RsmForumPost;
+use App\Support\RsmRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -81,5 +83,52 @@ class ForumController extends Controller
         ]);
 
         return back()->with('notice', 'Komentar ditambahkan.');
+    }
+
+    /** Moderation (super_user only) - edits a post's text; the image, if any, is left as-is. */
+    public function updatePost(Request $request, RsmForumPost $post): RedirectResponse
+    {
+        abort_unless(RsmRole::canModerateForum(Auth::user()), 403);
+
+        $data = $request->validate(['body' => ['nullable', 'string', 'max:2000']]);
+
+        if (blank($data['body'] ?? null) && ! $post->image_path) {
+            throw ValidationException::withMessages(['body' => 'Tulis sesuatu atau lampirkan gambar.']);
+        }
+
+        $post->update(['body' => $data['body'] ?? null]);
+
+        return back()->with('notice', 'Postingan diperbarui.');
+    }
+
+    public function destroyPost(RsmForumPost $post): RedirectResponse
+    {
+        abort_unless(RsmRole::canModerateForum(Auth::user()), 403);
+
+        if ($post->image_path) {
+            Storage::disk('public')->delete($post->image_path);
+        }
+        $post->delete();
+
+        return back()->with('notice', 'Postingan dihapus.');
+    }
+
+    public function updateComment(Request $request, RsmForumComment $comment): RedirectResponse
+    {
+        abort_unless(RsmRole::canModerateForum(Auth::user()), 403);
+
+        $data = $request->validate(['body' => ['required', 'string', 'max:500']]);
+        $comment->update(['body' => $data['body']]);
+
+        return back()->with('notice', 'Komentar diperbarui.');
+    }
+
+    public function destroyComment(RsmForumComment $comment): RedirectResponse
+    {
+        abort_unless(RsmRole::canModerateForum(Auth::user()), 403);
+
+        $comment->delete();
+
+        return back()->with('notice', 'Komentar dihapus.');
     }
 }
