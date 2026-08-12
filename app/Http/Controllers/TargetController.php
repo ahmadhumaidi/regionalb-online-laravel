@@ -114,9 +114,13 @@ class TargetController extends Controller
         $period = AdBudgetPeriods::default(Carbon::createFromFormat('Y-m-d', $targetMonth.'-01')->toDateString());
         $query = RsmAdBudgetLimit::query()->where('area', $area)->where('ad_period', $period);
         $wilayah = trim((string) ($item['wilayah'] ?? ''));
+        $unitName = trim((string) ($item['unit_name'] ?? ''));
 
         if ($scope !== 'regional' && $wilayah !== '') {
             $query->where('wilayah', $wilayah);
+        }
+        if (Schema::hasColumn('rsm_ad_budget_limits', 'unit_name') && $scope !== 'regional' && $unitName !== '') {
+            $query->where('unit_name', $unitName);
         }
 
         return (float) $query->sum('budget_limit');

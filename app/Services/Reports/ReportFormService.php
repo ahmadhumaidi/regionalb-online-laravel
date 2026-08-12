@@ -11,6 +11,7 @@ use App\Services\NotificationService;
 use App\Support\RsmRole;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -171,7 +172,8 @@ class ReportFormService
         $staffRow = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('name', $staff)->when($wilayah !== '', fn ($q) => $q->where('regional', $wilayah))->first();
         $campus = DB::table('partner_campuses')->where('display_name', $unit)->orWhere('name', $unit)->first();
 
-        if ($user->role === RsmUser::ROLE_KOORDINATOR && $campus && $campus->wilayah && $campus->wilayah !== $user->regional) {
+        $campusWilayah = Schema::hasColumn('partner_campuses', 'wilayah') ? ($campus->wilayah ?? null) : null;
+        if ($user->role === RsmUser::ROLE_KOORDINATOR && $campus && $campusWilayah && $campusWilayah !== $user->regional) {
             throw ValidationException::withMessages(['unit_name' => 'Kampus tersebut bukan bagian dari wilayah Anda.']);
         }
 
@@ -257,7 +259,8 @@ class ReportFormService
         $staffRow = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('name', $staff)->when($wilayah !== '', fn ($q) => $q->where('regional', $wilayah))->first();
         $campus = DB::table('partner_campuses')->where('display_name', $unit)->orWhere('name', $unit)->first();
 
-        if ($user->role === RsmUser::ROLE_KOORDINATOR && $campus && $campus->wilayah && $campus->wilayah !== $user->regional) {
+        $campusWilayah = Schema::hasColumn('partner_campuses', 'wilayah') ? ($campus->wilayah ?? null) : null;
+        if ($user->role === RsmUser::ROLE_KOORDINATOR && $campus && $campusWilayah && $campusWilayah !== $user->regional) {
             throw ValidationException::withMessages(['unit_name' => 'Kampus tersebut bukan bagian dari wilayah Anda.']);
         }
 
@@ -331,11 +334,15 @@ class ReportFormService
             return;
         }
         $requested = (float) $data['budget_requested'];
-        $limit = DB::table('rsm_ad_budget_limits')->where(['area' => $data['area'], 'ad_period' => $data['ad_period'], 'wilayah' => $data['wilayah']])->value('budget_limit');
-        if ((float) $limit <= 0) {
-            throw ValidationException::withMessages(['budget_requested' => 'Plafon anggaran untuk wilayah dan periode ini belum ditetapkan.']);
+        $limitQuery = DB::table('rsm_ad_budget_limits')->where(['area' => $data['area'], 'ad_period' => $data['ad_period'], 'wilayah' => $data['wilayah']]);
+        if (Schema::hasColumn('rsm_ad_budget_limits', 'unit_name')) {
+            $limitQuery->where('unit_name', $data['unit_name']);
         }
-        $used = DB::table('rsm_reports')->where('area', $data['area'])->where('report_type', RsmReport::TYPE_ADS)->where('ad_period', $data['ad_period'])->where('wilayah', $data['wilayah'])->whereRaw('LOWER(status) <> ?', ['ditolak'])->when($existing, fn ($q) => $q->where('id', '<>', $existing->id))->sum('budget_requested');
+        $limit = $limitQuery->value('budget_limit');
+        if ((float) $limit <= 0) {
+            throw ValidationException::withMessages(['budget_requested' => 'Plafon anggaran untuk kampus dan periode ini belum ditetapkan.']);
+        }
+        $used = DB::table('rsm_reports')->where('area', $data['area'])->where('report_type', RsmReport::TYPE_ADS)->where('ad_period', $data['ad_period'])->where('wilayah', $data['wilayah'])->where('unit_name', $data['unit_name'])->whereRaw('LOWER(status) <> ?', ['ditolak'])->when($existing, fn ($q) => $q->where('id', '<>', $existing->id))->sum('budget_requested');
         if ($requested <= 0 || $requested > ((float) $limit - (float) $used + 0.0001)) {
             throw ValidationException::withMessages(['budget_requested' => 'Anggaran melebihi sisa plafon atau tidak valid.']);
         }

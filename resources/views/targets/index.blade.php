@@ -85,7 +85,7 @@
                                 <td class="px-3 py-2">
                                     @if ($key === 'realisasi_iklan')
                                         <input type="text" value="Otomatis dari plafon" disabled class="w-full rounded-lg border-border bg-surface-muted text-ink-muted">
-                                        <p class="mt-1 text-[11px] text-ink-muted">Target mengikuti plafon anggaran wilayah/periode.</p>
+                                        <p class="mt-1 text-[11px] text-ink-muted">Target mengikuti plafon anggaran kampus/periode.</p>
                                     @else
                                         <input type="number" min="0" step="1" name="indicator_targets[{{ $key }}][target]" value="{{ $targetOld }}" class="w-full rounded-lg border-border bg-surface-muted">
                                     @endif

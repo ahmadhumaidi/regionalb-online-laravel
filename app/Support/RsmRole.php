@@ -75,6 +75,11 @@ class RsmRole
         return in_array($user?->role, ['super_user', 'senior'], true);
     }
 
+    public static function canManageAdBudgetLimit(?RsmUser $user): bool
+    {
+        return in_array($user?->role, ['super_user', 'senior', 'koordinator'], true);
+    }
+
     /**
      * Wider than canManageAdBudget() (which gates the plafon-setting form):
      * these are the roles whose Setujui/Tolak/Revisi buttons appear on the

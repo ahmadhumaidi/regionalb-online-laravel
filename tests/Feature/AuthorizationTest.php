@@ -114,6 +114,7 @@ class AuthorizationTest extends TestCase
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
+            'database/migrations/2026_08_12_093000_add_unit_name_to_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
             'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
         ]]);
@@ -157,6 +158,7 @@ class AuthorizationTest extends TestCase
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
+            'database/migrations/2026_08_12_093000_add_unit_name_to_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
             'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
         ]]);
@@ -173,7 +175,7 @@ class AuthorizationTest extends TestCase
             'is_active' => true,
         ]);
         RsmAdBudgetLimit::updateOrCreate(
-            ['area' => 'Regional B', 'ad_period' => 'Agustus 2026', 'wilayah' => 'Regional 7'],
+            ['area' => 'Regional B', 'ad_period' => 'Agustus 2026', 'wilayah' => 'Regional 7', 'unit_name' => 'Universitas Test'],
             ['budget_limit' => 1500000, 'created_by_user_id' => $superUser->id, 'created_by_name' => $superUser->name]
         );
 
@@ -203,7 +205,7 @@ class AuthorizationTest extends TestCase
         $this->assertSame('Herreg Kampus', $target->indicator_targets['herreg_kampus']['label']);
 
         $target->delete();
-        RsmAdBudgetLimit::where('area', 'Regional B')->where('ad_period', 'Agustus 2026')->where('wilayah', 'Regional 7')->delete();
+        RsmAdBudgetLimit::where('area', 'Regional B')->where('ad_period', 'Agustus 2026')->where('wilayah', 'Regional 7')->where('unit_name', 'Universitas Test')->delete();
         $staff->delete();
         $superUser->delete();
     }

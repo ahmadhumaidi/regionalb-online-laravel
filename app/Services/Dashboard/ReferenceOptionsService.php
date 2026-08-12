@@ -4,6 +4,7 @@ namespace App\Services\Dashboard;
 
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Ports rsm_reference_options() (rsm_db.php:1459) for the dashboard filter
@@ -48,7 +49,7 @@ class ReferenceOptionsService
         $campusesQuery = DB::table('partner_campuses')
             ->select('id')
             ->selectRaw('COALESCE(display_name, name) as label');
-        if ($user->role === 'koordinator' && trim((string) $user->regional) !== '') {
+        if ($user->role === 'koordinator' && trim((string) $user->regional) !== '' && Schema::hasColumn('partner_campuses', 'wilayah')) {
             $campusesQuery->where(fn ($q) => $q->where('wilayah', $user->regional)->orWhereNull('wilayah'));
         }
         $campuses = $campusesQuery

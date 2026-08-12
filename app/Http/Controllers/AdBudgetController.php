@@ -59,7 +59,7 @@ class AdBudgetController extends Controller
             'groups' => $reports['groups'],
             'totalCount' => $reports['total_count'],
             'shownCount' => $reports['shown_count'],
-            'canManageBudget' => RsmRole::canManageAdBudget($user),
+            'canManageBudget' => RsmRole::canManageAdBudgetLimit($user),
             'referenceOptions' => ReferenceOptionsService::build($area, $user),
         ]);
     }
@@ -68,19 +68,29 @@ class AdBudgetController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        abort_unless(RsmRole::canManageAdBudget($user), 403);
+        abort_unless(RsmRole::canManageAdBudgetLimit($user), 403);
 
         $data = $request->validate([
             'ad_period' => ['required', 'string', 'max:40'],
             'wilayah' => ['required', 'string', 'max:120'],
+            'unit_name' => ['required', 'string', 'max:160'],
             'budget_limit' => ['required', 'numeric', 'min:0.01'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        if ($user->role === RsmUser::ROLE_KOORDINATOR) {
+            $data['wilayah'] = (string) $user->regional;
+        }
+        $allowedCampuses = collect(ReferenceOptionsService::build($user->area ?: 'Regional B', $user)['campuses'])->pluck('label')->all();
+        if (! in_array($data['unit_name'], $allowedCampuses, true)) {
+            return back()->withErrors(['unit_name' => 'Kampus tidak tersedia untuk wilayah Anda.'])->withInput();
+        }
 
         AdBudgetLimitService::save(
             $user->area ?: 'Regional B',
             $data['ad_period'],
             $data['wilayah'],
+            $data['unit_name'],
             (float) $data['budget_limit'],
             $data['notes'] ?? null,
             $user

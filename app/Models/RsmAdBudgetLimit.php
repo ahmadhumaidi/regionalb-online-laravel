@@ -12,6 +12,7 @@ class RsmAdBudgetLimit extends Model
         'area',
         'ad_period',
         'wilayah',
+        'unit_name',
         'budget_limit',
         'notes',
         'created_by_user_id',

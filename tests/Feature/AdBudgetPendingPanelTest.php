@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\RsmAdLead;
+use App\Models\RsmAdBudgetLimit;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AdBudgetPendingPanelTest extends TestCase
@@ -17,9 +19,108 @@ class AdBudgetPendingPanelTest extends TestCase
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
             'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
+            'database/migrations/2026_08_12_093000_add_unit_name_to_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
         ]]);
+    }
+
+    public function test_koordinator_can_set_campus_budget_limit(): void
+    {
+        $this->migrate();
+
+        DB::table('partner_campuses')->insert([
+            'name' => 'STIESIA Surabaya',
+            'display_name' => 'STIESIA Surabaya',
+            'kode_kampus' => 'STIESIA-T',
+            'address' => '-',
+        ]);
+        $koordinator = RsmUser::create([
+            'id' => 900050, 'name' => 'Korwil Budget', 'username' => 'test_korwil_budget_900050',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($koordinator)->post(route('anggaran.limit.store'), [
+            'ad_period' => \App\Services\AdBudget\AdBudgetPeriods::default('2026-08-01'),
+            'wilayah' => 'Regional 4',
+            'unit_name' => 'STIESIA Surabaya',
+            'budget_limit' => 750000,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('rsm_ad_budget_limits', [
+            'area' => 'Regional B',
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'budget_limit' => 750000,
+        ]);
+
+        RsmAdBudgetLimit::where('unit_name', 'STIESIA Surabaya')->delete();
+        DB::table('partner_campuses')->where('kode_kampus', 'STIESIA-T')->delete();
+        $koordinator->delete();
+    }
+
+    public function test_ads_request_uses_campus_budget_limit_not_regional_pool(): void
+    {
+        $this->migrate();
+
+        foreach (['STIESIA Surabaya', 'Other Campus'] as $index => $campus) {
+            DB::table('partner_campuses')->insert([
+                'name' => $campus,
+                'display_name' => $campus,
+                'kode_kampus' => 'CAMPUS-LIMIT-'.$index,
+                'address' => '-',
+            ]);
+        }
+        $koordinator = RsmUser::create([
+            'id' => 900051, 'name' => 'Korwil Request', 'username' => 'test_korwil_request_900051',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
+        ]);
+        RsmAdBudgetLimit::create([
+            'area' => 'Regional B',
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'budget_limit' => 500000,
+            'created_by_user_id' => $koordinator->id,
+            'created_by_name' => $koordinator->name,
+        ]);
+
+        $this->actingAs($koordinator)->post(route('anggaran.store'), [
+            'report_date' => '2026-08-12',
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'Other Campus',
+            'platform' => 'Meta Ads',
+            'campaign_name' => 'Other Campus Campaign',
+            'ad_goal' => 'Leads',
+            'budget_requested' => 100000,
+        ])->assertSessionHasErrors('budget_requested');
+
+        $this->actingAs($koordinator)->post(route('anggaran.store'), [
+            'report_date' => '2026-08-12',
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'platform' => 'Meta Ads',
+            'campaign_name' => 'Allowed Campus Campaign',
+            'ad_goal' => 'Leads',
+            'budget_requested' => 100000,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('rsm_reports', [
+            'campaign_name' => 'Allowed Campus Campaign',
+            'unit_name' => 'STIESIA Surabaya',
+            'budget_requested' => 100000,
+        ]);
+
+        RsmReport::whereIn('campaign_name', ['Allowed Campus Campaign', 'Other Campus Campaign'])->delete();
+        RsmAdBudgetLimit::where('wilayah', 'Regional 6')->delete();
+        DB::table('partner_campuses')->whereIn('kode_kampus', ['CAMPUS-LIMIT-0', 'CAMPUS-LIMIT-1'])->delete();
+        $koordinator->delete();
     }
 
     public function test_anggaran_page_shows_report_link_only_when_editable(): void
