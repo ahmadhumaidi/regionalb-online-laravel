@@ -40,7 +40,19 @@ class DashboardController extends Controller
         $overview = DashboardOverviewService::build($area, $filters, $user);
         $staffAchievement = CollabMetricsService::personalPerformance($area, $filters, $user);
         $regionalStaffAchievement = $this->regionalStaffAchievement($area, $filters, $user, $staffAchievement);
-        $gamification = GamificationService::build($area, $filters, $user);
+
+        // "Arena Performa Staff" is meant to be the same company-wide
+        // leaderboard everyone sees, not just a staff viewer's own row -
+        // GamificationService::build() narrows its roster/report scope to
+        // "just me" for an actual staff caller (ScoringTableService's
+        // staffRoster()), so pass a role-cloned 'senior' user the same way
+        // regionalStaffAchievement()/topCampusClosing() already do for
+        // their own "show everyone, not just my scope" panels. id/name stay
+        // the real staff member's, so `my_rank` still resolves correctly.
+        $gamificationUser = $user->role === 'staff'
+            ? (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior']))
+            : $user;
+        $gamification = GamificationService::build($area, $filters, $gamificationUser);
         $referenceOptions = ReferenceOptionsService::build($area, $user);
 
         // Rekap Pencapaian's "Total Closing Kampus" card: same "Closing Kampus
