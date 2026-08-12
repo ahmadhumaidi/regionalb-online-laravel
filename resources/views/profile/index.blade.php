@@ -79,23 +79,45 @@
                             @endforeach
                         </div>
 
-                        <div class="rounded-xl border border-white/10 bg-[#161c3a] p-4">
-                            <p class="text-xs font-black tracking-wide text-indigo-200 uppercase">This Week</p>
-                            <p class="mt-0.5 text-[11px] text-indigo-300">Reset dalam <span class="font-semibold text-white" data-countdown-target="{{ $weekResetAt }}">--:--:--</span></p>
-                            <div class="mt-3 flex items-center gap-1.5">
-                                <x-icon name="bolt" class="h-4 w-4 text-amber-300" />
-                                <strong class="text-lg">{{ number_format($weekEnergy,0,',','.') }}</strong>
+                        <div class="space-y-4">
+                            <div class="rounded-xl border border-white/10 bg-[#161c3a] p-4">
+                                <p class="text-xs font-black tracking-wide text-indigo-200 uppercase">This Week</p>
+                                <p class="mt-0.5 text-[11px] text-indigo-300">Reset dalam <span class="font-semibold text-white" data-countdown-target="{{ $weekResetAt }}">--:--:--</span></p>
+                                <div class="mt-3 flex items-center gap-1.5">
+                                    <x-icon name="bolt" class="h-4 w-4 text-amber-300" />
+                                    <strong class="text-lg">{{ number_format($weekEnergy,0,',','.') }}</strong>
+                                </div>
+                                <div class="mt-4 space-y-2">
+                                    @foreach($weeklyChestTiers as $tier)
+                                        @php $reached = $weekEnergy >= $tier; @endphp
+                                        <div class="flex items-center gap-2 rounded-lg {{ $reached ? 'bg-emerald-400/10' : 'bg-white/5' }} px-2.5 py-2">
+                                            <span class="flex h-6 w-6 items-center justify-center rounded-full {{ $reached ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-300' }}">
+                                                @if($reached)<x-icon name="check" class="h-3.5 w-3.5" />@else<x-icon name="chest" class="h-3.5 w-3.5" />@endif
+                                            </span>
+                                            <span class="text-[11px] font-semibold {{ $reached ? 'text-emerald-200' : 'text-indigo-300' }}">{{ $reached ? 'Claimed' : 'Needed '.$tier }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
-                            <div class="mt-4 space-y-2">
-                                @foreach($weeklyChestTiers as $tier)
-                                    @php $reached = $weekEnergy >= $tier; @endphp
-                                    <div class="flex items-center gap-2 rounded-lg {{ $reached ? 'bg-emerald-400/10' : 'bg-white/5' }} px-2.5 py-2">
-                                        <span class="flex h-6 w-6 items-center justify-center rounded-full {{ $reached ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-300' }}">
-                                            @if($reached)<x-icon name="check" class="h-3.5 w-3.5" />@else<x-icon name="chest" class="h-3.5 w-3.5" />@endif
-                                        </span>
-                                        <span class="text-[11px] font-semibold {{ $reached ? 'text-emerald-200' : 'text-indigo-300' }}">{{ $reached ? 'Claimed' : 'Needed '.$tier }}</span>
-                                    </div>
-                                @endforeach
+
+                            <div class="rounded-xl border border-white/10 bg-[#161c3a] p-4">
+                                <p class="text-xs font-black tracking-wide text-indigo-200 uppercase">This Month</p>
+                                <p class="mt-0.5 text-[11px] text-indigo-300">Reset dalam <span class="font-semibold text-white" data-countdown-target="{{ $monthResetAt }}">--:--:--</span></p>
+                                <div class="mt-3 flex items-center gap-1.5">
+                                    <x-icon name="bolt" class="h-4 w-4 text-amber-300" />
+                                    <strong class="text-lg">{{ number_format($monthEnergy,0,',','.') }}</strong>
+                                </div>
+                                <div class="mt-4 space-y-2">
+                                    @foreach($monthlyChestTiers as $tier)
+                                        @php $reached = $monthEnergy >= $tier; @endphp
+                                        <div class="flex items-center gap-2 rounded-lg {{ $reached ? 'bg-emerald-400/10' : 'bg-white/5' }} px-2.5 py-2">
+                                            <span class="flex h-6 w-6 items-center justify-center rounded-full {{ $reached ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-300' }}">
+                                                @if($reached)<x-icon name="check" class="h-3.5 w-3.5" />@else<x-icon name="chest" class="h-3.5 w-3.5" />@endif
+                                            </span>
+                                            <span class="text-[11px] font-semibold {{ $reached ? 'text-emerald-200' : 'text-indigo-300' }}">{{ $reached ? 'Claimed' : 'Needed '.$tier }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     </div>

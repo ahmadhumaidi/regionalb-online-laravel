@@ -61,6 +61,8 @@ class ProfileController extends Controller
 
     private const WEEKLY_CHEST_TIERS = [330, 660, 990, 1320];
 
+    private const MONTHLY_CHEST_TIERS = [1500, 3000, 4500, 6000];
+
     public function show(): View
     {
         $user = Auth::user();
@@ -98,14 +100,20 @@ class ProfileController extends Controller
         $weekEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)
             ->whereBetween('claim_date', [now()->startOfWeek()->toDateString(), now()->endOfWeek()->toDateString()])
             ->sum('energy');
+        $monthEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)
+            ->whereBetween('claim_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+            ->sum('energy');
         $dailyChestTiers = self::DAILY_CHEST_TIERS;
         $weeklyChestTiers = self::WEEKLY_CHEST_TIERS;
+        $monthlyChestTiers = self::MONTHLY_CHEST_TIERS;
         $missionResetAt = now()->endOfDay()->toIso8601String();
         $weekResetAt = now()->endOfWeek()->toIso8601String();
+        $monthResetAt = now()->endOfMonth()->toIso8601String();
 
         return view('profile.index', compact(
             'user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'score', 'badges', 'dailyMissions',
-            'todayEnergy', 'weekEnergy', 'dailyChestTiers', 'weeklyChestTiers', 'missionResetAt', 'weekResetAt'
+            'todayEnergy', 'weekEnergy', 'monthEnergy', 'dailyChestTiers', 'weeklyChestTiers', 'monthlyChestTiers',
+            'missionResetAt', 'weekResetAt', 'monthResetAt'
         ));
     }
 
