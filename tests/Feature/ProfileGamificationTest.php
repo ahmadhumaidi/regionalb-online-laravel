@@ -81,15 +81,16 @@ class ProfileGamificationTest extends TestCase
 
     /**
      * Gamification Phase 1 changed this: the koordinator's Level/XP block
-     * now reads their *personal* lifetime XP ledger (XpService), which
-     * deliberately excludes their team's pooled activity (see
-     * GamificationService::personalProfileXp()) - team performance stays a
-     * separate concept from personal XP. Badges are unaffected by that
-     * refactor and still show the team's pooled achievement, since
-     * GamificationService::profileSummary() (which drives badges) wasn't
-     * touched.
+     * now reads their *team-average* lifetime XP ledger (XpService) instead
+     * of the raw pooled total - a koordinator's real job is monitoring/
+     * approving, not filing reports themselves, so their personal XP is the
+     * team's pooled point total divided by their active staff headcount
+     * (see GamificationService::averageTeamProfileXp()), not the raw sum.
+     * Badges are unaffected by this refactor and still show the team's
+     * pooled achievement, since GamificationService::profileSummary()
+     * (which drives badges) wasn't touched.
      */
-    public function test_koordinator_personal_xp_excludes_team_but_badges_stay_pooled(): void
+    public function test_koordinator_xp_is_team_average_and_badges_stay_pooled(): void
     {
         $this->migrate();
 
@@ -100,26 +101,32 @@ class ProfileGamificationTest extends TestCase
         ]);
 
         $reports = [];
-        foreach (['Staff A', 'Staff B'] as $name) {
+        $staffAccounts = [];
+        foreach (['Staff A', 'Staff B'] as $i => $name) {
+            $staffAccounts[] = RsmUser::create([
+                'id' => 900050 + $i, 'name' => $name, 'username' => 'test_'.\Illuminate\Support\Str::slug($name).'_'.(900050 + $i),
+                'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+                'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+            ]);
             $report = RsmReport::create([
                 'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
                 'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => $name, 'created_by_role' => 'staff',
                 'status' => 'Diverifikasi', 'title' => "Campaign {$name}", 'platform' => 'Meta Ads', 'campaign_name' => "Campaign {$name}",
                 'budget_requested' => 100000, 'realization_amount' => 100000,
             ]);
-            for ($i = 0; $i < 2; $i++) {
-                RsmAdLead::create(['report_id' => $report->id, 'lead_name' => "{$name} Reg {$i}", 'closing_status' => 'Registrasi', 'follow_up_result' => 'Sudah daftar']);
+            for ($j = 0; $j < 2; $j++) {
+                RsmAdLead::create(['report_id' => $report->id, 'lead_name' => "{$name} Reg {$j}", 'closing_status' => 'Registrasi', 'follow_up_result' => 'Sudah daftar']);
             }
             $reports[] = $report;
         }
 
-        // None of these reports are attributed to the koordinator
-        // personally (staff_name never matches them) - personal XP is 0,
-        // not the old pooled 174.
+        // Team pooled total is 174 (87 points/staff x 2, see the original
+        // pooled-XP comment this test replaced) across 2 active staff ->
+        // 87 XP average, not the raw 174 pooled sum, and not 0.
         $response = $this->actingAs($koordinator)->get(route('profile'));
 
         $response->assertOk();
-        $response->assertSee('0 XP');
+        $response->assertSee('87 XP');
         $response->assertSee('Level 1');
         $response->assertSee('League Starter');
         // Badges still reflect the pooled team total - unchanged by this refactor.
@@ -132,6 +139,9 @@ class ProfileGamificationTest extends TestCase
         foreach ($reports as $report) {
             RsmAdLead::where('report_id', $report->id)->delete();
             $report->delete();
+        }
+        foreach ($staffAccounts as $staffAccount) {
+            $staffAccount->delete();
         }
         $koordinator->delete();
     }

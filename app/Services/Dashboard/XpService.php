@@ -19,8 +19,9 @@ use Illuminate\Support\Facades\DB;
  * GamificationService is intentionally left owning the point FORMULA
  * (report/lead/Collab weights) and the League thresholds - this class only
  * owns the ledger (award/read) and the level curve, and calls back into
- * GamificationService::personalProfileXp() to know how many points a user's
- * personal activity is currently worth.
+ * GamificationService::profileActivityXp() to know how many points a
+ * user's activity (personal report authorship for staff, team average for
+ * koordinator/senior tier) is currently worth.
  */
 class XpService
 {
@@ -96,8 +97,9 @@ class XpService
 
     /**
      * One-time-per-day reconciliation: compares the user's current
-     * personal-activity point total (GamificationService::personalProfileXp
-     * - live, recalculated) against what's already banked in the ledger,
+     * activity point total (GamificationService::profileActivityXp() - live,
+     * recalculated; personal report authorship for staff, team average for
+     * koordinator/senior tier) against what's already banked in the ledger,
      * and awards the difference if the live total has grown. Never awards a
      * negative delta, so XP already banked survives a later drop in the
      * live total (a report getting rejected/deleted, etc).
@@ -108,7 +110,7 @@ class XpService
      */
     public static function syncPersonalActivity(RsmUser $user): ?RsmGamificationTransaction
     {
-        $livePoints = GamificationService::personalProfileXp($user);
+        $livePoints = GamificationService::profileActivityXp($user);
         $banked = self::getLifetimeXp($user);
         $delta = $livePoints - $banked;
 

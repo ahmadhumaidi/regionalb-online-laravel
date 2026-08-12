@@ -230,6 +230,46 @@ class GamificationService
     }
 
     /**
+     * Personal-activity XP entry point for the lifetime XP ledger
+     * (XpService::syncPersonalActivity() / the legacy backfill command) -
+     * dispatches by role since "personal" means something different for a
+     * staff member (their own report authorship) than for a koordinator/
+     * senior (their team's average output, since their actual job is
+     * monitoring/approving rather than filing reports themselves).
+     */
+    public static function profileActivityXp(RsmUser $user): int
+    {
+        return $user->role === RsmUser::ROLE_STAFF
+            ? self::personalProfileXp($user)
+            : self::averageTeamProfileXp($user);
+    }
+
+    /**
+     * Koordinator/senior tier XP: their team's pooled point total (same
+     * all-time, role-widened scope ReportScope already applies - wilayah
+     * for koordinator, whole area for senior tier and above) averaged
+     * across the number of active staff in that scope. A koordinator
+     * managing 10 staff who together closed 100 registrations earns less
+     * personal credit per head (10) than one managing 2 staff with the
+     * same team total (50) - an average, not the raw pooled sum, so team
+     * size doesn't by itself inflate or deflate a koordinator's XP.
+     */
+    public static function averageTeamProfileXp(RsmUser $user): int
+    {
+        $area = $user->area ?: 'Regional B';
+        [, $scoredRows] = self::scoredRows($area, DashboardFilters::allTime(), $user);
+        $pooledPoints = (int) $scoredRows->sum('points');
+
+        $staffQuery = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('area', $area)->where('is_active', true);
+        if ($user->role === RsmUser::ROLE_KOORDINATOR && trim((string) $user->regional) !== '') {
+            $staffQuery->where('regional', $user->regional);
+        }
+        $staffCount = $staffQuery->count();
+
+        return $staffCount > 0 ? (int) round($pooledPoints / $staffCount) : 0;
+    }
+
+    /**
      * The raw per-staff indicator breakdown (report counts, leads, follow
      * ups, registrasi/herreg, ad spend, etc.) behind build()/
      * profileSummary(), without the points/leaderboard framing - used by

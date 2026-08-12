@@ -252,6 +252,64 @@ class XpLedgerTest extends TestCase
         $koordinator->delete();
     }
 
+    /**
+     * Koordinator/senior tier XP is their team's pooled total averaged
+     * across active staff headcount, not the raw sum and not 0 - 10 staff
+     * who together closed 100 registrations means 10 registrations'
+     * worth of credit per head, matching the koordinator's own stated
+     * expectation for this formula.
+     */
+    public function test_koordinator_xp_is_team_pooled_total_averaged_by_staff_headcount(): void
+    {
+        $this->migrate();
+        $koordinator = RsmUser::create([
+            'id' => 920011, 'name' => 'Korwil Average XP', 'username' => 'test_korwil_avg_920011',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
+        ]);
+
+        $staffAccounts = [];
+        $reports = [];
+        for ($i = 0; $i < 10; $i++) {
+            $name = "Team Staff {$i}";
+            $staffAccounts[] = RsmUser::create([
+                'id' => 920100 + $i, 'name' => $name, 'username' => 'test_team_staff_'.(920100 + $i),
+                'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+                'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+            ]);
+            $report = RsmReport::create([
+                'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+                'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => $name, 'created_by_role' => 'staff',
+                'status' => 'Diverifikasi', 'title' => "Campaign {$name}", 'platform' => 'Meta Ads', 'campaign_name' => "Campaign {$name}",
+                'budget_requested' => 100000, 'realization_amount' => 100000,
+            ]);
+            // 10 registrasi per staff x 10 staff = 100 total closing across the team.
+            for ($j = 0; $j < 10; $j++) {
+                RsmAdLead::create(['report_id' => $report->id, 'lead_name' => "{$name} Reg {$j}", 'closing_status' => 'Registrasi']);
+            }
+            $reports[] = $report;
+        }
+
+        // Per staff: report_total(1)*5 + approved_reports(1)*10 +
+        // leads_total(10)*2 + closing(10)*20 + closing_iklan(10)*10 = 335
+        // points (an ads-type report with a verified status counts its
+        // registrasi leads toward both the "closing" and ad-specific
+        // "closing_iklan" indicators - existing scoreRow() behavior,
+        // unchanged by this refactor). Pooled across 10 staff = 3350;
+        // averaged by headcount (10) = 335 - the same number as a single
+        // staff member's own total, not the pooled 3350.
+        $this->assertSame(335, GamificationService::averageTeamProfileXp($koordinator));
+
+        foreach ($reports as $report) {
+            RsmAdLead::where('report_id', $report->id)->delete();
+            $report->delete();
+        }
+        foreach ($staffAccounts as $staffAccount) {
+            $staffAccount->delete();
+        }
+        $koordinator->delete();
+    }
+
     /** 10 & 11. ProfileController still renders fine (new XP ledger wired in) and Daily Mission is untouched. */
     public function test_profile_page_renders_with_lifetime_xp_and_daily_mission_intact(): void
     {

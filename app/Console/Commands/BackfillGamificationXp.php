@@ -11,8 +11,9 @@ use Illuminate\Console\Command;
 /**
  * One-time opening-balance import for the Gamification Phase 1 XP ledger
  * (see XpService/RsmGamificationTransaction) - every active user's current
- * personal point total (GamificationService::personalProfileXp(), the same
- * personal-only formula the ongoing daily sync uses) becomes a single
+ * activity point total (GamificationService::profileActivityXp(), the same
+ * formula the ongoing daily sync uses - personal report authorship for
+ * staff, team average for koordinator/senior tier) becomes a single
  * `legacy_xp_import` transaction, so switching to the ledger doesn't reset
  * anyone back to 0 XP.
  *
@@ -52,7 +53,7 @@ class BackfillGamificationXp extends Command
                         continue;
                     }
 
-                    $legacyXp = GamificationService::personalProfileXp($user);
+                    $legacyXp = GamificationService::profileActivityXp($user);
 
                     if ($legacyXp <= 0) {
                         $skipped++;

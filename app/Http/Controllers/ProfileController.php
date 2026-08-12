@@ -94,11 +94,13 @@ class ProfileController extends Controller
         // Gamification Phase 1: Level/XP/League now read from the lifetime
         // XP ledger (rsm_gamification_transactions via XpService) instead
         // of a live recalculation - syncPersonalActivity() banks any growth
-        // in the user's own personal point total since their last profile
-        // visit (idempotent, at most once per day), then the ledger's
-        // lifetime sum drives the level curve. Deliberately personal-only
-        // (not the pooled wilayah/area total profileSummary() above still
-        // uses for badges) - see GamificationService::personalProfileXp().
+        // since the user's last profile visit (idempotent, at most once per
+        // day), then the ledger's lifetime sum drives the level curve. XP
+        // means their own report authorship for staff, but their team's
+        // average output for koordinator/senior tier (their job is
+        // monitoring/approving, not filing reports themselves) - see
+        // GamificationService::profileActivityXp(). Badges above still use
+        // profileSummary()'s pooled team total, unchanged.
         XpService::syncPersonalActivity($user);
         $xp = XpService::getLifetimeXp($user);
         $levelInfo = XpService::calculateLevel($xp);
