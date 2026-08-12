@@ -230,18 +230,91 @@ class GamificationService
     }
 
     /**
-     * Personal-activity XP entry point for the lifetime XP ledger
-     * (XpService::syncPersonalActivity() / the legacy backfill command) -
-     * dispatches by role since "personal" means something different for a
-     * staff member (their own report authorship) than for a koordinator/
-     * senior (their team's average output, since their actual job is
-     * monitoring/approving rather than filing reports themselves).
+     * Personal-activity XP entry point for the ONE-TIME legacy backfill
+     * command only (gamification:backfill-xp) - full historical formula, so
+     * a brand-new ledger's opening balance reflects everything that
+     * happened before real-time events existed. Dispatches by role since
+     * "personal" means something different for a staff member (their own
+     * report authorship) than for a koordinator/senior (their team's
+     * average output, since their actual job is monitoring/approving
+     * rather than filing reports themselves).
+     *
+     * NOT used by the ongoing daily sync anymore (Gamification Phase 2) -
+     * see profileSyncXp() for that.
      */
     public static function profileActivityXp(RsmUser $user): int
     {
         return $user->role === RsmUser::ROLE_STAFF
             ? self::personalProfileXp($user)
             : self::averageTeamProfileXp($user);
+    }
+
+    /**
+     * Gamification Phase 2: entry point for XpService::syncPersonalActivity()
+     * (the ongoing daily reconciliation), NOT the same formula as
+     * profileActivityXp(). Report/lead-driven components (report_total,
+     * approved_reports, leads_total, follow_up_total, closing_iklan,
+     * complete_follow_up_notes) are now awarded in real time at their
+     * authoritative mutation points (XpService::syncReportEventXp(), called
+     * from ReportFormService, ReportStatusController, AdBudgetActionController,
+     * ObstacleFollowUpController, and AdLeadImportService) - if the daily
+     * sync also recomputed those, every report/lead would earn XP twice.
+     * Staff's sync therefore only tracks the remainder: registrasi/herreg,
+     * which come from Collab (an external periodic sync with no per-event
+     * mutation point in this codebase to hook a real-time award to).
+     * Koordinator/senior tier are unaffected - their XP is an all-or-nothing
+     * team average with no per-event equivalent, so they keep using the
+     * full pooled formula here, same as backfill.
+     */
+    public static function profileSyncXp(RsmUser $user): int
+    {
+        return $user->role === RsmUser::ROLE_STAFF
+            ? self::personalCollabOnlyXp($user)
+            : self::averageTeamProfileXp($user);
+    }
+
+    /** Registrasi/herreg-only slice of the point formula - see profileSyncXp() for why this excludes everything report/lead-driven. */
+    public static function personalCollabOnlyXp(RsmUser $user): int
+    {
+        $area = $user->area ?: 'Regional B';
+        $collabPerformance = CollabMetricsService::personalPerformance($area, DashboardFilters::allTime(), $user);
+        $row = collect($collabPerformance['rows'])
+            ->first(fn (array $r) => mb_strtolower(trim((string) $r['name'])) === mb_strtolower(trim((string) $user->name)));
+
+        $registrasi = (float) ($row['registrasi'] ?? 0);
+        $herreg = (float) ($row['herregistrasi'] ?? 0);
+
+        return (int) round($registrasi * 20 + $herreg * 35);
+    }
+
+    /**
+     * Which RsmUser a report's XP should be credited to - prefers the
+     * report's own user_id, falls back to a staff_name match scoped to the
+     * report's area (mirrors the attribution ReportScope/personalProfileXp()
+     * already use). Only ever returns a staff-role user, since real-time
+     * per-report XP is a personal-authorship concept - a report authored by
+     * or attributed to a koordinator/senior doesn't have an individual to
+     * credit (their XP is a team average, computed separately).
+     */
+    public static function resolveStaffAuthor(RsmReport $report): ?RsmUser
+    {
+        if ($report->user_id) {
+            $user = RsmUser::find($report->user_id);
+            if ($user && $user->role === RsmUser::ROLE_STAFF) {
+                return $user;
+            }
+        }
+
+        $name = trim((string) $report->staff_name);
+        if ($name === '') {
+            return null;
+        }
+
+        return RsmUser::query()
+            ->where('role', RsmUser::ROLE_STAFF)
+            ->where('area', $report->area)
+            ->where('name', $name)
+            ->first();
     }
 
     /**

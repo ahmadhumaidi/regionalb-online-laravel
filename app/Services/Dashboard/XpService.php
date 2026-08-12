@@ -3,6 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Models\RsmGamificationTransaction;
+use App\Models\RsmReport;
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\DB;
 
@@ -18,13 +19,24 @@ use Illuminate\Support\Facades\DB;
  *
  * GamificationService is intentionally left owning the point FORMULA
  * (report/lead/Collab weights) and the League thresholds - this class only
- * owns the ledger (award/read) and the level curve, and calls back into
- * GamificationService::profileActivityXp() to know how many points a
- * user's activity (personal report authorship for staff, team average for
- * koordinator/senior tier) is currently worth.
+ * owns the ledger (award/read) and the level curve.
+ *
+ * Phase 2 added real-time awarding: syncReportEventXp() is called from
+ * every authoritative report/lead mutation point (see its own docblock)
+ * instead of waiting for syncPersonalActivity()'s daily reconciliation to
+ * notice the change next time the user opens their Profile page.
+ * syncPersonalActivity() still exists and still runs - it now only covers
+ * the Collab-sourced (registrasi/herreg) slice for staff, which has no
+ * real-time trigger point in this codebase (see
+ * GamificationService::profileSyncXp()).
  */
 class XpService
 {
+    /** Mirrors GamificationService::STATUS_APPROVED - a report currently sitting in one of these statuses counts as "approved" for the report_approved event, fired once regardless of how many approved statuses it passes through afterward. */
+    private const STATUS_APPROVED = ['Diverifikasi', 'Disetujui', 'Disetujui Senior Manager', 'Selesai', 'Berjalan'];
+
+    private const AD_VERIFIED_STATUSES = ['diverifikasi', 'selesai'];
+
     private const LEVEL_BASE = 100;
 
     private const LEVEL_LINEAR_STEP = 50;
@@ -96,13 +108,22 @@ class XpService
     }
 
     /**
-     * One-time-per-day reconciliation: compares the user's current
-     * activity point total (GamificationService::profileActivityXp() - live,
-     * recalculated; personal report authorship for staff, team average for
-     * koordinator/senior tier) against what's already banked in the ledger,
-     * and awards the difference if the live total has grown. Never awards a
-     * negative delta, so XP already banked survives a later drop in the
-     * live total (a report getting rejected/deleted, etc).
+     * One-time-per-day reconciliation for whatever ISN'T covered by
+     * real-time events (see syncReportEventXp()) - compares
+     * GamificationService::profileSyncXp() (live) against what's already
+     * banked, and awards the difference if the live total has grown. Never
+     * awards a negative delta, so XP already banked survives a later drop
+     * in the live total.
+     *
+     * Gamification Phase 2: this used to cover the *entire* point formula
+     * (report_total, approved_reports, leads_total, follow_up_total,
+     * closing_iklan, complete_follow_up_notes, registrasi, herreg) for
+     * staff. Now that report/lead-driven components are awarded in real
+     * time at their source, profileSyncXp() only returns the
+     * Collab-sourced remainder (registrasi/herreg) for staff, so this can't
+     * double-count them. Koordinator/senior tier are unchanged (still the
+     * full team-average formula - no real-time equivalent exists for an
+     * average).
      *
      * Idempotency key is per user per day, so repeat page loads the same
      * day never double-award - the first view of a day banks whatever
@@ -110,7 +131,7 @@ class XpService
      */
     public static function syncPersonalActivity(RsmUser $user): ?RsmGamificationTransaction
     {
-        $livePoints = GamificationService::profileActivityXp($user);
+        $livePoints = GamificationService::profileSyncXp($user);
         $banked = self::getLifetimeXp($user);
         $delta = $livePoints - $banked;
 
@@ -125,6 +146,62 @@ class XpService
             reason: 'Personal activity point growth since last sync',
             idempotencyKey: 'activity_sync:'.$user->id.':'.now()->toDateString(),
         );
+    }
+
+    /**
+     * Gamification Phase 2: real-time XP at the authoritative source,
+     * called from every place a report/lead is actually created or
+     * transitioned - ReportFormService::create()/update(),
+     * ReportStatusController/AdBudgetActionController/
+     * ObstacleFollowUpController's transition() methods, and
+     * AdLeadImportService::import()/bulkUpdate(). Idempotent per
+     * (event_type, source_type, source_id) via awardXp() - safe to call
+     * redundantly from multiple mutation paths on the same report, since
+     * each event can only ever be inserted once regardless of how many
+     * times this runs. Deliberately staff-only (see
+     * GamificationService::resolveStaffAuthor()) - a koordinator/senior's
+     * XP is a team average with no single-event equivalent.
+     */
+    public static function syncReportEventXp(RsmReport $report): void
+    {
+        $staff = GamificationService::resolveStaffAuthor($report);
+        if (! $staff) {
+            return;
+        }
+
+        self::awardXp($staff, 'report_created', 5, 'report', $report->id, 'Laporan dibuat');
+
+        if (in_array($report->status, self::STATUS_APPROVED, true)) {
+            self::awardXp($staff, 'report_approved', 10, 'report', $report->id, 'Laporan disetujui/diverifikasi');
+        }
+
+        $isVerifiedAds = $report->report_type === RsmReport::TYPE_ADS
+            && in_array(mb_strtolower(trim((string) $report->status)), self::AD_VERIFIED_STATUSES, true);
+
+        $report->loadMissing('adLeads');
+        $leads = $report->adLeads;
+        if ($leads->isEmpty()) {
+            return;
+        }
+
+        $buckets = ClosingStatusClassifier::buckets(
+            $leads->pluck('closing_status')->filter(fn ($value) => trim((string) $value) !== '')
+        );
+
+        foreach ($leads as $lead) {
+            self::awardXp($staff, 'lead_created', 2, 'ad_lead', $lead->id, 'Lead ditambahkan');
+
+            $hasFollowUp = filled($lead->follow_up_result) || filled($lead->progress_status);
+            if ($hasFollowUp) {
+                self::awardXp($staff, 'lead_follow_up', 4, 'ad_lead', $lead->id, 'Follow up lead');
+            }
+            if (filled($lead->follow_up_result) && filled($lead->notes)) {
+                self::awardXp($staff, 'lead_notes_complete', 5, 'ad_lead', $lead->id, 'Catatan follow up lengkap');
+            }
+            if ($isVerifiedAds && in_array(mb_strtolower(trim((string) $lead->closing_status)), $buckets['registrasi'], true)) {
+                self::awardXp($staff, 'closing_iklan', 10, 'ad_lead', $lead->id, 'Closing dari data hasil iklan');
+            }
+        }
     }
 
     /**

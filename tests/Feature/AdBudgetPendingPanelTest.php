@@ -23,6 +23,7 @@ class AdBudgetPendingPanelTest extends TestCase
             'database/migrations/2026_08_12_093000_add_unit_name_to_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
+            'database/migrations/2026_08_13_090000_create_rsm_gamification_transactions_table.php',
         ]]);
     }
 

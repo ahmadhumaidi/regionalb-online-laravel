@@ -7,6 +7,7 @@ use App\Models\RsmActivityLog;
 use App\Models\RsmAdLead;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\Dashboard\XpService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -82,6 +83,7 @@ class AdLeadImportService
 
         if ($count > 0) {
             self::log($report, "Import data hasil iklan {$count} baris.", 'import_ad_leads');
+            XpService::syncReportEventXp($report->fresh());
         }
 
         return $count;
@@ -119,6 +121,7 @@ class AdLeadImportService
         if ($changes > 0) {
             self::refreshCounts($report);
             self::log($report, "{$changes} baris data hasil iklan diperbarui.", 'update_ad_leads');
+            XpService::syncReportEventXp($report->fresh());
         }
 
         return $changes;

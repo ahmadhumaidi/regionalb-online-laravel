@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RsmActivityLog;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\Dashboard\XpService;
 use App\Support\RsmRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -137,6 +138,7 @@ class AdBudgetActionController extends Controller
             $mutate();
         }
         $report->save();
+        XpService::syncReportEventXp($report);
 
         $originalId = (int) $request->session()->get('impersonation.original_id', 0);
         $impersonator = $originalId > 0 ? RsmUser::find($originalId) : null;

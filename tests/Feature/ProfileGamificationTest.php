@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\RsmAdLead;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\Dashboard\XpService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -32,6 +33,7 @@ class ProfileGamificationTest extends TestCase
             'database/migrations/2026_08_05_110009_create_rsm_collab_daily_metrics_table.php',
             'database/migrations/2026_08_12_150000_create_rsm_daily_mission_claims_table.php',
             'database/migrations/2026_08_13_090000_create_rsm_gamification_transactions_table.php',
+            'database/migrations/2026_08_05_110002_create_rsm_coordinator_schedules_table.php',
         ]]);
     }
 
@@ -58,14 +60,26 @@ class ProfileGamificationTest extends TestCase
             RsmAdLead::create(['report_id' => $report->id, 'lead_name' => "Lead {$i}", 'follow_up_result' => 'Masih proses']);
         }
 
-        // report_total*5=5, approved_reports*10=10, leads_total(10)*2=20,
-        // follow_up_total(10)*4=40, closing_for_points(4)*20=80,
-        // herreg_for_points(1)*35=35, closing_iklan(4)*10=40,
-        // complete_follow_up_notes(4)*5=20 -> 250 points.
+        // Gamification Phase 2: report/lead-driven XP is now awarded in
+        // real time at the authoritative mutation point (ReportFormService,
+        // AdLeadImportService, etc) instead of ProfileController::show()
+        // recalculating the whole formula on every visit - this fixture
+        // creates rows directly (bypassing those services), so simulate
+        // what they'd have triggered: report_created(5) +
+        // report_approved(10, status=Diverifikasi) + lead_created(10)*2=20
+        // + lead_follow_up(10)*4=40 + lead_notes_complete(4)*5=20 +
+        // closing_iklan(4)*10=40 -> 135 XP. The old formula's
+        // registrasi(4)*20 + herreg(1)*35 = 115 doesn't apply here anymore
+        // because that component now only comes from Collab data
+        // (XpService::syncPersonalActivity()'s daily sync) - this fixture
+        // has none seeded, matching a staff member with ad-lead activity
+        // but no Collab sync data yet.
+        XpService::syncReportEventXp($report->fresh());
+
         $response = $this->actingAs($staff)->get(route('profile'));
 
         $response->assertOk();
-        $response->assertSee('250 XP');
+        $response->assertSee('135 XP');
         $response->assertSee('Level 2');
         $response->assertSee('League Starter');
         $response->assertSee('✓ Follow Up Hero', false);

@@ -7,6 +7,7 @@ use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\AdBudget\AdBudgetPeriods;
 use App\Services\Dashboard\ReportScope;
+use App\Services\Dashboard\XpService;
 use App\Services\NotificationService;
 use App\Support\RsmRole;
 use Illuminate\Http\UploadedFile;
@@ -122,6 +123,7 @@ class ReportFormService
             self::storeAttachment($report, $attachment);
             self::log($report, $user, 'create_'.$type, null, $report->status);
             self::notifyIfKendalaSubmitted($report, null);
+            XpService::syncReportEventXp($report);
 
             return $report->fresh();
         });
@@ -148,6 +150,7 @@ class ReportFormService
             self::storeInsightAttachment($report, $insightAttachment);
             self::log($report, $user, 'edit', $oldStatus, $report->status);
             self::notifyIfKendalaSubmitted($report, $oldStatus);
+            XpService::syncReportEventXp($report);
 
             return $report->fresh();
         });
