@@ -14,7 +14,7 @@
         <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"></div>
 
         <aside
-            class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full transform flex-col border-r border-border transition-transform duration-200 lg:static lg:translate-x-0"
+            class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full transform flex-col border-r border-border transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0"
             style="background: linear-gradient(180deg, rgba(33, 36, 70, 0.95), rgba(22, 24, 52, 0.96)); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);"
             :class="sidebarOpen && '!translate-x-0'"
         >

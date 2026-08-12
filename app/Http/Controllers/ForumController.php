@@ -8,6 +8,7 @@ use App\Models\RsmForumPost;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -42,7 +43,9 @@ class ForumController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
-        abort_if(blank($data['body'] ?? null) && ! $request->hasFile('image'), 422, 'Tulis sesuatu atau lampirkan gambar.');
+        if (blank($data['body'] ?? null) && ! $request->hasFile('image')) {
+            throw ValidationException::withMessages(['body' => 'Tulis sesuatu atau lampirkan gambar.']);
+        }
 
         RsmForumPost::create([
             'user_id' => Auth::id(),

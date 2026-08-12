@@ -9,6 +9,7 @@
                     <input type="file" name="image" accept="image/jpeg,image/png,image/webp" class="text-xs text-ink-muted">
                     <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Posting</button>
                 </div>
+                @error('image')<p class="text-xs text-tone-red">{{ $message }} (maks. 5MB, format jpg/png/webp)</p>@enderror
             </form>
         </section>
 
