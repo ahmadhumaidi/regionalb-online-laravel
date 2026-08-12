@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\RsmActivityLog;
+use App\Models\RsmCoordinatorSchedule;
 use App\Models\RsmDailyMissionClaim;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\CoordinatorLiburService;
 use App\Services\Dashboard\CollabMetricsService;
 use App\Services\Dashboard\GamificationService;
 use App\Services\Dashboard\XpService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -56,6 +59,24 @@ class ProfileController extends Controller
         'share_fb' => 'Share FB',
         'aktivitas_lain' => 'Aktivitas Lain',
         'reg' => 'Closing Reg',
+    ];
+
+    /**
+     * Koordinator's Daily Mission is a separate scheme from staff's: Follow
+     * Up/Share FB are wilayah-wide (target scales with active campus
+     * count), and "Laporan Hasil Kunjungan" replaces "Closing Reg" (a
+     * koordinator doesn't personally close registrations, they file a
+     * visit report - see koordinatorDailyMissions()). Login and Aktivitas
+     * Lain are unchanged from the staff scheme, same keys/rewards, so they
+     * intentionally reuse those entries below rather than duplicating them
+     * under a "kor_" key.
+     */
+    private const KOORDINATOR_MISSION_REWARDS = [
+        'login' => ['energy' => 10, 'stars' => 15],
+        'kor_fu' => ['energy' => 25, 'stars' => 25],
+        'kor_share_fb' => ['energy' => 20, 'stars' => 20],
+        'aktivitas_lain' => ['energy' => 15, 'stars' => 15],
+        'kor_kunjungan' => ['energy' => 40, 'stars' => 35],
     ];
 
     private const DAILY_CHEST_TIERS = [65, 120, 165, 220];
@@ -138,6 +159,13 @@ class ProfileController extends Controller
 
     private function dailyMissions(RsmUser $user): array
     {
+        if ($user->role === 'koordinator') {
+            return $this->koordinatorDailyMissions($user);
+        }
+        if ($user->role !== 'staff') {
+            return [];
+        }
+
         $area = $user->area ?: 'Regional B';
         $today = now()->toDateString();
         $filters = [
@@ -229,6 +257,105 @@ class ProfileController extends Controller
             'progress' => $tier['target'] > 0 ? min(100, round(($actual / $tier['target']) * 100)) : 0,
             'done' => $actual >= $tier['target'],
         ]];
+    }
+
+    /**
+     * Koordinator's Daily Mission: Login/Aktivitas Lain are identical to
+     * the staff scheme (their own report authorship); Follow Up/Share FB
+     * are wilayah-wide (every staff report today under their regional, not
+     * just their own) with a target that scales with how many campuses are
+     * actually active today (jumlah unit − libur hari ini); "Laporan Hasil
+     * Kunjungan" replaces "Closing Reg" and checks whether today's
+     * coordinator-schedule visit was marked Selesai.
+     */
+    private function koordinatorDailyMissions(RsmUser $user): array
+    {
+        $area = $user->area ?: 'Regional B';
+        $today = now()->toDateString();
+        $regional = trim((string) $user->regional);
+
+        $unitCount = $regional !== '' ? DB::table('partner_campuses')->where('wilayah', $regional)->count() : 0;
+        $activeUnits = max(0, $unitCount - $this->coordinatorLiburToday($user));
+
+        $wilayahReports = RsmReport::query()
+            ->where('area', $area)
+            ->whereDate('report_date', $today)
+            ->when($regional !== '', fn ($q) => $q->where('wilayah', $regional))
+            ->with('adLeads')
+            ->get();
+        $followUps = $wilayahReports->sum(function (RsmReport $report): int {
+            if ($report->adLeads->isEmpty()) {
+                return 0;
+            }
+
+            return $report->adLeads
+                ->filter(fn ($lead) => filled($lead->follow_up_result) || filled($lead->progress_status))
+                ->count();
+        });
+
+        $otherActivities = RsmReport::query()
+            ->where('area', $area)
+            ->whereDate('report_date', $today)
+            ->where(fn ($q) => $q->where('user_id', $user->id)->orWhere('staff_name', $user->name))
+            ->where('report_type', RsmReport::TYPE_OTHER)
+            ->count();
+
+        $filters = ['date_from' => $today, 'date_to' => $today, 'wilayah' => '', 'unit_name' => '', 'staff_name' => ''];
+        $shareFb = CollabMetricsService::personalTotal($filters, $area, $user, 'Share FB Group');
+
+        $visitReportDone = RsmCoordinatorSchedule::query()
+            ->where('koordinator_user_id', $user->id)
+            ->whereDate('schedule_date', $today)
+            ->where('status', 'Selesai')
+            ->exists();
+
+        $claimedToday = RsmDailyMissionClaim::where('user_id', $user->id)
+            ->where('claim_date', $today)
+            ->pluck('mission_key')
+            ->all();
+
+        $missions = [
+            ['key' => 'login', 'label' => 'Login', 'actual' => 1, 'target' => 1],
+            ['key' => 'kor_fu', 'label' => 'Follow Up', 'actual' => $followUps, 'target' => 30 * $activeUnits],
+            ['key' => 'kor_share_fb', 'label' => 'Share FB', 'actual' => $shareFb, 'target' => 3 * $activeUnits],
+            ['key' => 'aktivitas_lain', 'label' => 'Aktivitas Lain', 'actual' => $otherActivities, 'target' => 1],
+            ['key' => 'kor_kunjungan', 'label' => 'Laporan Hasil Kunjungan', 'actual' => $visitReportDone ? 1 : 0, 'target' => 1],
+        ];
+
+        return array_map(function (array $mission) use ($claimedToday) {
+            $reward = self::KOORDINATOR_MISSION_REWARDS[$mission['key']];
+            $target = $mission['target'];
+
+            return [
+                'key' => $mission['key'],
+                'label' => $mission['label'],
+                'tier' => null,
+                'energy' => $reward['energy'],
+                'stars' => $reward['stars'],
+                'claimed' => in_array($mission['key'], $claimedToday, true),
+                'actual' => $mission['actual'],
+                'target' => $target,
+                'progress' => $target > 0 ? min(100, round(($mission['actual'] / $target) * 100)) : 0,
+                // target > 0 guard: a wilayah with no partner_campuses data
+                // (or 0 active units today) would otherwise divide/compare
+                // against 0 and read as instantly "done", handing out a
+                // reward for a mission that was never actually achievable.
+                'done' => $target > 0 && $mission['actual'] >= $target,
+            ];
+        }, $missions);
+    }
+
+    /** Whether TODAY is a day off for this koordinator, per Jadwal Personalia (CoordinatorLiburService) - the visit schedule generates at most 1 unit/day, so this is 0 or 1. */
+    private function coordinatorLiburToday(RsmUser $user): int
+    {
+        $map = CoordinatorLiburService::map();
+        if ($map['month'] === '' || $map['month'] !== now()->format('Y-m')) {
+            return 0;
+        }
+
+        $day = (int) now()->format('j');
+
+        return isset($map['coordinators'][$user->name][$day]) ? 1 : 0;
     }
 
     public function update(Request $request): RedirectResponse
