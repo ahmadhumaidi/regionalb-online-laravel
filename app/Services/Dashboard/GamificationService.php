@@ -30,15 +30,30 @@ class GamificationService
     /** "Realisasi Iklan" indicator: only counted once the koordinator wilayah has verified the report ("Diverifikasi" or later). */
     private const AD_KOORDINATOR_VERIFIED_STATUSES = ['diverifikasi', 'selesai'];
 
-    /** The 5 achievable badges scoreRow()/badges() can award - excludes the "On Progress" fallback shown when none are earned yet. */
-    public const BADGE_NAMES = ['Follow Up Hero', 'Closing Hunter', 'Herregistrasi Champion', 'Consistency Streak', 'Budget Efficient'];
+    /** The achievable badges scoreRow()/badges() can award - excludes the "On Progress" fallback shown when none are earned yet. */
+    public const BADGE_NAMES = [
+        'Closing Hunter', 'Herregistrasi Champion', 'Kampus Growth', 'Kampus Herreg Champion',
+        'Ads Reporter', 'Budget Mover', 'Budget Efficient', 'Follow Up Hero', 'Lead Generator',
+        'Report Consistent', 'Consistency Streak', 'Share FB Booster', 'Live Streamer',
+        'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
+    ];
 
     private const BADGE_DEFAULTS = [
-        'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'source' => 'Kolom FU / follow_up_total dari data lead dan laporan.', 'tone' => 'blue'],
-        'closing_hunter' => ['name' => 'Closing Hunter', 'target' => 3, 'source' => 'Closing Personal Per Regional dari Collab, fallback ke status registrasi lead.', 'tone' => 'green'],
-        'herregistrasi_champion' => ['name' => 'Herregistrasi Champion', 'target' => 1, 'source' => 'Herreg Personal Per Regional dari Collab, fallback ke status herregistrasi lead.', 'tone' => 'purple'],
-        'consistency_streak' => ['name' => 'Consistency Streak', 'target' => 5, 'source' => 'Jumlah hari unik dari report_date laporan.', 'tone' => 'orange'],
+        'closing_hunter' => ['name' => 'Closing Hunter', 'target' => 3, 'metric_key' => 'registrasi_personal', 'source' => 'Reg / Closing Personal Per Regional dari Collab.', 'tone' => 'green'],
+        'herregistrasi_champion' => ['name' => 'Herregistrasi Champion', 'target' => 1, 'metric_key' => 'herregistrasi_personal', 'source' => 'Herreg Personal Per Regional dari Collab.', 'tone' => 'purple'],
+        'kampus_growth' => ['name' => 'Kampus Growth', 'target' => 5, 'metric_key' => 'registrasi_kampus', 'source' => 'Reg Kampus dari Closing Kampus Regional.', 'tone' => 'green'],
+        'kampus_herreg_champion' => ['name' => 'Kampus Herreg Champion', 'target' => 2, 'metric_key' => 'herregistrasi_kampus', 'source' => 'Herreg Kampus dari Herreg Kampus Regional.', 'tone' => 'purple'],
+        'ads_reporter' => ['name' => 'Ads Reporter', 'target' => 1, 'metric_key' => 'laporan_iklan', 'source' => 'Lap. Iklan yang sudah dilaporkan unit.', 'tone' => 'orange'],
+        'budget_mover' => ['name' => 'Budget Mover', 'target' => 1000000, 'metric_key' => 'realisasi_iklan', 'source' => 'Realisasi Iklan yang sudah diverifikasi.', 'tone' => 'red'],
         'budget_efficient' => ['name' => 'Budget Efficient', 'target' => 1, 'source' => 'Realisasi Iklan dan registrasi pada periode/filter.', 'tone' => 'red'],
+        'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'metric_key' => 'follow_up_total', 'source' => 'FU / follow_up_total dari data lead dan laporan.', 'tone' => 'blue'],
+        'lead_generator' => ['name' => 'Lead Generator', 'target' => 20, 'metric_key' => 'leads_total', 'source' => 'Leads dari upload lead dan laporan.', 'tone' => 'blue'],
+        'report_consistent' => ['name' => 'Report Consistent', 'target' => 5, 'metric_key' => 'laporan_total', 'source' => 'Total laporan pada periode/filter.', 'tone' => 'orange'],
+        'consistency_streak' => ['name' => 'Consistency Streak', 'target' => 5, 'metric_key' => 'hari_aktif', 'source' => 'Jumlah hari unik dari report_date laporan.', 'tone' => 'orange'],
+        'share_fb_booster' => ['name' => 'Share FB Booster', 'target' => 10, 'metric_key' => 'share_fb_group', 'source' => 'Share FB Group dari Collab.', 'tone' => 'blue'],
+        'live_streamer' => ['name' => 'Live Streamer', 'target' => 2, 'metric_key' => 'live_streaming', 'source' => 'Live Streaming dari Collab.', 'tone' => 'red'],
+        'affiliator_mahasiswa' => ['name' => 'Affiliator Mahasiswa', 'target' => 1, 'metric_key' => 'affiliator_mahasiswa', 'source' => 'Affiliator Mahasiswa dari Collab.', 'tone' => 'green'],
+        'affiliator_non_mahasiswa' => ['name' => 'Affiliator Non Mahasiswa', 'target' => 1, 'metric_key' => 'affiliator_non_mahasiswa', 'source' => 'Affiliator Non Mahasiswa dari Collab.', 'tone' => 'green'],
     ];
 
     /** @return list<array{key: string, name: string, target_value: float, condition: string, source: string, tone: string}> */
@@ -73,7 +88,7 @@ class GamificationService
 
                 return array_merge($row, [
                     'points' => (float) ($row['total_score'] ?? 0),
-                    'badges' => $legacy['badges'] ?? ['On Progress'],
+                    'badges' => self::badgesFromScoringRow($row, $legacy['badges'] ?? []),
                 ]);
             })
             ->sortBy([['total_score', 'desc'], ['name', 'asc']])
@@ -293,6 +308,29 @@ class GamificationService
         return $badges === [] ? ['On Progress'] : $badges;
     }
 
+    /** @return list<string> */
+    private static function badgesFromScoringRow(array $row, array $fallbackBadges = []): array
+    {
+        $badges = [];
+        $thresholds = self::badgeThresholds();
+
+        foreach (self::BADGE_DEFAULTS as $key => $meta) {
+            $metricKey = (string) ($meta['metric_key'] ?? '');
+            if ($metricKey === '') {
+                continue;
+            }
+            if ((float) ($row[$metricKey] ?? 0) >= (float) ($thresholds[$key] ?? $meta['target'])) {
+                $badges[] = $meta['name'];
+            }
+        }
+
+        if ($badges === [] && $fallbackBadges !== []) {
+            $badges = array_values(array_filter($fallbackBadges, fn (string $badge) => $badge !== 'On Progress'));
+        }
+
+        return $badges === [] ? ['On Progress'] : $badges;
+    }
+
     /** @return array<string, float> */
     private static function badgeThresholds(): array
     {
@@ -319,8 +357,18 @@ class GamificationService
             'follow_up_hero' => "Minimal {$formatted} follow up lead dalam periode/filter yang dipilih.",
             'closing_hunter' => "Minimal {$formatted} registrasi dalam periode/filter yang dipilih.",
             'herregistrasi_champion' => "Minimal {$formatted} herregistrasi dalam periode/filter yang dipilih.",
-            'consistency_streak' => "Aktif mengirim laporan pada minimal {$formatted} hari berbeda.",
+            'kampus_growth' => "Minimal {$formatted} registrasi kampus dalam periode/filter yang dipilih.",
+            'kampus_herreg_champion' => "Minimal {$formatted} herregistrasi kampus dalam periode/filter yang dipilih.",
+            'ads_reporter' => "Minimal {$formatted} laporan iklan terkirim.",
+            'budget_mover' => "Minimal realisasi iklan Rp {$formatted}.",
             'budget_efficient' => "Ada realisasi iklan dan minimal {$formatted} registrasi.",
+            'lead_generator' => "Minimal {$formatted} leads terkumpul.",
+            'report_consistent' => "Minimal {$formatted} laporan terkirim.",
+            'consistency_streak' => "Aktif mengirim laporan pada minimal {$formatted} hari berbeda.",
+            'share_fb_booster' => "Minimal {$formatted} share FB Group.",
+            'live_streamer' => "Minimal {$formatted} sesi live streaming.",
+            'affiliator_mahasiswa' => "Minimal {$formatted} affiliator mahasiswa.",
+            'affiliator_non_mahasiswa' => "Minimal {$formatted} affiliator non mahasiswa.",
             default => "Minimal {$formatted} capaian pada periode/filter yang dipilih.",
         };
     }

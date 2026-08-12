@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\RsmBadgeSetting;
 use App\Models\RsmUser;
+use App\Services\Dashboard\GamificationService;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
@@ -33,6 +34,9 @@ class BadgePageTest extends TestCase
         $response->assertSee('Badge &amp; Achievement', false);
         $response->assertSee('Follow Up Hero');
         $response->assertSee('Minimal 10 follow up lead');
+        $response->assertSee('Kampus Growth');
+        $response->assertSee('Share FB Booster');
+        $response->assertSee('Affiliator Non Mahasiswa');
         $response->assertSee('On Progress');
 
         $user->delete();
@@ -56,15 +60,13 @@ class BadgePageTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($user)->post('/badges', [
-            'settings' => [
-                'follow_up_hero' => 12,
-                'closing_hunter' => 4,
-                'herregistrasi_champion' => 2,
-                'consistency_streak' => 6,
-                'budget_efficient' => 3,
-            ],
-        ]);
+        $settings = collect(GamificationService::badgeDefinitions())
+            ->mapWithKeys(fn (array $badge) => [$badge['key'] => (int) $badge['target_value']])
+            ->all();
+        $settings['follow_up_hero'] = 12;
+        $settings['budget_efficient'] = 3;
+
+        $response = $this->actingAs($user)->post('/badges', ['settings' => $settings]);
 
         $response->assertRedirect('/badges');
         $this->assertSame(12.0, (float) RsmBadgeSetting::where('badge_key', 'follow_up_hero')->value('target_value'));
