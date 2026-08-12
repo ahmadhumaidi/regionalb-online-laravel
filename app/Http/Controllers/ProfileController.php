@@ -172,10 +172,12 @@ class ProfileController extends Controller
     }
 
     /**
-     * Expands one mission's tier list into row(s) ready for the view/claim
-     * flow. A mission with several tiers (e.g. "fu": 30/45/60) exposes them
-     * one at a time — tier N+1 is `locked` until tier N has been claimed,
-     * even if $actual already clears its target.
+     * Collapses one mission's tier list down to a single row: whichever
+     * tier is next up (the first one not yet claimed today), or the last
+     * tier once every tier has been claimed. A mission with several tiers
+     * (e.g. "fu": 30/45/60) therefore only ever occupies one row in the
+     * list — claiming it swaps the row to the next tier's target/reward on
+     * the next page load, rather than revealing an extra row.
      *
      * @param  list<array{target:int,energy:int,stars:int}>  $tiers
      * @param  list<string>  $claimedToday
@@ -183,30 +185,31 @@ class ProfileController extends Controller
     private function missionTiers(string $key, string $label, float $actual, array $tiers, array $claimedToday): array
     {
         $multiTier = count($tiers) > 1;
-        $rows = [];
-        $previousClaimed = true;
+        $activeIndex = 0;
 
         foreach ($tiers as $index => $tier) {
             $tierKey = $multiTier ? sprintf('%s_%d', $key, $index + 1) : $key;
-            $claimed = in_array($tierKey, $claimedToday, true);
-
-            $rows[] = [
-                'key' => $tierKey,
-                'label' => $multiTier ? sprintf('%s %d', $label, $tier['target']) : $label,
-                'energy' => $tier['energy'],
-                'stars' => $tier['stars'],
-                'claimed' => $claimed,
-                'actual' => $actual,
-                'target' => $tier['target'],
-                'progress' => $tier['target'] > 0 ? min(100, round(($actual / $tier['target']) * 100)) : 0,
-                'done' => $actual >= $tier['target'],
-                'locked' => ! $previousClaimed,
-            ];
-
-            $previousClaimed = $claimed;
+            $activeIndex = $index;
+            if (! in_array($tierKey, $claimedToday, true)) {
+                break;
+            }
         }
 
-        return $rows;
+        $tier = $tiers[$activeIndex];
+        $tierKey = $multiTier ? sprintf('%s_%d', $key, $activeIndex + 1) : $key;
+
+        return [[
+            'key' => $tierKey,
+            'label' => $multiTier ? sprintf('%s %d', $label, $tier['target']) : $label,
+            'tier' => $multiTier ? ($activeIndex + 1).'/'.count($tiers) : null,
+            'energy' => $tier['energy'],
+            'stars' => $tier['stars'],
+            'claimed' => in_array($tierKey, $claimedToday, true),
+            'actual' => $actual,
+            'target' => $tier['target'],
+            'progress' => $tier['target'] > 0 ? min(100, round(($actual / $tier['target']) * 100)) : 0,
+            'done' => $actual >= $tier['target'],
+        ]];
     }
 
     public function update(Request $request): RedirectResponse
@@ -228,7 +231,6 @@ class ProfileController extends Controller
         $mission = collect($this->dailyMissions($user))->firstWhere('key', $missionKey);
 
         abort_unless($mission, 404);
-        abort_if($mission['locked'], 422, 'Selesaikan tingkat sebelumnya dulu.');
         abort_unless($mission['done'], 422, 'Misi ini belum selesai.');
         abort_if($mission['claimed'], 422, 'Reward misi ini sudah diklaim hari ini.');
 

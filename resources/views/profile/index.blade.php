@@ -47,77 +47,73 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-4 lg:grid-cols-[1fr_240px]">
-                        <div class="space-y-2">
-                            @foreach($dailyMissions as $mission)
-                                <div class="flex items-center gap-3 rounded-xl border {{ $mission['locked'] ? 'border-white/5 bg-[#1a1d38] opacity-50' : ($mission['claimed'] ? 'border-emerald-300/30 bg-emerald-400/5' : 'border-white/10 bg-[#212446]') }} p-3">
-                                    <div class="min-w-0 flex-1">
-                                        <p class="truncate text-sm font-bold tracking-wide uppercase">{{ $mission['label'] }}</p>
-                                        @if(!$mission['locked'] && !$mission['done'])
-                                            <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-sky-300" style="width: {{ $mission['progress'] }}%"></div></div>
-                                        @endif
-                                    </div>
-                                    <div class="flex shrink-0 items-center gap-2 text-xs">
-                                        <span class="flex items-center gap-1"><x-icon name="bolt" class="h-3.5 w-3.5 text-amber-300" />{{ $mission['energy'] }}</span>
-                                        <span class="flex items-center gap-1"><x-icon name="star" class="h-3.5 w-3.5 text-sky-300" />{{ $mission['stars'] }}</span>
-                                    </div>
-                                    <div class="shrink-0">
-                                        @if($mission['locked'])
-                                            <span class="flex items-center gap-1 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-bold text-indigo-300"><x-icon name="lock" class="h-3.5 w-3.5" />Terkunci</span>
-                                        @elseif($mission['claimed'])
-                                            <span class="flex items-center gap-1 rounded-lg bg-emerald-400/15 px-3 py-1.5 text-xs font-bold text-emerald-200"><x-icon name="check" class="h-3.5 w-3.5" />Diklaim</span>
-                                        @elseif($mission['done'])
-                                            <form method="POST" action="{{ route('profile.daily-mission.claim', $mission['key']) }}">
-                                                @csrf
-                                                <button type="submit" class="rounded-lg bg-gradient-to-b from-amber-400 to-orange-500 px-4 py-1.5 text-xs font-black tracking-wide text-white uppercase shadow-md hover:from-amber-300 hover:to-orange-400">Claim</button>
-                                            </form>
-                                        @else
-                                            <span class="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-bold text-indigo-200">{{ number_format($mission['actual'],0,',','.') }}/{{ number_format($mission['target'],0,',','.') }}</span>
-                                        @endif
-                                    </div>
+                    <div class="space-y-2">
+                        @foreach($dailyMissions as $mission)
+                            <div class="flex items-center gap-3 rounded-xl border {{ $mission['claimed'] ? 'border-emerald-300/30 bg-emerald-400/5' : 'border-white/10 bg-[#212446]' }} p-3">
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-sm font-bold tracking-wide uppercase">{{ $mission['label'] }}@if($mission['tier'])<span class="ml-1.5 text-[10px] font-semibold text-indigo-300">({{ $mission['tier'] }})</span>@endif</p>
+                                    @unless($mission['done'])
+                                        <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-sky-300" style="width: {{ $mission['progress'] }}%"></div></div>
+                                    @endunless
                                 </div>
-                            @endforeach
-                        </div>
-
-                        <div class="space-y-4">
-                            <div class="rounded-xl border border-white/10 bg-[#161c3a] p-4">
-                                <p class="text-xs font-black tracking-wide text-indigo-200 uppercase">This Week</p>
-                                <p class="mt-0.5 text-[11px] text-indigo-300">Reset dalam <span class="font-semibold text-white" data-countdown-target="{{ $weekResetAt }}">--:--:--</span></p>
-                                <div class="mt-3 flex items-center gap-1.5">
-                                    <x-icon name="bolt" class="h-4 w-4 text-amber-300" />
-                                    <strong class="text-lg">{{ number_format($weekEnergy,0,',','.') }}</strong>
+                                <div class="flex w-16 shrink-0 flex-col items-end gap-0.5 text-[11px] leading-none">
+                                    <span class="flex items-center gap-1"><x-icon name="bolt" class="h-3 w-3 text-amber-300" />{{ $mission['energy'] }}</span>
+                                    <span class="flex items-center gap-1"><x-icon name="star" class="h-3 w-3 text-sky-300" />{{ $mission['stars'] }}</span>
                                 </div>
-                                <div class="mt-4 space-y-2">
-                                    @foreach($weeklyChestTiers as $tier)
-                                        @php $reached = $weekEnergy >= $tier; @endphp
-                                        <div class="flex items-center gap-2 rounded-lg {{ $reached ? 'bg-emerald-400/10' : 'bg-white/5' }} px-2.5 py-2">
-                                            <span class="flex h-6 w-6 items-center justify-center rounded-full {{ $reached ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-300' }}">
-                                                @if($reached)<x-icon name="check" class="h-3.5 w-3.5" />@else<x-icon name="chest" class="h-3.5 w-3.5" />@endif
-                                            </span>
-                                            <span class="text-[11px] font-semibold {{ $reached ? 'text-emerald-200' : 'text-indigo-300' }}">{{ $reached ? 'Claimed' : 'Needed '.$tier }}</span>
-                                        </div>
-                                    @endforeach
+                                <div class="w-20 shrink-0 text-center">
+                                    @if($mission['claimed'])
+                                        <span class="flex items-center justify-center gap-1 rounded-lg bg-emerald-400/15 px-2 py-1.5 text-xs font-bold text-emerald-200"><x-icon name="check" class="h-3.5 w-3.5" />Diklaim</span>
+                                    @elseif($mission['done'])
+                                        <form method="POST" action="{{ route('profile.daily-mission.claim', $mission['key']) }}">
+                                            @csrf
+                                            <button type="submit" class="w-full rounded-lg bg-gradient-to-b from-amber-400 to-orange-500 px-2 py-1.5 text-xs font-black tracking-wide text-white uppercase shadow-md hover:from-amber-300 hover:to-orange-400">Claim</button>
+                                        </form>
+                                    @else
+                                        <span class="block rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-indigo-200">{{ number_format($mission['actual'],0,',','.') }}/{{ number_format($mission['target'],0,',','.') }}</span>
+                                    @endif
                                 </div>
                             </div>
+                        @endforeach
+                    </div>
 
-                            <div class="rounded-xl border border-white/10 bg-[#161c3a] p-4">
-                                <p class="text-xs font-black tracking-wide text-indigo-200 uppercase">This Month</p>
-                                <p class="mt-0.5 text-[11px] text-indigo-300">Reset dalam <span class="font-semibold text-white" data-countdown-target="{{ $monthResetAt }}">--:--:--</span></p>
-                                <div class="mt-3 flex items-center gap-1.5">
-                                    <x-icon name="bolt" class="h-4 w-4 text-amber-300" />
-                                    <strong class="text-lg">{{ number_format($monthEnergy,0,',','.') }}</strong>
-                                </div>
-                                <div class="mt-4 space-y-2">
-                                    @foreach($monthlyChestTiers as $tier)
-                                        @php $reached = $monthEnergy >= $tier; @endphp
-                                        <div class="flex items-center gap-2 rounded-lg {{ $reached ? 'bg-emerald-400/10' : 'bg-white/5' }} px-2.5 py-2">
-                                            <span class="flex h-6 w-6 items-center justify-center rounded-full {{ $reached ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-300' }}">
-                                                @if($reached)<x-icon name="check" class="h-3.5 w-3.5" />@else<x-icon name="chest" class="h-3.5 w-3.5" />@endif
-                                            </span>
-                                            <span class="text-[11px] font-semibold {{ $reached ? 'text-emerald-200' : 'text-indigo-300' }}">{{ $reached ? 'Claimed' : 'Needed '.$tier }}</span>
-                                        </div>
-                                    @endforeach
-                                </div>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-xl border border-white/10 bg-[#161c3a] p-4">
+                            <p class="text-xs font-black tracking-wide text-indigo-200 uppercase">This Week</p>
+                            <p class="mt-0.5 text-[11px] text-indigo-300">Reset dalam <span class="font-semibold text-white" data-countdown-target="{{ $weekResetAt }}">--:--:--</span></p>
+                            <div class="mt-3 flex items-center gap-1.5">
+                                <x-icon name="bolt" class="h-4 w-4 text-amber-300" />
+                                <strong class="text-lg">{{ number_format($weekEnergy,0,',','.') }}</strong>
+                            </div>
+                            <div class="mt-4 space-y-2">
+                                @foreach($weeklyChestTiers as $tier)
+                                    @php $reached = $weekEnergy >= $tier; @endphp
+                                    <div class="flex items-center gap-2 rounded-lg {{ $reached ? 'bg-emerald-400/10' : 'bg-white/5' }} px-2.5 py-2">
+                                        <span class="flex h-6 w-6 items-center justify-center rounded-full {{ $reached ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-300' }}">
+                                            @if($reached)<x-icon name="check" class="h-3.5 w-3.5" />@else<x-icon name="chest" class="h-3.5 w-3.5" />@endif
+                                        </span>
+                                        <span class="text-[11px] font-semibold {{ $reached ? 'text-emerald-200' : 'text-indigo-300' }}">{{ $reached ? 'Claimed' : 'Needed '.$tier }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-white/10 bg-[#161c3a] p-4">
+                            <p class="text-xs font-black tracking-wide text-indigo-200 uppercase">This Month</p>
+                            <p class="mt-0.5 text-[11px] text-indigo-300">Reset dalam <span class="font-semibold text-white" data-countdown-target="{{ $monthResetAt }}">--:--:--</span></p>
+                            <div class="mt-3 flex items-center gap-1.5">
+                                <x-icon name="bolt" class="h-4 w-4 text-amber-300" />
+                                <strong class="text-lg">{{ number_format($monthEnergy,0,',','.') }}</strong>
+                            </div>
+                            <div class="mt-4 space-y-2">
+                                @foreach($monthlyChestTiers as $tier)
+                                    @php $reached = $monthEnergy >= $tier; @endphp
+                                    <div class="flex items-center gap-2 rounded-lg {{ $reached ? 'bg-emerald-400/10' : 'bg-white/5' }} px-2.5 py-2">
+                                        <span class="flex h-6 w-6 items-center justify-center rounded-full {{ $reached ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-300' }}">
+                                            @if($reached)<x-icon name="check" class="h-3.5 w-3.5" />@else<x-icon name="chest" class="h-3.5 w-3.5" />@endif
+                                        </span>
+                                        <span class="text-[11px] font-semibold {{ $reached ? 'text-emerald-200' : 'text-indigo-300' }}">{{ $reached ? 'Claimed' : 'Needed '.$tier }}</span>
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
                     </div>
