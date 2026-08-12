@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\RsmBadgeSetting;
 use App\Services\Dashboard\GamificationService;
-use App\Support\RsmRole;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -15,7 +14,8 @@ class BadgeController extends Controller
         return view('badges.index', [
             'active' => 'badges',
             'badges' => GamificationService::badgeDefinitions(),
-            'canManageBadges' => RsmRole::canManageTargets($request->user()),
+            'indicators' => GamificationService::scoringIndicators(),
+            'canManageBadges' => $request->user()?->role === 'super_user',
             'fallback' => [
                 'name' => 'On Progress',
                 'condition' => 'Ditampilkan ketika staff belum memenuhi syarat badge mana pun.',
@@ -27,12 +27,14 @@ class BadgeController extends Controller
 
     public function update(Request $request)
     {
-        abort_unless(RsmRole::canManageTargets($request->user()), 403);
+        abort_unless($request->user()?->role === 'super_user', 403);
 
         $keys = collect(GamificationService::badgeDefinitions())->pluck('key')->all();
+        $indicatorKeys = array_keys(GamificationService::scoringIndicators());
         $rules = [];
         foreach ($keys as $key) {
-            $rules["settings.$key"] = ['required', 'numeric', 'min:0'];
+            $rules["settings.$key.indicator_key"] = ['required', 'string', 'in:'.implode(',', $indicatorKeys)];
+            $rules["settings.$key.target_value"] = ['required', 'numeric', 'min:0'];
         }
 
         $data = $request->validate($rules);
@@ -40,7 +42,8 @@ class BadgeController extends Controller
             RsmBadgeSetting::updateOrCreate(
                 ['badge_key' => $key],
                 [
-                    'target_value' => (float) $value,
+                    'indicator_key' => (string) $value['indicator_key'],
+                    'target_value' => (float) $value['target_value'],
                     'updated_by_user_id' => $request->user()->id,
                     'updated_by_name' => $request->user()->name,
                 ]

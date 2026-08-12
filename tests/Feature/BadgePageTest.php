@@ -15,6 +15,7 @@ class BadgePageTest extends TestCase
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_12_090000_create_rsm_badge_settings_table.php',
+            'database/migrations/2026_08_12_092000_add_indicator_key_to_rsm_badge_settings_table.php',
         ]]);
 
         $user = RsmUser::create([
@@ -33,7 +34,8 @@ class BadgePageTest extends TestCase
         $response->assertOk();
         $response->assertSee('Badge &amp; Achievement', false);
         $response->assertSee('Follow Up Hero');
-        $response->assertSee('Minimal 10 follow up lead');
+        $response->assertSee('Minimal 10 FU');
+        $response->assertSee('Indikator');
         $response->assertSee('Kampus Growth');
         $response->assertSee('Share FB Booster');
         $response->assertSee('Affiliator Non Mahasiswa');
@@ -47,6 +49,7 @@ class BadgePageTest extends TestCase
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_12_090000_create_rsm_badge_settings_table.php',
+            'database/migrations/2026_08_12_092000_add_indicator_key_to_rsm_badge_settings_table.php',
         ]]);
 
         $user = RsmUser::create([
@@ -61,19 +64,26 @@ class BadgePageTest extends TestCase
         ]);
 
         $settings = collect(GamificationService::badgeDefinitions())
-            ->mapWithKeys(fn (array $badge) => [$badge['key'] => (int) $badge['target_value']])
+            ->mapWithKeys(fn (array $badge) => [$badge['key'] => [
+                'indicator_key' => $badge['indicator_key'],
+                'target_value' => (int) $badge['target_value'],
+            ]])
             ->all();
-        $settings['follow_up_hero'] = 12;
-        $settings['budget_efficient'] = 3;
+        $settings['follow_up_hero']['indicator_key'] = 'leads';
+        $settings['follow_up_hero']['target_value'] = 12;
+        $settings['budget_efficient']['indicator_key'] = 'reg';
+        $settings['budget_efficient']['target_value'] = 3;
 
         $response = $this->actingAs($user)->post('/badges', ['settings' => $settings]);
 
         $response->assertRedirect('/badges');
-        $this->assertSame(12.0, (float) RsmBadgeSetting::where('badge_key', 'follow_up_hero')->value('target_value'));
+        $followUpHero = RsmBadgeSetting::where('badge_key', 'follow_up_hero')->first();
+        $this->assertSame('leads', $followUpHero->indicator_key);
+        $this->assertSame(12.0, (float) $followUpHero->target_value);
 
         $response = $this->actingAs($user)->get('/badges');
-        $response->assertSee('Minimal 12 follow up lead');
-        $response->assertSee('minimal 3 registrasi');
+        $response->assertSee('Minimal 12 Leads');
+        $response->assertSee('Minimal 3 Reg');
 
         $user->delete();
     }

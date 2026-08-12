@@ -36,18 +36,38 @@
                         </div>
                         <dl class="mt-4 grid gap-3 text-sm">
                             <div>
+                                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Indikator</dt>
+                                <dd class="mt-1">
+                                    <select
+                                        name="settings[{{ $badge['key'] }}][indicator_key]"
+                                        @disabled(! $canManageBadges)
+                                        class="w-full rounded-lg border-border bg-surface-muted text-sm"
+                                    >
+                                        @foreach ($indicators as $indicatorKey => $indicator)
+                                            <option value="{{ $indicatorKey }}" @selected(old('settings.'.$badge['key'].'.indicator_key', $badge['indicator_key']) === $indicatorKey)>
+                                                {{ $indicator['label'] }} · {{ $indicator['group'] ?? 'Indikator' }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </dd>
+                            </div>
+                            <div>
                                 <dt class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Nilai Dicapai</dt>
                                 <dd class="mt-1">
                                     <input
                                         type="number"
                                         min="0"
-                                        step="1"
-                                        name="settings[{{ $badge['key'] }}]"
-                                        value="{{ old('settings.'.$badge['key'], (int) $badge['target_value']) }}"
+                                        step="{{ $indicators[$badge['indicator_key']]['step'] ?? '1' }}"
+                                        name="settings[{{ $badge['key'] }}][target_value]"
+                                        value="{{ old('settings.'.$badge['key'].'.target_value', (float) $badge['target_value']) }}"
                                         @disabled(! $canManageBadges)
                                         class="w-full rounded-lg border-border bg-surface-muted"
                                     >
                                 </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Indikator Terpilih</dt>
+                                <dd class="mt-1 text-ink">{{ $badge['indicator_label'] }}</dd>
                             </div>
                             <div>
                                 <dt class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Ketentuan</dt>

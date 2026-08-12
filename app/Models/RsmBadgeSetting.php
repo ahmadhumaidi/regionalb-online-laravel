@@ -10,6 +10,7 @@ class RsmBadgeSetting extends Model
 
     protected $fillable = [
         'badge_key',
+        'indicator_key',
         'target_value',
         'updated_by_user_id',
         'updated_by_name',

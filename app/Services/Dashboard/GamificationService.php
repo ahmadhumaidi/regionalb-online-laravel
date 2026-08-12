@@ -45,7 +45,7 @@ class GamificationService
         'kampus_herreg_champion' => ['name' => 'Kampus Herreg Champion', 'target' => 2, 'metric_key' => 'herregistrasi_kampus', 'source' => 'Herreg Kampus dari Herreg Kampus Regional.', 'tone' => 'purple'],
         'ads_reporter' => ['name' => 'Ads Reporter', 'target' => 1, 'metric_key' => 'laporan_iklan', 'source' => 'Lap. Iklan yang sudah dilaporkan unit.', 'tone' => 'orange'],
         'budget_mover' => ['name' => 'Budget Mover', 'target' => 1000000, 'metric_key' => 'realisasi_iklan', 'source' => 'Realisasi Iklan yang sudah diverifikasi.', 'tone' => 'red'],
-        'budget_efficient' => ['name' => 'Budget Efficient', 'target' => 1, 'source' => 'Realisasi Iklan dan registrasi pada periode/filter.', 'tone' => 'red'],
+        'budget_efficient' => ['name' => 'Budget Efficient', 'target' => 1, 'indicator_key' => 'reg', 'source' => 'Indikator pilihan pada periode/filter.', 'tone' => 'red'],
         'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'metric_key' => 'follow_up_total', 'source' => 'FU / follow_up_total dari data lead dan laporan.', 'tone' => 'blue'],
         'lead_generator' => ['name' => 'Lead Generator', 'target' => 20, 'metric_key' => 'leads_total', 'source' => 'Leads dari upload lead dan laporan.', 'tone' => 'blue'],
         'report_consistent' => ['name' => 'Report Consistent', 'target' => 5, 'metric_key' => 'laporan_total', 'source' => 'Total laporan pada periode/filter.', 'tone' => 'orange'],
@@ -56,20 +56,29 @@ class GamificationService
         'affiliator_non_mahasiswa' => ['name' => 'Affiliator Non Mahasiswa', 'target' => 1, 'metric_key' => 'affiliator_non_mahasiswa', 'source' => 'Affiliator Non Mahasiswa dari Collab.', 'tone' => 'green'],
     ];
 
-    /** @return list<array{key: string, name: string, target_value: float, condition: string, source: string, tone: string}> */
+    /** @return list<array{key: string, name: string, indicator_key: string, indicator_label: string, target_value: float, condition: string, source: string, tone: string}> */
     public static function badgeDefinitions(): array
     {
-        $thresholds = self::badgeThresholds();
+        $settings = self::badgeSettings();
+        $indicators = self::scoringIndicators();
 
-        return collect(self::BADGE_DEFAULTS)->map(function (array $meta, string $key) use ($thresholds) {
-            $target = (float) ($thresholds[$key] ?? $meta['target']);
+        return collect(self::BADGE_DEFAULTS)->map(function (array $meta, string $key) use ($settings, $indicators) {
+            $defaultIndicatorKey = self::defaultIndicatorKey($meta, $indicators);
+            $indicatorKey = (string) ($settings[$key]['indicator_key'] ?? $defaultIndicatorKey);
+            if (! array_key_exists($indicatorKey, $indicators)) {
+                $indicatorKey = $defaultIndicatorKey;
+            }
+            $indicatorLabel = (string) ($indicators[$indicatorKey]['label'] ?? $meta['name']);
+            $target = (float) ($settings[$key]['target_value'] ?? $meta['target']);
 
             return [
                 'key' => $key,
                 'name' => $meta['name'],
+                'indicator_key' => $indicatorKey,
+                'indicator_label' => $indicatorLabel,
                 'target_value' => $target,
-                'condition' => self::conditionFor($key, $target),
-                'source' => $meta['source'],
+                'condition' => self::conditionFor($indicatorLabel, $target),
+                'source' => self::sourceForIndicator($indicatorKey, $indicators, $meta),
                 'tone' => $meta['tone'],
             ];
         })->values()->all();
@@ -138,13 +147,16 @@ class GamificationService
 
         return [
             'points' => (int) $scoredRows->sum('points'),
-            'badges' => self::badges(
-                (float) $scoredRows->sum('follow_up_total'),
-                (float) $scoredRows->sum('closing_for_points'),
-                (float) $scoredRows->sum('herreg_for_points'),
-                $reportDays,
-                (float) $scoredRows->sum('spend_total'),
-            ),
+            'badges' => self::badgesFromScoringRow([
+                'registrasi_personal' => (float) $scoredRows->sum('registrasi_personal'),
+                'herregistrasi_personal' => (float) $scoredRows->sum('herregistrasi_personal'),
+                'laporan_iklan' => (float) $scoredRows->sum('laporan_iklan'),
+                'realisasi_iklan' => (float) $scoredRows->sum('realisasi_iklan'),
+                'follow_up_total' => (float) $scoredRows->sum('follow_up_total'),
+                'leads_total' => (float) $scoredRows->sum('leads_total'),
+                'laporan_total' => (float) $scoredRows->sum('laporan_total'),
+                'hari_aktif' => $reportDays,
+            ]),
         ];
     }
 
@@ -275,11 +287,20 @@ class GamificationService
             + $row['uploaded_ad_reports'] * 10
             + $row['complete_follow_up_notes'] * 5;
 
-        return array_merge($row, [
+        $scoredRow = array_merge($row, [
             'closing_for_points' => $closingForPoints,
             'herreg_for_points' => $herregForPoints,
+            'registrasi_personal' => (float) $closingForPoints,
+            'herregistrasi_personal' => (float) $herregForPoints,
+            'laporan_iklan' => (float) $row['uploaded_ad_reports'],
+            'realisasi_iklan' => (float) $row['spend_total'],
+            'laporan_total' => (float) $row['report_total'],
+            'hari_aktif' => (float) $row['report_days'],
             'points' => (int) round($points),
-            'badges' => self::badges($row['follow_up_total'], $closingForPoints, $herregForPoints, $row['report_days'], $row['spend_total']),
+        ]);
+
+        return array_merge($scoredRow, [
+            'badges' => self::badgesFromScoringRow($scoredRow),
         ]);
     }
 
@@ -312,14 +333,16 @@ class GamificationService
     private static function badgesFromScoringRow(array $row, array $fallbackBadges = []): array
     {
         $badges = [];
-        $thresholds = self::badgeThresholds();
+        $settings = self::badgeSettings();
+        $indicators = self::scoringIndicators();
 
         foreach (self::BADGE_DEFAULTS as $key => $meta) {
-            $metricKey = (string) ($meta['metric_key'] ?? '');
+            $indicatorKey = (string) ($settings[$key]['indicator_key'] ?? self::defaultIndicatorKey($meta, $indicators));
+            $metricKey = (string) ($indicators[$indicatorKey]['metric_key'] ?? $meta['metric_key'] ?? '');
             if ($metricKey === '') {
                 continue;
             }
-            if ((float) ($row[$metricKey] ?? 0) >= (float) ($thresholds[$key] ?? $meta['target'])) {
+            if ((float) ($row[$metricKey] ?? 0) >= (float) ($settings[$key]['target_value'] ?? $meta['target'])) {
                 $badges[] = $meta['name'];
             }
         }
@@ -334,43 +357,74 @@ class GamificationService
     /** @return array<string, float> */
     private static function badgeThresholds(): array
     {
-        $thresholds = collect(self::BADGE_DEFAULTS)->mapWithKeys(fn (array $meta, string $key) => [$key => (float) $meta['target']])->all();
+        return collect(self::BADGE_DEFAULTS)
+            ->mapWithKeys(fn (array $meta, string $key) => [$key => (float) (self::badgeSettings()[$key]['target_value'] ?? $meta['target'])])
+            ->all();
+    }
+
+    /** @return array<string, array{indicator_key?: string, target_value: float}> */
+    private static function badgeSettings(): array
+    {
+        $settings = collect(self::BADGE_DEFAULTS)
+            ->mapWithKeys(fn (array $meta, string $key) => [$key => ['target_value' => (float) $meta['target']]])
+            ->all();
 
         if (! Schema::hasTable('rsm_badge_settings')) {
-            return $thresholds;
+            return $settings;
         }
 
-        RsmBadgeSetting::query()->pluck('target_value', 'badge_key')->each(function (mixed $value, string $key) use (&$thresholds) {
-            if (array_key_exists($key, $thresholds)) {
-                $thresholds[$key] = (float) $value;
+        $hasIndicatorKey = Schema::hasColumn('rsm_badge_settings', 'indicator_key');
+        RsmBadgeSetting::query()->get(['badge_key', 'target_value', ...($hasIndicatorKey ? ['indicator_key'] : [])])->each(function (RsmBadgeSetting $setting) use (&$settings, $hasIndicatorKey) {
+            if (array_key_exists($setting->badge_key, $settings)) {
+                $settings[$setting->badge_key]['target_value'] = (float) $setting->target_value;
+                if ($hasIndicatorKey && filled($setting->indicator_key)) {
+                    $settings[$setting->badge_key]['indicator_key'] = (string) $setting->indicator_key;
+                }
             }
         });
 
-        return $thresholds;
+        return $settings;
     }
 
-    private static function conditionFor(string $key, float $target): string
+    /** @return array<string, array> */
+    public static function scoringIndicators(): array
+    {
+        return (array) config('scoring_indicators.indicators', []);
+    }
+
+    private static function defaultIndicatorKey(array $meta, array $indicators): string
+    {
+        if (isset($meta['indicator_key']) && array_key_exists((string) $meta['indicator_key'], $indicators)) {
+            return (string) $meta['indicator_key'];
+        }
+
+        $metricKey = (string) ($meta['metric_key'] ?? '');
+        foreach ($indicators as $key => $indicator) {
+            if ((string) ($indicator['metric_key'] ?? '') === $metricKey) {
+                return (string) $key;
+            }
+        }
+
+        return (string) array_key_first($indicators);
+    }
+
+    private static function sourceForIndicator(string $indicatorKey, array $indicators, array $meta): string
+    {
+        $indicator = $indicators[$indicatorKey] ?? null;
+        if (! is_array($indicator)) {
+            return (string) $meta['source'];
+        }
+
+        $group = (string) ($indicator['group'] ?? 'Indikator');
+
+        return "Indikator {$indicator['label']} dari grup {$group}.";
+    }
+
+    private static function conditionFor(string $indicatorLabel, float $target): string
     {
         $formatted = number_format($target, 0, ',', '.');
 
-        return match ($key) {
-            'follow_up_hero' => "Minimal {$formatted} follow up lead dalam periode/filter yang dipilih.",
-            'closing_hunter' => "Minimal {$formatted} registrasi dalam periode/filter yang dipilih.",
-            'herregistrasi_champion' => "Minimal {$formatted} herregistrasi dalam periode/filter yang dipilih.",
-            'kampus_growth' => "Minimal {$formatted} registrasi kampus dalam periode/filter yang dipilih.",
-            'kampus_herreg_champion' => "Minimal {$formatted} herregistrasi kampus dalam periode/filter yang dipilih.",
-            'ads_reporter' => "Minimal {$formatted} laporan iklan terkirim.",
-            'budget_mover' => "Minimal realisasi iklan Rp {$formatted}.",
-            'budget_efficient' => "Ada realisasi iklan dan minimal {$formatted} registrasi.",
-            'lead_generator' => "Minimal {$formatted} leads terkumpul.",
-            'report_consistent' => "Minimal {$formatted} laporan terkirim.",
-            'consistency_streak' => "Aktif mengirim laporan pada minimal {$formatted} hari berbeda.",
-            'share_fb_booster' => "Minimal {$formatted} share FB Group.",
-            'live_streamer' => "Minimal {$formatted} sesi live streaming.",
-            'affiliator_mahasiswa' => "Minimal {$formatted} affiliator mahasiswa.",
-            'affiliator_non_mahasiswa' => "Minimal {$formatted} affiliator non mahasiswa.",
-            default => "Minimal {$formatted} capaian pada periode/filter yang dipilih.",
-        };
+        return "Minimal {$formatted} {$indicatorLabel} dalam periode/filter yang dipilih.";
     }
 
     /** @return list<string> */
