@@ -20,6 +20,13 @@
             @foreach ($gamification['leaderboard'] as $i => $row)
                 <div class="flex items-center gap-3 rounded-xl border border-border px-3 py-2.5">
                     <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-semibold text-ink-muted">{{ $i + 1 }}</span>
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-sm font-bold text-brand-700">
+                        @if (! empty($row['photo_path']))
+                            <img src="{{ $row['photo_path'] }}" alt="{{ $row['name'] }}" class="h-full w-full object-cover">
+                        @else
+                            {{ strtoupper(mb_substr($row['name'] ?: 'U', 0, 1)) }}
+                        @endif
+                    </span>
                     <div class="min-w-0 flex-1">
                         <strong class="block truncate text-sm font-medium text-ink">{{ $row['name'] }}</strong>
                         <div class="mt-1 flex flex-wrap gap-1">

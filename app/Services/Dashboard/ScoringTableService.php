@@ -56,6 +56,7 @@ class ScoringTableService
                 $row = [
                     'user_id' => $staff->id,
                     'name' => $staff->name,
+                    'photo_path' => $staff->photoUrl(),
                     'wilayah' => $wilayah !== '' ? $wilayah : '-',
                     'unit_name' => $unitName !== '' ? $unitName : '-',
                     'registrasi_personal' => (float) ($personal['registrasi'] ?? 0),
