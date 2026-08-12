@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\RsmUser;
 use App\Services\BdcReportUsersService;
 use App\Services\CollabSourceService;
+use App\Services\Dashboard\XpService;
 use App\Services\PersonnelScheduleService;
 use Illuminate\Console\Command;
 
@@ -28,6 +30,29 @@ class SyncLegacySources extends Command
                 'Collab: '.count($data['reports'] ?? []).' report, '.count($data['errors'] ?? []).' error'
                 .($windowDays !== null ? " (window {$windowDays} hari)" : ' (full)')
             );
+
+            // Collab is the authoritative source for personal registrasi/herreg.
+            // Reconcile staff XP immediately after a successful/partial source
+            // refresh so XP no longer waits for the user to open Profile.
+            if (! empty($data['reports'])) {
+                $reconciled = 0;
+                $awarded = 0;
+
+                RsmUser::query()
+                    ->where('role', RsmUser::ROLE_STAFF)
+                    ->where('is_active', true)
+                    ->orderBy('id')
+                    ->chunkById(50, function ($users) use (&$reconciled, &$awarded): void {
+                        foreach ($users as $user) {
+                            $reconciled++;
+                            if (XpService::syncCollabActivity($user) !== null) {
+                                $awarded++;
+                            }
+                        }
+                    });
+
+                $this->line("Collab XP: {$reconciled} staff direkonsiliasi, {$awarded} transaksi/baseline dibuat");
+            }
         }
         if ($run('bdc')) {
             $data = BdcReportUsersService::refresh();
