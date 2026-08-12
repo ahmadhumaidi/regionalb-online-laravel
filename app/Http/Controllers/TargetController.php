@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class TargetController extends Controller
 {
@@ -45,6 +46,7 @@ class TargetController extends Controller
         }
         $data = $request->validate($rules);
         $baseIndicatorTargets = $this->indicatorTargets($data);
+        $this->assertTotalWeightIsOneHundred($baseIndicatorTargets);
         $all = $request->boolean('apply_all_scope'); $area = $user->area ?: 'Regional B'; $scope = $data['scope_type'];
         $wilayah = $scope === 'regional' ? '' : trim((string) ($data['wilayah'] ?? '')); $unit = in_array($scope, ['unit', 'staff'], true) ? trim((string) ($data['unit_name'] ?? '')) : ''; $staff = $scope === 'staff' ? trim((string) ($data['staff_name'] ?? '')) : '';
         if (! $all && $scope === 'wilayah' && $wilayah === '') return back()->withErrors(['wilayah' => 'Wilayah wajib dipilih.'])->withInput();
@@ -87,6 +89,18 @@ class TargetController extends Controller
         }
 
         return $targets;
+    }
+
+    private function assertTotalWeightIsOneHundred(array $indicatorTargets): void
+    {
+        $totalWeight = collect($indicatorTargets)->sum(fn (array $row): float => (float) ($row['weight'] ?? 0));
+        if (abs($totalWeight - 100.0) <= 0.01) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'indicator_targets' => 'Total bobot indikator harus tepat 100%. Saat ini: '.number_format($totalWeight, 2, ',', '.').'%.',
+        ]);
     }
 
     private function withAdBudgetTargets(array $indicatorTargets, string $area, string $targetMonth, array $item, string $scope): array

@@ -235,4 +235,49 @@ class AuthorizationTest extends TestCase
 
         $superUser->delete();
     }
+
+    public function test_monthly_target_rejects_indicator_weights_that_do_not_total_one_hundred(): void
+    {
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
+            'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
+        ]]);
+
+        $superUser = RsmUser::create([
+            'id' => 900012, 'name' => 'Test Super Weight', 'username' => 'test_super_weight_900012',
+            'password_hash' => 'x', 'role' => 'super_user', 'jabatan' => 'Super User',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900013, 'name' => 'Test Staff Weight', 'username' => 'test_staff_weight_900013',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 7', 'campus_name' => 'Universitas Test',
+            'is_active' => true,
+        ]);
+
+        $indicatorTargets = collect(config('scoring_indicators.indicators'))
+            ->mapWithKeys(fn (array $indicator, string $key) => [$key => [
+                'target' => $indicator['default_target'] ?? 1,
+                'weight' => $indicator['default_weight'],
+            ]])
+            ->all();
+        $indicatorTargets['reg']['weight'] = 11;
+
+        $response = $this->actingAs($superUser)->post('/targets', [
+            'target_month' => '2026-08',
+            'scope_type' => 'staff',
+            'staff_name' => 'Test Staff Weight',
+            'indicator_targets' => $indicatorTargets,
+        ]);
+
+        $response->assertSessionHasErrors('indicator_targets');
+        $this->assertDatabaseMissing('rsm_monthly_targets', [
+            'staff_name' => 'Test Staff Weight',
+            'target_month' => '2026-08',
+        ]);
+
+        $staff->delete();
+        $superUser->delete();
+    }
 }

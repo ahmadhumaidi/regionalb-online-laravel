@@ -20,7 +20,7 @@
             <span class="rounded-lg glass-card-muted px-3 py-1.5 text-xs font-semibold text-ink-muted">{{ $area }}</span>
         </div>
 
-        <form method="POST" action="{{ route('scoring.targets.store') }}" class="mt-4 grid gap-4">
+        <form method="POST" action="{{ route('scoring.targets.store') }}" class="mt-4 grid gap-4" x-data="{ totalWeight: 0, updateWeightTotal() { this.totalWeight = Array.from($el.querySelectorAll('[data-weight-input]')).reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0); } }" x-init="updateWeightTotal()" @input="updateWeightTotal()">
             @csrf
             <div class="grid gap-3 md:grid-cols-3">
                 <label class="grid gap-1 text-xs text-ink-muted">Bulan target
@@ -64,6 +64,12 @@
             </div>
 
             <div class="overflow-x-auto rounded-xl border border-border">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-surface-muted/40 px-3 py-2 text-xs">
+                    <span class="font-semibold text-ink-muted">Total bobot wajib 100%</span>
+                    <span class="rounded-lg px-3 py-1 font-bold" :class="Math.abs(totalWeight - 100) <= 0.01 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">
+                        Total bobot: <span x-text="totalWeight.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>%
+                    </span>
+                </div>
                 <table class="w-full min-w-[780px] text-left text-sm">
                     <thead>
                         <tr class="border-b border-border bg-surface-muted/60 text-xs text-ink-muted">
@@ -93,7 +99,7 @@
                                     @endif
                                 </td>
                                 <td class="px-3 py-2">
-                                    <input type="number" min="0" max="100" step="0.01" name="indicator_targets[{{ $key }}][weight]" value="{{ $weightOld }}" class="w-full rounded-lg border-border bg-surface-muted">
+                                    <input type="number" min="0" max="100" step="0.01" name="indicator_targets[{{ $key }}][weight]" value="{{ $weightOld }}" data-weight-input class="w-full rounded-lg border-border bg-surface-muted">
                                 </td>
                             </tr>
                         @endforeach
