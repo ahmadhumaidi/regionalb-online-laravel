@@ -374,6 +374,55 @@ class ScoringTableTest extends TestCase
         $senior->delete();
     }
 
+    public function test_other_reports_have_dedicated_activity_indicator(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900056, 'name' => 'Test Senior Other', 'username' => 'test_senior_other_900056',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900057, 'name' => 'Other Activity Staff', 'username' => 'test_other_activity_staff_900057',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+
+        RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_MARKETING, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Other Activity Staff', 'created_by_role' => 'staff',
+            'status' => 'Dikirim', 'title' => 'Marketing Visit',
+        ]);
+        RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Other Activity Staff', 'created_by_role' => 'staff',
+            'status' => 'Dikirim', 'title' => 'Rapat Koordinasi',
+        ]);
+
+        $table = \App\Services\Dashboard\ScoringTableService::build(
+            'Regional B',
+            [
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+                'wilayah' => '',
+                'unit_name' => '',
+                'staff_name' => '',
+            ],
+            $senior->fresh()
+        );
+
+        $row = collect($table['rows'])->firstWhere('name', 'Other Activity Staff');
+
+        $this->assertNotNull($row);
+        $this->assertSame(2, $row['laporan_total']);
+        $this->assertSame(1, $row['aktivitas_lain_total']);
+
+        RsmReport::where('staff_name', 'Other Activity Staff')->delete();
+        $staff->delete();
+        $senior->delete();
+    }
+
     public function test_arena_performa_leaderboard_uses_total_score(): void
     {
         $this->migrate();

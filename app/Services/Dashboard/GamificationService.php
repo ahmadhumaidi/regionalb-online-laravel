@@ -31,7 +31,7 @@ class GamificationService
     public const BADGE_NAMES = [
         'Closing Hunter', 'Herregistrasi Champion', 'Kampus Growth', 'Kampus Herreg Champion',
         'Efisiensi Iklan', 'Closing Iklan Hunter', 'Budget Efficient', 'Follow Up Hero',
-        'Report Consistent', 'Consistency Streak', 'Share FB Booster', 'Live Streamer',
+        'Report Consistent', 'Activity Helper', 'Consistency Streak', 'Share FB Booster', 'Live Streamer',
         'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
     ];
 
@@ -45,6 +45,7 @@ class GamificationService
         'budget_efficient' => ['name' => 'Budget Efficient', 'target' => 1, 'indicator_key' => 'reg', 'source' => 'Indikator pilihan pada periode/filter.', 'tone' => 'red'],
         'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'metric_key' => 'follow_up_total', 'source' => 'FU / follow_up_total dari data lead dan laporan.', 'tone' => 'blue'],
         'report_consistent' => ['name' => 'Report Consistent', 'target' => 5, 'metric_key' => 'laporan_total', 'source' => 'Total laporan pada periode/filter.', 'tone' => 'orange'],
+        'activity_helper' => ['name' => 'Activity Helper', 'target' => 2, 'metric_key' => 'aktivitas_lain_total', 'source' => 'Jumlah laporan Aktivitas Lain pada periode/filter.', 'tone' => 'blue'],
         'consistency_streak' => ['name' => 'Consistency Streak', 'target' => 5, 'metric_key' => 'hari_aktif', 'source' => 'Jumlah hari unik dari report_date laporan.', 'tone' => 'orange'],
         'share_fb_booster' => ['name' => 'Share FB Booster', 'target' => 10, 'metric_key' => 'share_fb_group', 'source' => 'Share FB Group dari Collab.', 'tone' => 'blue'],
         'live_streamer' => ['name' => 'Live Streamer', 'target' => 2, 'metric_key' => 'live_streaming', 'source' => 'Live Streaming dari Collab.', 'tone' => 'red'],
@@ -152,6 +153,7 @@ class GamificationService
                 'follow_up_total' => (float) $scoredRows->sum('follow_up_total'),
                 'leads_total' => (float) $scoredRows->sum('leads_total'),
                 'laporan_total' => (float) $scoredRows->sum('laporan_total'),
+                'aktivitas_lain_total' => (float) $scoredRows->sum('aktivitas_lain_total'),
                 'hari_aktif' => $reportDays,
             ]),
         ];
@@ -220,6 +222,7 @@ class GamificationService
                 $registrasi = 0;
                 $herreg = 0;
                 $completeFollowUpNotes = 0;
+                $otherReports = 0;
                 $spend = 0.0;
                 $adLeads = 0;
                 $adClosing = 0;
@@ -241,6 +244,10 @@ class GamificationService
                     } else {
                         $leads += (int) $report->leads_count;
                         $registrasi += (int) $report->closing_count;
+                    }
+
+                    if ($report->report_type === RsmReport::TYPE_OTHER) {
+                        $otherReports++;
                     }
 
                     if ($report->report_type === RsmReport::TYPE_ADS) {
@@ -279,6 +286,7 @@ class GamificationService
                     'report_total' => $groupReports->count(),
                     'report_days' => $groupReports->pluck('report_date')->filter()->map(fn ($date) => $date->toDateString())->unique()->count(),
                     'approved_reports' => $groupReports->whereIn('status', self::STATUS_APPROVED)->count(),
+                    'aktivitas_lain_total' => $otherReports,
                     'leads_total' => $leads,
                     'follow_up_total' => $followUp,
                     'registrasi_total' => $registrasi,
@@ -326,6 +334,7 @@ class GamificationService
             'registrasi_personal' => (float) $closingForPoints,
             'herregistrasi_personal' => (float) $herregForPoints,
             'laporan_total' => (float) $row['report_total'],
+            'aktivitas_lain_total' => (float) $row['aktivitas_lain_total'],
             'hari_aktif' => (float) $row['report_days'],
             'points' => (int) round($points),
         ]);

@@ -68,6 +68,7 @@ class ScoringTableService
                     'follow_up_total' => (int) ($indicator['follow_up_total'] ?? 0),
                     'leads_total' => (int) ($indicator['leads_total'] ?? 0),
                     'laporan_total' => (int) ($indicator['report_total'] ?? 0),
+                    'aktivitas_lain_total' => (int) ($indicator['aktivitas_lain_total'] ?? 0),
                     'hari_aktif' => (int) ($indicator['report_days'] ?? 0),
                     'share_fb_group' => (float) ($shareFbByName->get($nameKey) ?? 0),
                     'live_streaming' => (float) ($liveStreamingByName->get($nameKey) ?? 0),

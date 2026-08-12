@@ -51,8 +51,14 @@ return [
         'total_lap' => [
             'label' => 'Total Lap.',
             'group' => 'Aktivitas',
-            'default_weight' => 5,
+            'default_weight' => 3,
             'metric_key' => 'laporan_total',
+        ],
+        'aktivitas_lain' => [
+            'label' => 'Aktivitas Lain',
+            'group' => 'Aktivitas',
+            'default_weight' => 2,
+            'metric_key' => 'aktivitas_lain_total',
         ],
         'aktif' => [
             'label' => 'Aktif',
