@@ -101,6 +101,9 @@ class TargetController extends Controller
         if (array_key_exists('lap_iklan', $indicatorTargets)) {
             $indicatorTargets['lap_iklan']['target'] = $adBudgetTarget > 0 ? 1.0 : 0.0;
         }
+        if ($adBudgetTarget <= 0 && array_key_exists('leads', $indicatorTargets)) {
+            $indicatorTargets['leads']['target'] = 0.0;
+        }
         if (array_key_exists('realisasi_iklan', $indicatorTargets)) {
             $indicatorTargets['realisasi_iklan']['target'] = $adBudgetTarget;
         }

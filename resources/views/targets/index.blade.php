@@ -90,6 +90,8 @@
                                         <input type="number" min="0" step="1" name="indicator_targets[{{ $key }}][target]" value="{{ $targetOld }}" class="w-full rounded-lg border-border bg-surface-muted">
                                         @if ($key === 'lap_iklan')
                                             <p class="mt-1 text-[11px] text-ink-muted">Otomatis 1 jika ada plafon, 0 jika tanpa plafon.</p>
+                                        @elseif ($key === 'leads')
+                                            <p class="mt-1 text-[11px] text-ink-muted">Jika tanpa plafon, target otomatis 0 dan dianggap tercapai.</p>
                                         @endif
                                     @endif
                                 </td>

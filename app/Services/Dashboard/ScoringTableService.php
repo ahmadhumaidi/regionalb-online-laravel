@@ -153,7 +153,7 @@ class ScoringTableService
             $targetValue = $hasTargetRow ? (float) ($targetRows[$key]['target'] ?? 0) : 0.0;
             $weight = $hasTargetRow ? (float) ($targetRows[$key]['weight'] ?? $meta['default_weight'] ?? 0) : 0.0;
             $score = match (true) {
-                in_array($key, ['lap_iklan', 'realisasi_iklan'], true) && $hasTargetRow && $targetValue <= 0 && $weight > 0 => $weight,
+                in_array($key, ['lap_iklan', 'realisasi_iklan', 'leads'], true) && $hasTargetRow && $targetValue <= 0 && $weight > 0 => $weight,
                 $targetValue > 0 && $weight > 0 => min($actual / $targetValue, 1.0) * $weight,
                 default => 0.0,
             };

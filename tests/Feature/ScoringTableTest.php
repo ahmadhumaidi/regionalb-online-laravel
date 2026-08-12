@@ -285,6 +285,7 @@ class ScoringTableTest extends TestCase
             'indicator_targets' => [
                 'lap_iklan' => ['target' => 0, 'weight' => 4],
                 'realisasi_iklan' => ['target' => 0, 'weight' => 5],
+                'leads' => ['target' => 0, 'weight' => 6],
             ],
         ]);
 
@@ -305,8 +306,9 @@ class ScoringTableTest extends TestCase
         $this->assertNotNull($row);
         $this->assertSame(4.0, $row['score_details']['lap_iklan']['score']);
         $this->assertSame(5.0, $row['score_details']['realisasi_iklan']['score']);
-        $this->assertSame(9.0, $row['total_score']);
-        $this->assertSame(9.0, $row['total_weight']);
+        $this->assertSame(6.0, $row['score_details']['leads']['score']);
+        $this->assertSame(15.0, $row['total_score']);
+        $this->assertSame(15.0, $row['total_weight']);
 
         $staff->delete();
         $senior->delete();
