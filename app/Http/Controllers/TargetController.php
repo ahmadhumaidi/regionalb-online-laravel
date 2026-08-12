@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RsmAdBudgetLimit;
 use App\Models\RsmMonthlyTarget;
 use App\Models\RsmUser;
+use App\Services\AdBudget\AdBudgetPeriods;
 use App\Support\AreaRegionals;
 use App\Support\RsmRole;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class TargetController extends Controller
@@ -40,7 +44,7 @@ class TargetController extends Controller
             $rules["indicator_targets.$key.weight"] = ['nullable', 'numeric', 'min:0', 'max:100'];
         }
         $data = $request->validate($rules);
-        $indicatorTargets = $this->indicatorTargets($data);
+        $baseIndicatorTargets = $this->indicatorTargets($data);
         $all = $request->boolean('apply_all_scope'); $area = $user->area ?: 'Regional B'; $scope = $data['scope_type'];
         $wilayah = $scope === 'regional' ? '' : trim((string) ($data['wilayah'] ?? '')); $unit = in_array($scope, ['unit', 'staff'], true) ? trim((string) ($data['unit_name'] ?? '')) : ''; $staff = $scope === 'staff' ? trim((string) ($data['staff_name'] ?? '')) : '';
         if (! $all && $scope === 'wilayah' && $wilayah === '') return back()->withErrors(['wilayah' => 'Wilayah wajib dipilih.'])->withInput();
@@ -53,6 +57,7 @@ class TargetController extends Controller
         $items = $all && $scope !== 'regional' ? $this->bulkItems($area, $scope) : [['wilayah' => $wilayah, 'unit_name' => $unit, 'staff_name' => $staff]];
         if ($items === []) return back()->withErrors(['scope_type' => 'Tidak ada data pada scope yang dipilih.'])->withInput();
         foreach ($items as $item) {
+            $indicatorTargets = $this->withAdBudgetTarget($baseIndicatorTargets, $area, $data['target_month'], $item, $scope);
             $key = $scope === 'staff' ? 'staff:' . mb_strtolower(trim($item['staff_name'])) : ($scope === 'unit' ? 'unit:' . mb_strtolower(trim($item['unit_name'])) : ($scope === 'wilayah' ? 'wilayah:' . mb_strtolower(trim($item['wilayah'])) : 'regional'));
             RsmMonthlyTarget::updateOrCreate(['area' => $area, 'target_month' => $data['target_month'], 'scope_key' => $key], ['scope_type' => $scope, 'wilayah' => $item['wilayah'] ?: null, 'unit_name' => $item['unit_name'] ?: null, 'staff_name' => $item['staff_name'] ?: null, 'target_leads' => (int) ($indicatorTargets['leads']['target'] ?? 0), 'target_follow_up' => (int) ($indicatorTargets['fu']['target'] ?? 0), 'target_registrasi' => (int) ($indicatorTargets['reg']['target'] ?? 0), 'target_herregistrasi' => (int) ($indicatorTargets['herreg']['target'] ?? 0), 'target_anggaran' => (float) ($indicatorTargets['realisasi_iklan']['target'] ?? 0), 'indicator_targets' => $indicatorTargets, 'notes' => trim((string) ($data['notes'] ?? '')) ?: null, 'created_by_user_id' => $user->id, 'created_by_name' => $user->name]);
         }
@@ -74,6 +79,9 @@ class TargetController extends Controller
         foreach ($this->indicators() as $key => $meta) {
             $row = is_array($submitted[$key] ?? null) ? $submitted[$key] : [];
             $target = $row['target'] ?? $legacyTargets[$key] ?? 0;
+            if ($key === 'realisasi_iklan') {
+                $target = 0;
+            }
             $weight = $row['weight'] ?? $meta['default_weight'];
             $targets[$key] = [
                 'label' => $meta['label'],
@@ -84,6 +92,34 @@ class TargetController extends Controller
         }
 
         return $targets;
+    }
+
+    private function withAdBudgetTarget(array $indicatorTargets, string $area, string $targetMonth, array $item, string $scope): array
+    {
+        if (! array_key_exists('realisasi_iklan', $indicatorTargets)) {
+            return $indicatorTargets;
+        }
+
+        $indicatorTargets['realisasi_iklan']['target'] = $this->adBudgetTarget($area, $targetMonth, $item, $scope);
+
+        return $indicatorTargets;
+    }
+
+    private function adBudgetTarget(string $area, string $targetMonth, array $item, string $scope): float
+    {
+        if (! Schema::hasTable('rsm_ad_budget_limits')) {
+            return 0.0;
+        }
+
+        $period = AdBudgetPeriods::default(Carbon::createFromFormat('Y-m-d', $targetMonth.'-01')->toDateString());
+        $query = RsmAdBudgetLimit::query()->where('area', $area)->where('ad_period', $period);
+        $wilayah = trim((string) ($item['wilayah'] ?? ''));
+
+        if ($scope !== 'regional' && $wilayah !== '') {
+            $query->where('wilayah', $wilayah);
+        }
+
+        return (float) $query->sum('budget_limit');
     }
 
     private function indicators(): array

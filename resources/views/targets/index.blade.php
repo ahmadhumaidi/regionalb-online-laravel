@@ -83,7 +83,12 @@
                                 <td class="px-3 py-2 text-xs font-semibold text-ink-muted">{{ $indicator['group'] }}</td>
                                 <td class="px-3 py-2 font-semibold text-ink">{{ $indicator['label'] }}</td>
                                 <td class="px-3 py-2">
-                                    <input type="number" min="0" step="{{ $key === 'realisasi_iklan' ? '0.01' : '1' }}" name="indicator_targets[{{ $key }}][target]" value="{{ $targetOld }}" class="w-full rounded-lg border-border bg-surface-muted">
+                                    @if ($key === 'realisasi_iklan')
+                                        <input type="text" value="Otomatis dari plafon" disabled class="w-full rounded-lg border-border bg-surface-muted text-ink-muted">
+                                        <p class="mt-1 text-[11px] text-ink-muted">Target mengikuti plafon anggaran wilayah/periode.</p>
+                                    @else
+                                        <input type="number" min="0" step="1" name="indicator_targets[{{ $key }}][target]" value="{{ $targetOld }}" class="w-full rounded-lg border-border bg-surface-muted">
+                                    @endif
                                 </td>
                                 <td class="px-3 py-2">
                                     <input type="number" min="0" max="100" step="0.01" name="indicator_targets[{{ $key }}][weight]" value="{{ $weightOld }}" class="w-full rounded-lg border-border bg-surface-muted">

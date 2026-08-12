@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\RsmActivityLog;
+use App\Models\RsmAdBudgetLimit;
 use App\Models\RsmMonthlyTarget;
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\Artisan;
@@ -112,6 +113,7 @@ class AuthorizationTest extends TestCase
     {
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
             'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
         ]]);
@@ -154,6 +156,7 @@ class AuthorizationTest extends TestCase
     {
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
             'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
         ]]);
@@ -169,6 +172,10 @@ class AuthorizationTest extends TestCase
             'area' => 'Regional B', 'regional' => 'Regional 7', 'campus_name' => 'Universitas Test',
             'is_active' => true,
         ]);
+        RsmAdBudgetLimit::updateOrCreate(
+            ['area' => 'Regional B', 'ad_period' => 'Agustus 2026', 'wilayah' => 'Regional 7'],
+            ['budget_limit' => 1500000, 'created_by_user_id' => $superUser->id, 'created_by_name' => $superUser->name]
+        );
 
         $response = $this->actingAs($superUser)->post('/targets', [
             'target_month' => '2026-08',
@@ -179,7 +186,7 @@ class AuthorizationTest extends TestCase
                 'herreg' => ['target' => 8, 'weight' => 15],
                 'leads' => ['target' => 40, 'weight' => 8],
                 'fu' => ['target' => 25, 'weight' => 10],
-                'realisasi_iklan' => ['target' => 1500000, 'weight' => 7],
+                'realisasi_iklan' => ['target' => 999999, 'weight' => 7],
             ],
         ]);
 
@@ -191,10 +198,12 @@ class AuthorizationTest extends TestCase
         $this->assertSame(40, (int) $target->target_leads);
         $this->assertSame(25, (int) $target->target_follow_up);
         $this->assertSame(1500000.0, (float) $target->target_anggaran);
+        $this->assertSame(1500000.0, (float) $target->indicator_targets['realisasi_iklan']['target']);
         $this->assertSame(10.0, (float) $target->indicator_targets['reg']['weight']);
         $this->assertSame('Herreg Kampus', $target->indicator_targets['herreg_kampus']['label']);
 
         $target->delete();
+        RsmAdBudgetLimit::where('area', 'Regional B')->where('ad_period', 'Agustus 2026')->where('wilayah', 'Regional 7')->delete();
         $staff->delete();
         $superUser->delete();
     }
@@ -218,6 +227,7 @@ class AuthorizationTest extends TestCase
         $response->assertOk();
         $response->assertSee('Target &amp; Bobot', false);
         $response->assertSee('Hasil Scoring');
+        $response->assertSee('Otomatis dari plafon');
 
         $superUser->delete();
     }
