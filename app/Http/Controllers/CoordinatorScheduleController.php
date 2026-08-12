@@ -129,14 +129,14 @@ class CoordinatorScheduleController extends Controller
         $grouped = [];
         $summary = [];
         foreach ($regionals as $regional) {
-            $summary[$regional] = ['total' => 0, 'Fisik' => 0, 'Zoom' => 0, 'Telepon' => 0, 'Selesai' => 0, 'Libur' => 0];
+            $summary[$regional] = ['total' => 0, 'Visit' => 0, 'Zoom' => 0, 'Telepon' => 0, 'Selesai' => 0, 'Libur' => 0];
             $grouped[$regional] = collect();
         }
         foreach ($rows as $row) {
             $regional = $row->wilayah ?: '-';
             if (! isset($grouped[$regional])) {
                 $grouped[$regional] = collect();
-                $summary[$regional] = ['total' => 0, 'Fisik' => 0, 'Zoom' => 0, 'Telepon' => 0, 'Selesai' => 0, 'Libur' => 0];
+                $summary[$regional] = ['total' => 0, 'Visit' => 0, 'Zoom' => 0, 'Telepon' => 0, 'Selesai' => 0, 'Libur' => 0];
             }
             $grouped[$regional]->push($row);
             $summary[$regional]['total']++;
@@ -162,7 +162,7 @@ class CoordinatorScheduleController extends Controller
             'wilayah' => 'required|string|max:80',
             'koordinator_name' => 'required|string|max:160',
             'unit_name' => 'required|string|max:200',
-            'visit_type' => ['required', Rule::in(['Fisik', 'Zoom', 'Telepon'])],
+            'visit_type' => ['required', Rule::in(['Visit', 'Zoom', 'Telepon'])],
             'status' => ['required', Rule::in(['Rencana', 'Dijadwalkan', 'Selesai', 'Reschedule'])],
             'agenda' => 'required|string|max:500',
             'result_text' => 'nullable|string|max:2000',
@@ -297,7 +297,7 @@ class CoordinatorScheduleController extends Controller
         ];
 
         if (isset($patterns[$regional]) && preg_match($patterns[$regional], $name)) {
-            return 'Fisik';
+            return 'Visit';
         }
 
         return 'Zoom';
@@ -484,7 +484,7 @@ class CoordinatorScheduleController extends Controller
         $this->scope($schedule, $user);
         $data = $request->validate([
             'unit_name' => 'required|string|max:200',
-            'visit_type' => ['required', Rule::in(['Fisik', 'Zoom', 'Telepon'])],
+            'visit_type' => ['required', Rule::in(['Visit', 'Zoom', 'Telepon'])],
             'agenda' => 'required|string|max:500',
         ]);
         $schedule->update($data);

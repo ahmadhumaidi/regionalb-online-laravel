@@ -38,11 +38,11 @@
 
     <section class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         @foreach ($summaryRegionals as $regional)
-            @php $row = $summary[$regional] ?? ['total' => 0, 'Fisik' => 0, 'Zoom' => 0, 'Telepon' => 0, 'Selesai' => 0]; @endphp
+            @php $row = $summary[$regional] ?? ['total' => 0, 'Visit' => 0, 'Zoom' => 0, 'Telepon' => 0, 'Selesai' => 0]; @endphp
             <div class="rounded-2xl glass-card p-4">
                 <p class="text-xs text-ink-muted">{{ $regional }}</p>
                 <p class="mt-1 text-lg font-semibold text-ink">{{ number_format($row['total'], 0, ',', '.') }} agenda</p>
-                <p class="mt-1 text-xs text-ink-muted">{{ number_format($row['Fisik'], 0, ',', '.') }} fisik, {{ number_format($row['Zoom'], 0, ',', '.') }} Zoom, {{ number_format($row['Selesai'], 0, ',', '.') }} selesai</p>
+                <p class="mt-1 text-xs text-ink-muted">{{ number_format($row['Visit'], 0, ',', '.') }} visit, {{ number_format($row['Zoom'], 0, ',', '.') }} Zoom, {{ number_format($row['Selesai'], 0, ',', '.') }} selesai</p>
             </div>
         @endforeach
     </section>
@@ -63,7 +63,7 @@
                 <select name="wilayah" required class="rounded-lg border-border bg-surface-muted"><option value="">Wilayah</option>@foreach ($regionals as $regional)<option>{{ $regional }}</option>@endforeach</select>
                 <select name="koordinator_name" required class="rounded-lg border-border bg-surface-muted">@foreach ($profiles as $regional => $profile)<option value="{{ $profile['name'] }}">{{ $profile['name'] }} - {{ $regional }}</option>@endforeach</select>
                 <select name="unit_name" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih unit/kampus</option>@foreach ($references['campuses'] as $campus)<option value="{{ $campus['label'] }}">{{ $campus['label'] }}</option>@endforeach</select>
-                <select name="visit_type" class="rounded-lg border-border bg-surface-muted"><option>Fisik</option><option selected>Zoom</option><option>Telepon</option></select>
+                <select name="visit_type" class="rounded-lg border-border bg-surface-muted"><option>Visit</option><option selected>Zoom</option><option>Telepon</option></select>
                 <select name="status" class="rounded-lg border-border bg-surface-muted"><option>Rencana</option><option>Dijadwalkan</option><option>Selesai</option><option>Reschedule</option></select>
                 <input name="agenda" value="Monitoring PMB, leads, iklan, dan action plan kampus" required class="md:col-span-3 rounded-lg border-border bg-surface-muted">
                 <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white md:col-span-3">Simpan Jadwal</button>
@@ -123,7 +123,7 @@
                                                         <form method="POST" action="{{ route('jadwal-koordinator.update', $row) }}" class="mt-2 grid gap-1">
                                                             @csrf @method('PATCH')
                                                             <input name="unit_name" value="{{ $row->unit_name }}" required class="w-44 rounded border-border px-1 text-xs">
-                                                            <select name="visit_type" class="rounded border-border text-xs"><option @selected($row->visit_type === 'Fisik')>Fisik</option><option @selected($row->visit_type === 'Zoom')>Zoom</option><option @selected($row->visit_type === 'Telepon')>Telepon</option></select>
+                                                            <select name="visit_type" class="rounded border-border text-xs"><option @selected($row->visit_type === 'Visit')>Visit</option><option @selected($row->visit_type === 'Zoom')>Zoom</option><option @selected($row->visit_type === 'Telepon')>Telepon</option></select>
                                                             <input name="agenda" value="{{ $row->agenda }}" required class="w-56 rounded border-border px-1 text-xs">
                                                             <button class="mt-1 rounded-md bg-brand-600 px-2 py-1 text-left text-xs font-semibold text-white">Simpan</button>
                                                         </form>
