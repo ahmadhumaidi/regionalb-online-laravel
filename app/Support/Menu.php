@@ -23,6 +23,7 @@ class Menu
                 'title' => 'Utama',
                 'items' => [
                     ['key' => 'dashboard', 'label' => 'Dashboard Utama', 'icon' => 'home'],
+                    ['key' => 'forum', 'label' => 'Forum Diskusi', 'icon' => 'chat'],
                 ],
             ],
             [
@@ -92,6 +93,7 @@ class Menu
     {
         return [
             'dashboard' => 'Dashboard Utama',
+            'forum' => 'Forum Diskusi',
             'pencapaian' => 'Pencapaian Staff',
             'jadwal-koordinator' => 'Jadwal Koordinator',
             'bdc-users' => 'BDC Marketing',
@@ -135,6 +137,7 @@ class Menu
     {
         return match ($key) {
             'dashboard' => route('dashboard'),
+            'forum' => route('forum'),
             'anggaran' => route('anggaran'),
             'konten' => route('konten'),
             'pencapaian' => route('pencapaian'),

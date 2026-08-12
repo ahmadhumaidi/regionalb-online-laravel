@@ -9,6 +9,7 @@ use App\Http\Controllers\AktivitasController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ForumController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\NotificationController;
@@ -48,6 +49,10 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::delete('/impersonation', [ImpersonationController::class, 'destroy'])->name('impersonation.destroy');
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/forum', [ForumController::class, 'index'])->name('forum');
+    Route::post('/forum/posts', [ForumController::class, 'storePost'])->name('forum.posts.store');
+    Route::post('/forum/posts/{post}/like', [ForumController::class, 'toggleLike'])->name('forum.posts.like');
+    Route::post('/forum/posts/{post}/comments', [ForumController::class, 'storeComment'])->name('forum.posts.comments.store');
     Route::get('/anggaran', [AdBudgetController::class, 'index'])->name('anggaran');
     Route::post('/anggaran/limit', [AdBudgetController::class, 'storeLimit'])->name('anggaran.limit.store');
     Route::get('/anggaran/create', fn () => app(ReportFormController::class)->create('ads'))->name('anggaran.create');
