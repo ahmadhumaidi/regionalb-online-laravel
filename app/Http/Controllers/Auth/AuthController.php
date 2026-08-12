@@ -13,7 +13,7 @@ class AuthController extends Controller
     public function create(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard');
+            return redirect()->route('profile');
         }
 
         return view('auth.login');
@@ -44,7 +44,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $request->session()->forget('impersonation.original_id');
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('profile'));
     }
 
     public function destroy(Request $request): RedirectResponse
