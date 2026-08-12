@@ -6,6 +6,7 @@ use App\Models\RsmAdLead;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -119,5 +120,59 @@ class ProfileGamificationTest extends TestCase
             $report->delete();
         }
         $koordinator->delete();
+    }
+
+    public function test_profile_shows_daily_mission_progress(): void
+    {
+        $this->migrate();
+
+        $staff = RsmUser::create([
+            'id' => 900058, 'name' => 'Daily Mission Staff', 'username' => 'daily_mission_staff',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+        $adReport = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'user_id' => $staff->id, 'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Daily Mission Staff', 'created_by_role' => 'staff', 'status' => 'Diverifikasi',
+            'title' => 'Daily Ads', 'platform' => 'Meta Ads', 'campaign_name' => 'Daily Ads',
+            'budget_requested' => 100000,
+        ]);
+        for ($i = 0; $i < 30; $i++) {
+            RsmAdLead::create(['report_id' => $adReport->id, 'lead_name' => "Lead {$i}", 'follow_up_result' => 'Sudah follow up']);
+        }
+        $otherReport = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER, 'report_date' => now(),
+            'user_id' => $staff->id, 'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Daily Mission Staff', 'created_by_role' => 'staff', 'status' => 'Dikirim',
+            'title' => 'Koordinasi harian',
+        ]);
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Share FB Group', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'daily-share-1', 'staff_name' => 'Daily Mission Staff', 'regional' => 'Regional 6', 'value' => 3,
+        ]);
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'daily-reg-1', 'staff_name' => 'Daily Mission Staff', 'regional' => 'Regional 6', 'value' => 1,
+        ]);
+
+        $response = $this->actingAs($staff)->get(route('profile'));
+
+        $response->assertOk();
+        $response->assertSee('Daily Mission');
+        $response->assertSee('5/5 selesai');
+        $response->assertSee('Login');
+        $response->assertSee('Follow Up');
+        $response->assertSee('30/30');
+        $response->assertSee('Share FB');
+        $response->assertSee('3/3');
+        $response->assertSee('Aktivitas Lain');
+        $response->assertSee('Closing Reg');
+
+        \App\Models\RsmCollabDailyMetric::whereIn('entity_key', ['daily-share-1', 'daily-reg-1'])->delete();
+        RsmAdLead::where('report_id', $adReport->id)->delete();
+        $otherReport->delete();
+        $adReport->delete();
+        $staff->delete();
     }
 }

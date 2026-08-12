@@ -31,7 +31,7 @@ class GamificationService
     public const BADGE_NAMES = [
         'Closing Hunter', 'Herregistrasi Champion', 'Kampus Growth', 'Kampus Herreg Champion',
         'Efisiensi Iklan', 'Closing Iklan Hunter', 'Budget Efficient', 'Follow Up Hero',
-        'Report Consistent', 'Activity Helper', 'Consistency Streak', 'Share FB Booster', 'Live Streamer',
+        'Activity Helper', 'Consistency Streak', 'Share FB Booster', 'Live Streamer',
         'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
     ];
 
@@ -44,7 +44,6 @@ class GamificationService
         'closing_iklan_hunter' => ['name' => 'Closing Iklan Hunter', 'target' => 1, 'metric_key' => 'closing_iklan', 'source' => 'Closing dari data hasil iklan.', 'tone' => 'green'],
         'budget_efficient' => ['name' => 'Budget Efficient', 'target' => 1, 'indicator_key' => 'reg', 'source' => 'Indikator pilihan pada periode/filter.', 'tone' => 'red'],
         'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'metric_key' => 'follow_up_total', 'source' => 'FU / follow_up_total dari data lead dan laporan.', 'tone' => 'blue'],
-        'report_consistent' => ['name' => 'Report Consistent', 'target' => 5, 'metric_key' => 'laporan_total', 'source' => 'Total laporan pada periode/filter.', 'tone' => 'orange'],
         'activity_helper' => ['name' => 'Activity Helper', 'target' => 2, 'metric_key' => 'aktivitas_lain_total', 'source' => 'Jumlah laporan Aktivitas Lain pada periode/filter.', 'tone' => 'blue'],
         'consistency_streak' => ['name' => 'Consistency Streak', 'target' => 5, 'metric_key' => 'hari_aktif', 'source' => 'Jumlah hari unik dari report_date laporan.', 'tone' => 'orange'],
         'share_fb_booster' => ['name' => 'Share FB Booster', 'target' => 10, 'metric_key' => 'share_fb_group', 'source' => 'Share FB Group dari Collab.', 'tone' => 'blue'],

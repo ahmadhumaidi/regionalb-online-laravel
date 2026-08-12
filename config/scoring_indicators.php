@@ -48,16 +48,10 @@ return [
             'default_weight' => 10,
             'metric_key' => 'follow_up_total',
         ],
-        'total_lap' => [
-            'label' => 'Total Lap.',
-            'group' => 'Aktivitas',
-            'default_weight' => 3,
-            'metric_key' => 'laporan_total',
-        ],
         'aktivitas_lain' => [
             'label' => 'Aktivitas Lain',
             'group' => 'Aktivitas',
-            'default_weight' => 2,
+            'default_weight' => 5,
             'metric_key' => 'aktivitas_lain_total',
         ],
         'aktif' => [

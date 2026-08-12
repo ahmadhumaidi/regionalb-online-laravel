@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RsmActivityLog;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\Dashboard\CollabMetricsService;
 use App\Services\Dashboard\GamificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class ProfileController extends Controller
             'closing' => (clone $query)->sum('closing_count'),
             'active_days' => (clone $query)->distinct('report_date')->count('report_date'),
         ];
+        $dailyMissions = $this->dailyMissions($user);
         $reports = (clone $query)->latest('report_date')->latest('id')->limit(10)->get();
         $logs = RsmActivityLog::query()->where('area', $user->area)->where('actor_user_id', $user->id)->latest()->limit(10)->get();
 
@@ -48,7 +50,61 @@ class ProfileController extends Controller
         );
         $score = min(100, ($stats['reports'] * 4) + ($stats['leads'] * 2) + ($stats['closing'] * 8));
 
-        return view('profile.index', compact('user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'score', 'badges'));
+        return view('profile.index', compact('user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'score', 'badges', 'dailyMissions'));
+    }
+
+    private function dailyMissions(RsmUser $user): array
+    {
+        $area = $user->area ?: 'Regional B';
+        $today = now()->toDateString();
+        $filters = [
+            'date_from' => $today,
+            'date_to' => $today,
+            'wilayah' => '',
+            'unit_name' => '',
+            'staff_name' => (string) $user->name,
+        ];
+
+        $dailyReports = RsmReport::query()
+            ->where('area', $area)
+            ->whereDate('report_date', $today)
+            ->when($user->role === 'staff', fn ($q) => $q->where(fn ($inner) => $inner->where('user_id', $user->id)->orWhere('staff_name', $user->name)))
+            ->when($user->role === 'koordinator' && $user->regional, fn ($q) => $q->where('wilayah', $user->regional))
+            ->with('adLeads')
+            ->get();
+
+        $followUps = $dailyReports->sum(function (RsmReport $report): int {
+            if ($report->adLeads->isEmpty()) {
+                return 0;
+            }
+
+            return $report->adLeads
+                ->filter(fn ($lead) => filled($lead->follow_up_result) || filled($lead->progress_status))
+                ->count();
+        });
+        $otherActivities = $dailyReports->where('report_type', RsmReport::TYPE_OTHER)->count();
+        $shareFb = CollabMetricsService::personalTotal($filters, $area, $user, 'Share FB Group');
+        $registrasi = CollabMetricsService::personalTotal($filters, $area, $user, 'Closing Personal Per Regional');
+
+        return [
+            $this->mission('login', 'Login', 1, 1),
+            $this->mission('fu', 'Follow Up', $followUps, 30),
+            $this->mission('share_fb', 'Share FB', $shareFb, 3),
+            $this->mission('aktivitas_lain', 'Aktivitas Lain', $otherActivities, 1),
+            $this->mission('reg', 'Closing Reg', $registrasi, 1),
+        ];
+    }
+
+    private function mission(string $key, string $label, float $actual, float $target): array
+    {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'actual' => $actual,
+            'target' => $target,
+            'progress' => $target > 0 ? min(100, round(($actual / $target) * 100)) : 0,
+            'done' => $actual >= $target,
+        ];
     }
 
     public function update(Request $request): RedirectResponse
