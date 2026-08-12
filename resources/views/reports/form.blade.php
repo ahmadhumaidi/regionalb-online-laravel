@@ -68,7 +68,7 @@
                 @endif
                 @if (in_array('ad_leads_file', $adsFields))
                     <div class="md:col-span-2 rounded-xl border border-l-4 border-border border-l-tone-green bg-surface-muted/50 p-4">
-                        <label class="grid gap-1 text-sm"><span class="flex items-center gap-1.5 font-semibold text-ink"><x-icon name="chart-bar" class="h-4 w-4 text-tone-green" />Upload data hasil iklan (.xls/.xlsx)</span><div class="flex flex-wrap items-center gap-2"><input type="file" name="ad_leads_file" accept=".xls,.xlsx" class="w-full min-w-0 flex-1 rounded-lg border-border bg-surface-muted"><a href="{{ route('anggaran.leads.template') }}" class="shrink-0 whitespace-nowrap rounded-lg border border-border px-3 py-2 text-sm">Download Template</a></div><span class="text-xs text-ink-muted">Kosongkan jika tidak ingin menambah data hasil iklan.</span></label>
+                        <label class="grid gap-1 text-sm"><span class="flex items-center gap-1.5 font-semibold text-ink"><x-icon name="chart-bar" class="h-4 w-4 text-tone-green" />Upload data hasil iklan (.xls/.xlsx)</span><div class="flex flex-wrap items-center gap-2"><input type="file" name="ad_leads_file" accept=".xls,.xlsx" class="w-full min-w-0 flex-1 rounded-lg border-border bg-surface-muted"><a href="{{ route('anggaran.leads.template') }}" class="shrink-0 whitespace-nowrap rounded-lg border border-border px-3 py-2 text-sm">Download Template</a></div><span class="text-xs text-ink-muted">Kosongkan jika tidak ingin mengganti data hasil iklan yang sudah ada.</span></label>
                     </div>
                 @endif
                 @if (in_array('notes', $adsFields))

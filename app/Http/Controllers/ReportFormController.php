@@ -78,7 +78,7 @@ class ReportFormController extends Controller
         ReportFormService::update($report, $data, $request->file('attachment_path'), $user, $request->file('insight_attachment_path'));
 
         if ($report->report_type === RsmReport::TYPE_ADS && $request->hasFile('ad_leads_file')) {
-            AdLeadImportService::import($report->fresh(), $request->file('ad_leads_file'), replaceExisting: false);
+            AdLeadImportService::import($report->fresh(), $request->file('ad_leads_file'), replaceExisting: true);
         }
 
         if (
