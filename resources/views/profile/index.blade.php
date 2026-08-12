@@ -18,21 +18,86 @@
             </aside>
             <div class="space-y-5">
                 <section id="ringkasan" class="grid gap-3 sm:grid-cols-3"><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">League</span><strong class="mt-2 block text-xl">{{ $league }}</strong><small class="text-indigo-200">XP dan konsistensi</small></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">Aktivitas</span><strong class="mt-2 block text-xl">{{ number_format($stats['reports'],0,',','.') }}</strong><small class="text-indigo-200">Total kegiatan</small></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">Aura</span><strong class="mt-2 block text-xl">{{ $score }}/100</strong><small class="text-indigo-200">Skor performa</small></article></section>
-                <section id="daily-mission" class="rounded-2xl border border-white/10 bg-[#35385f] p-5">
-                    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-                        <div><h2 class="text-base font-bold">Daily Mission</h2><p class="mt-1 text-xs text-indigo-200">Target aktivitas hari ini</p></div>
-                        <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-indigo-100">{{ collect($dailyMissions)->where('done', true)->count() }}/{{ count($dailyMissions) }} selesai</span>
+                <section id="daily-mission" class="rounded-2xl border border-white/10 bg-gradient-to-b from-[#1c2b52] to-[#111a33] p-5">
+                    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-base font-black tracking-wide uppercase">Daily Mission</h2>
+                            <p class="mt-1 text-xs text-indigo-200">Reset dalam <span class="font-semibold text-white" data-countdown-target="{{ $missionResetAt }}">--:--:--</span></p>
+                        </div>
+                        <div class="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5">
+                            <x-icon name="bolt" class="h-4 w-4 text-amber-300" />
+                            <strong class="text-sm">{{ number_format($todayEnergy,0,',','.') }}</strong>
+                        </div>
                     </div>
-                    <div class="grid gap-3 md:grid-cols-5">
-                        @foreach($dailyMissions as $mission)
-                            <article class="rounded-xl border {{ $mission['done'] ? 'border-emerald-300/40 bg-emerald-400/10' : 'border-white/10 bg-[#212446]' }} p-3">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div><p class="text-xs font-semibold text-indigo-200">{{ $mission['label'] }}</p><strong class="mt-1 block text-lg">{{ number_format($mission['actual'],0,',','.') }}/{{ number_format($mission['target'],0,',','.') }}</strong></div>
-                                    <span class="rounded-full px-2 py-0.5 text-[11px] font-bold {{ $mission['done'] ? 'bg-emerald-400/20 text-emerald-100' : 'bg-white/10 text-indigo-200' }}">{{ $mission['done'] ? 'Done' : 'Progress' }}</span>
+
+                    <div class="relative mb-6 px-2">
+                        <div class="absolute top-4 right-6 left-6 h-1 rounded-full bg-white/10">
+                            <div class="h-full rounded-full bg-gradient-to-r from-amber-300 to-emerald-300" style="width: {{ min(100, ($todayEnergy / max($dailyChestTiers)) * 100) }}%"></div>
+                        </div>
+                        <div class="relative flex justify-between">
+                            @foreach($dailyChestTiers as $tier)
+                                @php $reached = $todayEnergy >= $tier; @endphp
+                                <div class="flex flex-col items-center gap-1">
+                                    <span class="flex h-8 w-8 items-center justify-center rounded-full border-2 {{ $reached ? 'border-emerald-300 bg-emerald-400/20 text-emerald-200' : 'border-white/20 bg-[#212446] text-indigo-300' }}">
+                                        @if($reached)<x-icon name="check" class="h-4 w-4" />@else<x-icon name="chest" class="h-4 w-4" />@endif
+                                    </span>
+                                    <span class="text-[11px] font-semibold {{ $reached ? 'text-emerald-200' : 'text-indigo-300' }}">{{ $tier }}</span>
                                 </div>
-                                <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full {{ $mission['done'] ? 'bg-emerald-300' : 'bg-sky-300' }}" style="width: {{ $mission['progress'] }}%"></div></div>
-                            </article>
-                        @endforeach
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="grid gap-4 lg:grid-cols-[1fr_240px]">
+                        <div class="space-y-2">
+                            @foreach($dailyMissions as $mission)
+                                <div class="flex items-center gap-3 rounded-xl border {{ $mission['locked'] ? 'border-white/5 bg-[#1a1d38] opacity-50' : ($mission['claimed'] ? 'border-emerald-300/30 bg-emerald-400/5' : 'border-white/10 bg-[#212446]') }} p-3">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-sm font-bold tracking-wide uppercase">{{ $mission['label'] }}</p>
+                                        @if(!$mission['locked'] && !$mission['done'])
+                                            <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-sky-300" style="width: {{ $mission['progress'] }}%"></div></div>
+                                        @endif
+                                    </div>
+                                    <div class="flex shrink-0 items-center gap-2 text-xs">
+                                        <span class="flex items-center gap-1"><x-icon name="bolt" class="h-3.5 w-3.5 text-amber-300" />{{ $mission['energy'] }}</span>
+                                        <span class="flex items-center gap-1"><x-icon name="star" class="h-3.5 w-3.5 text-sky-300" />{{ $mission['stars'] }}</span>
+                                    </div>
+                                    <div class="shrink-0">
+                                        @if($mission['locked'])
+                                            <span class="flex items-center gap-1 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-bold text-indigo-300"><x-icon name="lock" class="h-3.5 w-3.5" />Terkunci</span>
+                                        @elseif($mission['claimed'])
+                                            <span class="flex items-center gap-1 rounded-lg bg-emerald-400/15 px-3 py-1.5 text-xs font-bold text-emerald-200"><x-icon name="check" class="h-3.5 w-3.5" />Diklaim</span>
+                                        @elseif($mission['done'])
+                                            <form method="POST" action="{{ route('profile.daily-mission.claim', $mission['key']) }}">
+                                                @csrf
+                                                <button type="submit" class="rounded-lg bg-gradient-to-b from-amber-400 to-orange-500 px-4 py-1.5 text-xs font-black tracking-wide text-white uppercase shadow-md hover:from-amber-300 hover:to-orange-400">Claim</button>
+                                            </form>
+                                        @else
+                                            <span class="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-bold text-indigo-200">{{ number_format($mission['actual'],0,',','.') }}/{{ number_format($mission['target'],0,',','.') }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="rounded-xl border border-white/10 bg-[#161c3a] p-4">
+                            <p class="text-xs font-black tracking-wide text-indigo-200 uppercase">This Week</p>
+                            <p class="mt-0.5 text-[11px] text-indigo-300">Reset dalam <span class="font-semibold text-white" data-countdown-target="{{ $weekResetAt }}">--:--:--</span></p>
+                            <div class="mt-3 flex items-center gap-1.5">
+                                <x-icon name="bolt" class="h-4 w-4 text-amber-300" />
+                                <strong class="text-lg">{{ number_format($weekEnergy,0,',','.') }}</strong>
+                            </div>
+                            <div class="mt-4 space-y-2">
+                                @foreach($weeklyChestTiers as $tier)
+                                    @php $reached = $weekEnergy >= $tier; @endphp
+                                    <div class="flex items-center gap-2 rounded-lg {{ $reached ? 'bg-emerald-400/10' : 'bg-white/5' }} px-2.5 py-2">
+                                        <span class="flex h-6 w-6 items-center justify-center rounded-full {{ $reached ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-300' }}">
+                                            @if($reached)<x-icon name="check" class="h-3.5 w-3.5" />@else<x-icon name="chest" class="h-3.5 w-3.5" />@endif
+                                        </span>
+                                        <span class="text-[11px] font-semibold {{ $reached ? 'text-emerald-200' : 'text-indigo-300' }}">{{ $reached ? 'Claimed' : 'Needed '.$tier }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
                 </section>
                 <section class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-widest text-sky-300">Profil User</p><h2 class="mt-1 text-2xl font-bold">{{ $user->name }}</h2><p class="mt-2 text-sm text-indigo-100">{{ $user->bio_text ?: 'Biodata singkat belum diisi.' }}</p></div><div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-400 to-sky-400 text-2xl font-black">@if($user->photo_path)<img src="{{ $user->photoUrl() }}" alt="{{ $user->name }}" class="h-full w-full object-cover">@else{{ strtoupper(mb_substr($user->name ?: 'U',0,1)) }}@endif</div></div></section>

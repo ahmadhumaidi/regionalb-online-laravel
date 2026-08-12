@@ -90,3 +90,37 @@ window.captureAchievementSnapshot = async function (targetId, action, button) {
         if (button && originalLabel) button.textContent = originalLabel;
     }
 };
+
+/**
+ * Daily Mission "TODAY"/"THIS WEEK" countdowns (profile.index) - ticks a
+ * single element's text down to a target ISO timestamp every second. Shows
+ * "NdNhNm" once a day or more remains, "NhNmNs" once under a day, freezing
+ * at "00:00:00" past the target rather than going negative.
+ */
+window.startCountdown = function (el, targetIso) {
+    const target = new Date(targetIso).getTime();
+
+    const tick = () => {
+        const diff = Math.max(0, target - Date.now());
+        const totalSeconds = Math.floor(diff / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        el.textContent = days > 0
+            ? `${days}D ${hours}H ${minutes}M`
+            : `${String(hours).padStart(2, '0')}H ${String(minutes).padStart(2, '0')}M ${String(seconds).padStart(2, '0')}S`;
+    };
+
+    tick();
+
+    return setInterval(tick, 1000);
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-countdown-target]').forEach((el) => {
+        const target = el.getAttribute('data-countdown-target');
+        if (target) window.startCountdown(el, target);
+    });
+});

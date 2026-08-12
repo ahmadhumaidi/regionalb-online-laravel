@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\RsmActivityLog;
+use App\Models\RsmDailyMissionClaim;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\CollabMetricsService;
@@ -17,6 +18,49 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    /**
+     * Daily Mission reward catalog — a currency scoped entirely to this
+     * widget (energy/stars), deliberately separate from GamificationService's
+     * all-time XP/Level/League points. "Follow Up" and "Closing Reg" have
+     * several tiers that unlock one at a time (must claim tier N before
+     * tier N+1 appears claimable) — every other mission has a single tier.
+     * Claiming every tier of every mission once yields 220 energy / 210
+     * stars in one day, matching DAILY_CHEST_TIERS' last tier.
+     */
+    private const MISSION_TIERS = [
+        'login' => [
+            ['target' => 1, 'energy' => 10, 'stars' => 15],
+        ],
+        'fu' => [
+            ['target' => 30, 'energy' => 20, 'stars' => 20],
+            ['target' => 45, 'energy' => 20, 'stars' => 20],
+            ['target' => 60, 'energy' => 20, 'stars' => 20],
+        ],
+        'share_fb' => [
+            ['target' => 3, 'energy' => 15, 'stars' => 15],
+        ],
+        'aktivitas_lain' => [
+            ['target' => 1, 'energy' => 15, 'stars' => 15],
+        ],
+        'reg' => [
+            ['target' => 1, 'energy' => 40, 'stars' => 35],
+            ['target' => 2, 'energy' => 40, 'stars' => 35],
+            ['target' => 3, 'energy' => 40, 'stars' => 35],
+        ],
+    ];
+
+    private const MISSION_LABELS = [
+        'login' => 'Login',
+        'fu' => 'Follow Up',
+        'share_fb' => 'Share FB',
+        'aktivitas_lain' => 'Aktivitas Lain',
+        'reg' => 'Closing Reg',
+    ];
+
+    private const DAILY_CHEST_TIERS = [65, 120, 165, 220];
+
+    private const WEEKLY_CHEST_TIERS = [330, 660, 990, 1320];
+
     public function show(): View
     {
         $user = Auth::user();
@@ -50,7 +94,19 @@ class ProfileController extends Controller
         );
         $score = min(100, ($stats['reports'] * 4) + ($stats['leads'] * 2) + ($stats['closing'] * 8));
 
-        return view('profile.index', compact('user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'score', 'badges', 'dailyMissions'));
+        $todayEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)->where('claim_date', now()->toDateString())->sum('energy');
+        $weekEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)
+            ->whereBetween('claim_date', [now()->startOfWeek()->toDateString(), now()->endOfWeek()->toDateString()])
+            ->sum('energy');
+        $dailyChestTiers = self::DAILY_CHEST_TIERS;
+        $weeklyChestTiers = self::WEEKLY_CHEST_TIERS;
+        $missionResetAt = now()->endOfDay()->toIso8601String();
+        $weekResetAt = now()->endOfWeek()->toIso8601String();
+
+        return view('profile.index', compact(
+            'user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'score', 'badges', 'dailyMissions',
+            'todayEnergy', 'weekEnergy', 'dailyChestTiers', 'weeklyChestTiers', 'missionResetAt', 'weekResetAt'
+        ));
     }
 
     private function dailyMissions(RsmUser $user): array
@@ -86,25 +142,63 @@ class ProfileController extends Controller
         $shareFb = CollabMetricsService::personalTotal($filters, $area, $user, 'Share FB Group');
         $registrasi = CollabMetricsService::personalTotal($filters, $area, $user, 'Closing Personal Per Regional');
 
-        return [
-            $this->mission('login', 'Login', 1, 1),
-            $this->mission('fu', 'Follow Up', $followUps, 30),
-            $this->mission('share_fb', 'Share FB', $shareFb, 3),
-            $this->mission('aktivitas_lain', 'Aktivitas Lain', $otherActivities, 1),
-            $this->mission('reg', 'Closing Reg', $registrasi, 1),
+        $claimedToday = RsmDailyMissionClaim::where('user_id', $user->id)
+            ->where('claim_date', $today)
+            ->pluck('mission_key')
+            ->all();
+
+        $actuals = [
+            'login' => 1,
+            'fu' => $followUps,
+            'share_fb' => $shareFb,
+            'aktivitas_lain' => $otherActivities,
+            'reg' => $registrasi,
         ];
+
+        $rows = [];
+        foreach (self::MISSION_TIERS as $key => $tiers) {
+            $rows = array_merge($rows, $this->missionTiers($key, self::MISSION_LABELS[$key], $actuals[$key], $tiers, $claimedToday));
+        }
+
+        return $rows;
     }
 
-    private function mission(string $key, string $label, float $actual, float $target): array
+    /**
+     * Expands one mission's tier list into row(s) ready for the view/claim
+     * flow. A mission with several tiers (e.g. "fu": 30/45/60) exposes them
+     * one at a time — tier N+1 is `locked` until tier N has been claimed,
+     * even if $actual already clears its target.
+     *
+     * @param  list<array{target:int,energy:int,stars:int}>  $tiers
+     * @param  list<string>  $claimedToday
+     */
+    private function missionTiers(string $key, string $label, float $actual, array $tiers, array $claimedToday): array
     {
-        return [
-            'key' => $key,
-            'label' => $label,
-            'actual' => $actual,
-            'target' => $target,
-            'progress' => $target > 0 ? min(100, round(($actual / $target) * 100)) : 0,
-            'done' => $actual >= $target,
-        ];
+        $multiTier = count($tiers) > 1;
+        $rows = [];
+        $previousClaimed = true;
+
+        foreach ($tiers as $index => $tier) {
+            $tierKey = $multiTier ? sprintf('%s_%d', $key, $index + 1) : $key;
+            $claimed = in_array($tierKey, $claimedToday, true);
+
+            $rows[] = [
+                'key' => $tierKey,
+                'label' => $multiTier ? sprintf('%s %d', $label, $tier['target']) : $label,
+                'energy' => $tier['energy'],
+                'stars' => $tier['stars'],
+                'claimed' => $claimed,
+                'actual' => $actual,
+                'target' => $tier['target'],
+                'progress' => $tier['target'] > 0 ? min(100, round(($actual / $tier['target']) * 100)) : 0,
+                'done' => $actual >= $tier['target'],
+                'locked' => ! $previousClaimed,
+            ];
+
+            $previousClaimed = $claimed;
+        }
+
+        return $rows;
     }
 
     public function update(Request $request): RedirectResponse
@@ -117,6 +211,28 @@ class ProfileController extends Controller
         }
         $user->forceFill(array_filter(['bio_text' => $data['bio_text'] ?? null, 'photo_path' => $data['photo_path'] ?? null], static fn ($v) => $v !== null))->save();
         return back()->with('notice', 'Profil berhasil diperbarui.');
+    }
+
+    /** Claim today's reward for one Daily Mission tier - recomputes mission progress server-side rather than trusting the client. */
+    public function claimMission(string $missionKey): RedirectResponse
+    {
+        $user = Auth::user();
+        $mission = collect($this->dailyMissions($user))->firstWhere('key', $missionKey);
+
+        abort_unless($mission, 404);
+        abort_if($mission['locked'], 422, 'Selesaikan tingkat sebelumnya dulu.');
+        abort_unless($mission['done'], 422, 'Misi ini belum selesai.');
+        abort_if($mission['claimed'], 422, 'Reward misi ini sudah diklaim hari ini.');
+
+        RsmDailyMissionClaim::create([
+            'user_id' => $user->id,
+            'mission_key' => $missionKey,
+            'claim_date' => now()->toDateString(),
+            'energy' => $mission['energy'],
+            'stars' => $mission['stars'],
+        ]);
+
+        return back()->with('notice', 'Reward misi diklaim!');
     }
 
     public function edit(): View { return view('profile.password', ['active' => 'password']); }
