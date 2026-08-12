@@ -4,6 +4,7 @@
     $paths = [
         'home' => '<path d="M4 11.5 12 4l8 7.5" /><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9" />',
         'chart-bar' => '<path d="M4 20V10" /><path d="M10 20V4" /><path d="M16 20v-7" /><path d="M4 20h16" />',
+        'trophy' => '<path d="M8 4h8v4.5a4 4 0 0 1-8 0V4Z" /><path d="M8 6H5.5a2 2 0 0 0 0 4H8" /><path d="M16 6h2.5a2 2 0 0 1 0 4H16" /><path d="M12 12.5V17" /><path d="M9 20h6" /><path d="M10 17h4" />',
         'calendar' => '<rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M3.5 9.5h17" /><path d="M8 3v4" /><path d="M16 3v4" />',
         'users' => '<circle cx="9" cy="8" r="3" /><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" /><path d="M15.5 5.5a3 3 0 0 1 0 5.9" /><path d="M15 14.2c2.4.5 4.5 2.3 4.5 4.8" />',
         'photo' => '<rect x="3.5" y="4.5" width="17" height="15" rx="2" /><circle cx="9" cy="10" r="1.75" /><path d="M4 18.5 9.5 13l3 3 3.5-4L20 17" />',

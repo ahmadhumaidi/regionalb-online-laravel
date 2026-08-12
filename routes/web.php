@@ -6,6 +6,7 @@ use App\Http\Controllers\AdBudgetController;
 use App\Http\Controllers\AdLeadController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AktivitasController;
+use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImpersonationController;
@@ -95,6 +96,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/scoring', [ScoringController::class, 'index'])->name('scoring');
     Route::get('/scoring/targets', [TargetController::class, 'index'])->name('scoring.targets');
     Route::post('/scoring/targets', [TargetController::class, 'store'])->name('scoring.targets.store');
+    Route::get('/badges', [BadgeController::class, 'index'])->name('badges');
     Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');

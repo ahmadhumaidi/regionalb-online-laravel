@@ -31,6 +31,43 @@ class GamificationService
     /** The 5 achievable badges scoreRow()/badges() can award - excludes the "On Progress" fallback shown when none are earned yet. */
     public const BADGE_NAMES = ['Follow Up Hero', 'Closing Hunter', 'Herregistrasi Champion', 'Consistency Streak', 'Budget Efficient'];
 
+    /** @return list<array{name: string, condition: string, source: string, tone: string}> */
+    public static function badgeDefinitions(): array
+    {
+        return [
+            [
+                'name' => 'Follow Up Hero',
+                'condition' => 'Minimal 10 follow up lead dalam periode/filter yang dipilih.',
+                'source' => 'Kolom FU / follow_up_total dari data lead dan laporan.',
+                'tone' => 'blue',
+            ],
+            [
+                'name' => 'Closing Hunter',
+                'condition' => 'Minimal 3 registrasi dalam periode/filter yang dipilih.',
+                'source' => 'Closing Personal Per Regional dari Collab, fallback ke status registrasi lead.',
+                'tone' => 'green',
+            ],
+            [
+                'name' => 'Herregistrasi Champion',
+                'condition' => 'Minimal 1 herregistrasi dalam periode/filter yang dipilih.',
+                'source' => 'Herreg Personal Per Regional dari Collab, fallback ke status herregistrasi lead.',
+                'tone' => 'purple',
+            ],
+            [
+                'name' => 'Consistency Streak',
+                'condition' => 'Aktif mengirim laporan pada minimal 5 hari berbeda.',
+                'source' => 'Jumlah hari unik dari report_date laporan.',
+                'tone' => 'orange',
+            ],
+            [
+                'name' => 'Budget Efficient',
+                'condition' => 'Ada realisasi iklan dan menghasilkan minimal 1 registrasi.',
+                'source' => 'Realisasi Iklan dan registrasi pada periode/filter.',
+                'tone' => 'red',
+            ],
+        ];
+    }
+
     public static function build(string $area, array $filters, RsmUser $user): array
     {
         [, $scoredRows] = self::scoredRows($area, $filters, $user);

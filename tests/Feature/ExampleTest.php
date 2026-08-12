@@ -39,6 +39,7 @@ class ExampleTest extends TestCase
             'bdc-users' => ['/bdc-users'],
             'role' => ['/role'],
             'closing-kampus' => ['/closing-kampus'],
+            'badges' => ['/badges'],
             'profile' => ['/profile'],
         ];
     }
