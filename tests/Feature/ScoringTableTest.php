@@ -259,6 +259,57 @@ class ScoringTableTest extends TestCase
         $senior->delete();
     }
 
+    public function test_zero_ad_realization_target_counts_as_achieved(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900052, 'name' => 'Test Senior No Cap', 'username' => 'test_senior_no_cap_900052',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900053, 'name' => 'No Cap Staff', 'username' => 'test_no_cap_staff_900053',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+
+        RsmMonthlyTarget::create([
+            'area' => 'Regional B',
+            'target_month' => now()->format('Y-m'),
+            'scope_type' => 'staff',
+            'scope_key' => 'staff:no cap staff',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'No Cap Staff',
+            'indicator_targets' => [
+                'realisasi_iklan' => ['target' => 0, 'weight' => 5],
+            ],
+        ]);
+
+        $table = \App\Services\Dashboard\ScoringTableService::build(
+            'Regional B',
+            [
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+                'wilayah' => '',
+                'unit_name' => '',
+                'staff_name' => '',
+            ],
+            $senior->fresh()
+        );
+
+        $row = collect($table['rows'])->firstWhere('name', 'No Cap Staff');
+
+        $this->assertNotNull($row);
+        $this->assertSame(5.0, $row['score_details']['realisasi_iklan']['score']);
+        $this->assertSame(5.0, $row['total_score']);
+        $this->assertSame(5.0, $row['total_weight']);
+
+        $staff->delete();
+        $senior->delete();
+    }
+
     public function test_arena_performa_leaderboard_uses_total_score(): void
     {
         $this->migrate();
