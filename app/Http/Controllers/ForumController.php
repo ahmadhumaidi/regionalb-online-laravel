@@ -39,7 +39,7 @@ class ForumController extends Controller
     {
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:2000'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         abort_if(blank($data['body'] ?? null) && ! $request->hasFile('image'), 422, 'Tulis sesuatu atau lampirkan gambar.');
