@@ -88,7 +88,7 @@
                                     @if (($indicator['direction'] ?? 'higher') === 'lower')
                                         <p class="mt-1 text-[11px] text-ink-muted">Semakin rendah semakin bagus.</p>
                                     @endif
-                                    @if (in_array($key, ['cpm', 'cpl', 'closing_iklan'], true))
+                                    @if (in_array($key, ['cpm_cpl', 'closing_iklan'], true))
                                         <p class="mt-1 text-[11px] text-ink-muted">Jika kampus tanpa plafon, target otomatis 0 dan dianggap tercapai.</p>
                                     @endif
                                 </td>
@@ -123,8 +123,7 @@
                     <th class="py-2 pr-3">Staff</th>
                     <th class="py-2 pr-3">Reg</th>
                     <th class="py-2 pr-3">Herreg</th>
-                    <th class="py-2 pr-3">CPM</th>
-                    <th class="py-2 pr-3">CPL</th>
+                    <th class="py-2 pr-3">CPM/CPL</th>
                     <th class="py-2 pr-3">Closing Iklan</th>
                     <th class="py-2 pr-3">FU</th>
                     <th class="py-2 pr-3">Bobot</th>
@@ -146,15 +145,14 @@
                         <td class="py-2 pr-3">{{ $target->staff_name ?: '-' }}</td>
                         <td class="py-2 pr-3">{{ number_format((float) $target->target_registrasi, 0, ',', '.') }}</td>
                         <td class="py-2 pr-3">{{ number_format((float) $target->target_herregistrasi, 0, ',', '.') }}</td>
-                        <td class="py-2 pr-3">{{ number_format($targetFor('cpm'), 0, ',', '.') }}</td>
-                        <td class="py-2 pr-3">{{ number_format($targetFor('cpl'), 0, ',', '.') }}</td>
+                        <td class="py-2 pr-3">{{ number_format($targetFor('cpm_cpl'), 0, ',', '.') }}</td>
                         <td class="py-2 pr-3">{{ number_format($targetFor('closing_iklan'), 0, ',', '.') }}</td>
                         <td class="py-2 pr-3">{{ number_format((float) $target->target_follow_up, 0, ',', '.') }}</td>
                         <td class="py-2 pr-3">{{ number_format($weightTotal, 2, ',', '.') }}%</td>
                         <td class="py-2">{{ $filledCount }} indikator</td>
                     </tr>
                 @empty
-                    <tr><td colspan="12" class="py-8 text-center text-ink-muted">Belum ada target staff.</td></tr>
+                    <tr><td colspan="11" class="py-8 text-center text-ink-muted">Belum ada target staff.</td></tr>
                 @endforelse
             </tbody>
         </table>

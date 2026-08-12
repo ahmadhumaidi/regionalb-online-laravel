@@ -30,7 +30,7 @@ class GamificationService
     /** The achievable badges scoreRow()/badges() can award - excludes the "On Progress" fallback shown when none are earned yet. */
     public const BADGE_NAMES = [
         'Closing Hunter', 'Herregistrasi Champion', 'Kampus Growth', 'Kampus Herreg Champion',
-        'CPM Efisien', 'CPL Efisien', 'Closing Iklan Hunter', 'Budget Efficient', 'Follow Up Hero',
+        'Efisiensi Iklan', 'Closing Iklan Hunter', 'Budget Efficient', 'Follow Up Hero',
         'Report Consistent', 'Consistency Streak', 'Share FB Booster', 'Live Streamer',
         'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
     ];
@@ -40,8 +40,7 @@ class GamificationService
         'herregistrasi_champion' => ['name' => 'Herregistrasi Champion', 'target' => 1, 'metric_key' => 'herregistrasi_personal', 'source' => 'Herreg Personal Per Regional dari Collab.', 'tone' => 'purple'],
         'kampus_growth' => ['name' => 'Kampus Growth', 'target' => 5, 'metric_key' => 'registrasi_kampus', 'source' => 'Reg Kampus dari Closing Kampus Regional.', 'tone' => 'green'],
         'kampus_herreg_champion' => ['name' => 'Kampus Herreg Champion', 'target' => 2, 'metric_key' => 'herregistrasi_kampus', 'source' => 'Herreg Kampus dari Herreg Kampus Regional.', 'tone' => 'purple'],
-        'cpm_efisien' => ['name' => 'CPM Efisien', 'target' => 4000, 'metric_key' => 'cpm', 'source' => 'CPM dari realisasi iklan dan impresi.', 'tone' => 'orange'],
-        'cpl_efisien' => ['name' => 'CPL Efisien', 'target' => 25000, 'metric_key' => 'cpl_iklan', 'source' => 'CPL dari realisasi iklan dan data hasil iklan.', 'tone' => 'red'],
+        'efisiensi_iklan' => ['name' => 'Efisiensi Iklan', 'target' => 4000, 'metric_key' => 'cpm_cpl', 'source' => 'CPM atau CPL sesuai tujuan iklan.', 'tone' => 'orange'],
         'closing_iklan_hunter' => ['name' => 'Closing Iklan Hunter', 'target' => 1, 'metric_key' => 'closing_iklan', 'source' => 'Closing dari data hasil iklan.', 'tone' => 'green'],
         'budget_efficient' => ['name' => 'Budget Efficient', 'target' => 1, 'indicator_key' => 'reg', 'source' => 'Indikator pilihan pada periode/filter.', 'tone' => 'red'],
         'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'metric_key' => 'follow_up_total', 'source' => 'FU / follow_up_total dari data lead dan laporan.', 'tone' => 'blue'],
@@ -148,8 +147,7 @@ class GamificationService
             'badges' => self::badgesFromScoringRow([
                 'registrasi_personal' => (float) $scoredRows->sum('registrasi_personal'),
                 'herregistrasi_personal' => (float) $scoredRows->sum('herregistrasi_personal'),
-                'cpm' => (float) $scoredRows->avg('cpm'),
-                'cpl_iklan' => (float) $scoredRows->avg('cpl_iklan'),
+                'cpm_cpl' => (float) $scoredRows->avg('cpm_cpl'),
                 'closing_iklan' => (float) $scoredRows->sum('closing_iklan'),
                 'follow_up_total' => (float) $scoredRows->sum('follow_up_total'),
                 'leads_total' => (float) $scoredRows->sum('leads_total'),
@@ -226,6 +224,10 @@ class GamificationService
                 $adLeads = 0;
                 $adClosing = 0;
                 $impressions = 0;
+                $leadGoalSpend = 0.0;
+                $leadGoalLeads = 0;
+                $impressionGoalSpend = 0.0;
+                $impressionGoalImpressions = 0;
 
                 foreach ($groupReports as $report) {
                     $leadRows = $report->adLeads;
@@ -252,9 +254,22 @@ class GamificationService
                             $impressions += (int) $report->impressions_count;
                             $adLeads += $reportAdLeads;
                             $adClosing += $reportAdClosing;
+                            if (self::usesCplMetric($report, $reportAdLeads)) {
+                                $leadGoalSpend += (float) $report->realization_amount;
+                                $leadGoalLeads += $reportAdLeads;
+                            } else {
+                                $impressionGoalSpend += (float) $report->realization_amount;
+                                $impressionGoalImpressions += (int) $report->impressions_count;
+                            }
                         }
                     }
                 }
+
+                $cpmCpl = match (true) {
+                    $leadGoalSpend > 0 && $leadGoalLeads > 0 => round($leadGoalSpend / $leadGoalLeads, 2),
+                    $impressionGoalSpend > 0 && $impressionGoalImpressions > 0 => round(($impressionGoalSpend / $impressionGoalImpressions) * 1000, 2),
+                    default => 0.0,
+                };
 
                 return [
                     'user_id' => $first->user_id ?: null,
@@ -274,11 +289,19 @@ class GamificationService
                     'ad_closing_total' => $adClosing,
                     'cpm' => $impressions > 0 ? round(($spend / $impressions) * 1000, 2) : 0.0,
                     'cpl_iklan' => $adLeads > 0 ? round($spend / $adLeads, 2) : 0.0,
+                    'cpm_cpl' => $cpmCpl,
                     'closing_iklan' => $adClosing,
                     'complete_follow_up_notes' => $completeFollowUpNotes,
                 ];
             })
             ->values();
+    }
+
+    private static function usesCplMetric(RsmReport $report, int $adLeads): bool
+    {
+        $goal = mb_strtolower(trim((string) $report->ad_goal));
+
+        return $adLeads > 0 || str_contains($goal, 'lead') || str_contains($goal, 'prospek') || str_contains($goal, 'ctwa');
     }
 
     private static function scoreRow(array $row, Collection $collabByName): array

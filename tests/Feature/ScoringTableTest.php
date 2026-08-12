@@ -284,8 +284,7 @@ class ScoringTableTest extends TestCase
             'unit_name' => 'STIESIA Surabaya',
             'staff_name' => 'No Cap Staff',
             'indicator_targets' => [
-                'cpm' => ['target' => 0, 'weight' => 4],
-                'cpl' => ['target' => 0, 'weight' => 5],
+                'cpm_cpl' => ['target' => 0, 'weight' => 9],
                 'closing_iklan' => ['target' => 0, 'weight' => 6],
             ],
         ]);
@@ -305,8 +304,7 @@ class ScoringTableTest extends TestCase
         $row = collect($table['rows'])->firstWhere('name', 'No Cap Staff');
 
         $this->assertNotNull($row);
-        $this->assertSame(4.0, $row['score_details']['cpm']['score']);
-        $this->assertSame(5.0, $row['score_details']['cpl']['score']);
+        $this->assertSame(9.0, $row['score_details']['cpm_cpl']['score']);
         $this->assertSame(6.0, $row['score_details']['closing_iklan']['score']);
         $this->assertSame(15.0, $row['total_score']);
         $this->assertSame(15.0, $row['total_weight']);
@@ -315,7 +313,7 @@ class ScoringTableTest extends TestCase
         $senior->delete();
     }
 
-    public function test_cpm_and_cpl_use_lower_is_better_scoring(): void
+    public function test_cpm_cpl_uses_lower_is_better_scoring_by_ad_goal(): void
     {
         $this->migrate();
 
@@ -346,8 +344,7 @@ class ScoringTableTest extends TestCase
             'unit_name' => 'STIESIA Surabaya',
             'staff_name' => 'CPM Staff',
             'indicator_targets' => [
-                'cpm' => ['target' => 4000, 'weight' => 10],
-                'cpl' => ['target' => 2000, 'weight' => 10],
+                'cpm_cpl' => ['target' => 2000, 'weight' => 20],
                 'closing_iklan' => ['target' => 2, 'weight' => 10],
             ],
         ]);
@@ -367,10 +364,8 @@ class ScoringTableTest extends TestCase
         $row = collect($table['rows'])->firstWhere('name', 'CPM Staff');
 
         $this->assertNotNull($row);
-        $this->assertSame(8000.0, $row['cpm']);
-        $this->assertSame(4000.0, $row['cpl_iklan']);
-        $this->assertSame(5.0, $row['score_details']['cpm']['score']);
-        $this->assertSame(5.0, $row['score_details']['cpl']['score']);
+        $this->assertSame(4000.0, $row['cpm_cpl']);
+        $this->assertSame(10.0, $row['score_details']['cpm_cpl']['score']);
         $this->assertSame(5.0, $row['score_details']['closing_iklan']['score']);
         $this->assertSame(15.0, $row['total_score']);
 

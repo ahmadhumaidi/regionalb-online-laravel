@@ -94,7 +94,7 @@ class TargetController extends Controller
         $adBudgetTarget = $this->adBudgetTarget($area, $targetMonth, $item, $scope);
 
         if ($adBudgetTarget <= 0) {
-            foreach (['cpm', 'cpl', 'closing_iklan'] as $key) {
+            foreach (['cpm_cpl', 'closing_iklan'] as $key) {
                 if (array_key_exists($key, $indicatorTargets)) {
                     $indicatorTargets[$key]['target'] = 0.0;
                 }

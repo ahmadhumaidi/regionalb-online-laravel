@@ -63,8 +63,7 @@ class ScoringTableService
                     'herregistrasi_personal' => (float) ($personal['herregistrasi'] ?? 0),
                     'registrasi_kampus' => self::lookupCampus($unitName, $campusRegistrasi),
                     'herregistrasi_kampus' => self::lookupCampus($unitName, $campusHerreg),
-                    'cpm' => (float) ($indicator['cpm'] ?? 0),
-                    'cpl_iklan' => (float) ($indicator['cpl_iklan'] ?? 0),
+                    'cpm_cpl' => (float) ($indicator['cpm_cpl'] ?? 0),
                     'closing_iklan' => (int) ($indicator['closing_iklan'] ?? 0),
                     'follow_up_total' => (int) ($indicator['follow_up_total'] ?? 0),
                     'leads_total' => (int) ($indicator['leads_total'] ?? 0),
@@ -155,7 +154,7 @@ class ScoringTableService
             $weight = $hasTargetRow ? (float) ($targetRows[$key]['weight'] ?? $meta['default_weight'] ?? 0) : 0.0;
             $direction = (string) ($meta['direction'] ?? 'higher');
             $score = match (true) {
-                in_array($key, ['cpm', 'cpl', 'closing_iklan'], true) && $hasTargetRow && $targetValue <= 0 && $weight > 0 => $weight,
+                in_array($key, ['cpm_cpl', 'closing_iklan'], true) && $hasTargetRow && $targetValue <= 0 && $weight > 0 => $weight,
                 $direction === 'lower' && $targetValue > 0 && $actual > 0 && $weight > 0 => min($targetValue / $actual, 1.0) * $weight,
                 $targetValue > 0 && $weight > 0 => min($actual / $targetValue, 1.0) * $weight,
                 default => 0.0,

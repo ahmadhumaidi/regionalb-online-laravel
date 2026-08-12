@@ -188,8 +188,7 @@ class AuthorizationTest extends TestCase
             'indicator_targets' => [
                 'reg' => ['target' => 12, 'weight' => 10],
                 'herreg' => ['target' => 8, 'weight' => 15],
-                'cpm' => ['target' => 4000, 'weight' => 6],
-                'cpl' => ['target' => 25000, 'weight' => 6],
+                'cpm_cpl' => ['target' => 4000, 'weight' => 12],
                 'closing_iklan' => ['target' => 3, 'weight' => 8],
                 'fu' => ['target' => 25, 'weight' => 10],
             ],
@@ -201,8 +200,7 @@ class AuthorizationTest extends TestCase
         $this->assertSame(12, (int) $target->target_registrasi);
         $this->assertSame(8, (int) $target->target_herregistrasi);
         $this->assertSame(25, (int) $target->target_follow_up);
-        $this->assertSame(4000.0, (float) $target->indicator_targets['cpm']['target']);
-        $this->assertSame(25000.0, (float) $target->indicator_targets['cpl']['target']);
+        $this->assertSame(4000.0, (float) $target->indicator_targets['cpm_cpl']['target']);
         $this->assertSame(3.0, (float) $target->indicator_targets['closing_iklan']['target']);
         $this->assertSame(10.0, (float) $target->indicator_targets['reg']['weight']);
         $this->assertSame('Herreg Kampus', $target->indicator_targets['herreg_kampus']['label']);
