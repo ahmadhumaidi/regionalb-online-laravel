@@ -158,21 +158,75 @@ class GamificationService
         ];
     }
 
-    /** @return array{level: int, level_progress: int, league: string} */
+    /**
+     * @return array{level: int, level_progress: int, league: string}
+     *
+     * @deprecated Kept for backward compatibility (delegates to
+     * XpService::calculateLevel() for the level curve instead of the old
+     * flat "200 XP = 1 level" rule). ProfileController now calls
+     * XpService::calculateLevel() directly for the richer breakdown
+     * (xp_into_level/xp_needed/etc); this wrapper is for any other caller
+     * that only needs the level/progress/league summary.
+     */
     public static function levelFor(int $points): array
     {
-        $level = max(1, (int) floor($points / 200) + 1);
-        $levelBase = ($level - 1) * 200;
-        $levelProgress = min(100, (int) round((($points - $levelBase) / 200) * 100));
-        $league = match (true) {
+        $calc = XpService::calculateLevel($points);
+
+        return [
+            'level' => $calc['level'],
+            'level_progress' => $calc['progress_percent'],
+            'league' => self::leagueFor($points),
+        ];
+    }
+
+    /** League thresholds - unchanged from the original levelFor(); Phase 1 only swaps the XP input source (lifetime ledger instead of live-recalculated points), not the League tiers themselves. */
+    public static function leagueFor(int $points): string
+    {
+        return match (true) {
             $points >= 5000 => 'Diamond',
             $points >= 2500 => 'Platinum',
             $points >= 1000 => 'Gold',
             $points >= 500 => 'Silver',
             default => 'Starter',
         };
+    }
 
-        return ['level' => $level, 'level_progress' => $levelProgress, 'league' => $league];
+    /**
+     * Personal-only point total for the lifetime XP ledger (Gamification
+     * Phase 1) - deliberately does NOT go through ScopedReports/ReportScope,
+     * since that widens visibility to a koordinator's whole wilayah or a
+     * senior's whole area for *viewing* reports, which would leak the
+     * team's pooled activity into what's supposed to be one person's XP.
+     * Reuses the same personal-attribution filter ProfileController already
+     * applies to a staff member's own "Ringkasan" stats (user_id or
+     * staff_name match), just applied regardless of role - a koordinator/
+     * senior with no personal report activity of their own legitimately
+     * gets 0 here, by design (team performance stays a separate metric).
+     */
+    public static function personalProfileXp(RsmUser $user): int
+    {
+        $area = $user->area ?: 'Regional B';
+        $reports = RsmReport::query()
+            ->where('area', $area)
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)->orWhere('staff_name', $user->name);
+            })
+            ->with('adLeads')
+            ->get();
+
+        if ($reports->isEmpty()) {
+            return 0;
+        }
+
+        $rawStatuses = $reports->flatMap(fn (RsmReport $report) => $report->adLeads->pluck('closing_status'))
+            ->filter(fn ($value) => trim((string) $value) !== '');
+        $buckets = ClosingStatusClassifier::buckets($rawStatuses);
+        $rows = self::aggregateByStaff($reports, $buckets);
+
+        $collabPerformance = CollabMetricsService::personalPerformance($area, DashboardFilters::allTime(), $user);
+        $collabByName = collect($collabPerformance['rows'])->keyBy(fn ($row) => mb_strtolower(trim((string) $row['name'])));
+
+        return (int) $rows->map(fn (array $row) => self::scoreRow($row, $collabByName))->sum('points');
     }
 
     /**

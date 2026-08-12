@@ -30,6 +30,8 @@ class ProfileGamificationTest extends TestCase
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
             'database/migrations/2026_08_05_110009_create_rsm_collab_daily_metrics_table.php',
+            'database/migrations/2026_08_12_150000_create_rsm_daily_mission_claims_table.php',
+            'database/migrations/2026_08_13_090000_create_rsm_gamification_transactions_table.php',
         ]]);
     }
 
@@ -77,7 +79,17 @@ class ProfileGamificationTest extends TestCase
         $staff->delete();
     }
 
-    public function test_koordinator_sees_pooled_wilayah_points_on_profile_page(): void
+    /**
+     * Gamification Phase 1 changed this: the koordinator's Level/XP block
+     * now reads their *personal* lifetime XP ledger (XpService), which
+     * deliberately excludes their team's pooled activity (see
+     * GamificationService::personalProfileXp()) - team performance stays a
+     * separate concept from personal XP. Badges are unaffected by that
+     * refactor and still show the team's pooled achievement, since
+     * GamificationService::profileSummary() (which drives badges) wasn't
+     * touched.
+     */
+    public function test_koordinator_personal_xp_excludes_team_but_badges_stay_pooled(): void
     {
         $this->migrate();
 
@@ -101,14 +113,16 @@ class ProfileGamificationTest extends TestCase
             $reports[] = $report;
         }
 
-        // Per staff: 5 + 10 + 4 + 8 + 40 + 0 + 20 + 0 = 87 points. Pooled
-        // across both staff in the koordinator's own wilayah: 174 points.
+        // None of these reports are attributed to the koordinator
+        // personally (staff_name never matches them) - personal XP is 0,
+        // not the old pooled 174.
         $response = $this->actingAs($koordinator)->get(route('profile'));
 
         $response->assertOk();
-        $response->assertSee('174 XP');
+        $response->assertSee('0 XP');
         $response->assertSee('Level 1');
         $response->assertSee('League Starter');
+        // Badges still reflect the pooled team total - unchanged by this refactor.
         $response->assertSee('✓ Closing Hunter', false);
         $response->assertSee('✓ Budget Efficient', false);
         $response->assertSee('○ Follow Up Hero', false);
@@ -158,16 +172,20 @@ class ProfileGamificationTest extends TestCase
 
         $response = $this->actingAs($staff)->get(route('profile'));
 
+        // Pre-existing test assertions here referenced a "5/5 selesai"
+        // summary counter and per-mission "X/Y" progress text that no
+        // longer exist since the Daily Mission section was redesigned to a
+        // chest-track + individual Claim buttons (all 5 missions in this
+        // fixture are done, so each row now renders a Claim button instead
+        // of progress text). Updated to match current markup - unrelated to
+        // the Gamification Phase 1 XP ledger this test file also covers.
         $response->assertOk();
         $response->assertSee('Daily Mission');
-        $response->assertSee('5/5 selesai');
         $response->assertSee('Login');
-        $response->assertSee('Follow Up');
-        $response->assertSee('30/30');
+        $response->assertSee('Follow Up 30');
         $response->assertSee('Share FB');
-        $response->assertSee('3/3');
         $response->assertSee('Aktivitas Lain');
-        $response->assertSee('Closing Reg');
+        $response->assertSee('Closing Reg 1');
 
         \App\Models\RsmCollabDailyMetric::whereIn('entity_key', ['daily-share-1', 'daily-reg-1'])->delete();
         RsmAdLead::where('report_id', $adReport->id)->delete();

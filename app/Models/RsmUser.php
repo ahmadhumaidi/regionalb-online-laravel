@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -91,5 +92,11 @@ class RsmUser extends Authenticatable
         return str_starts_with($this->photo_path, 'profiles/')
             ? \Illuminate\Support\Facades\Storage::url($this->photo_path)
             : route('users.photo', $this);
+    }
+
+    /** Lifetime XP ledger — see XpService and RsmGamificationTransaction. */
+    public function gamificationTransactions(): HasMany
+    {
+        return $this->hasMany(RsmGamificationTransaction::class, 'user_id');
     }
 }

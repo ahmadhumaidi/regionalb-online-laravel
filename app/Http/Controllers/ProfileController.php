@@ -8,6 +8,7 @@ use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Dashboard\CollabMetricsService;
 use App\Services\Dashboard\GamificationService;
+use App\Services\Dashboard\XpService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -82,14 +83,30 @@ class ProfileController extends Controller
         $reports = (clone $query)->latest('report_date')->latest('id')->limit(10)->get();
         $logs = RsmActivityLog::query()->where('area', $user->area)->where('actor_user_id', $user->id)->latest()->limit(10)->get();
 
-        // Same point formula and badge thresholds as the Dashboard's "Arena
-        // Performa Staff" leaderboard (GamificationService) - staff see
-        // their own standing, koordinator/senior tier see their team's
-        // pooled totals. See GamificationService::profileSummary().
+        // Badge thresholds still come from the Dashboard's "Arena Performa
+        // Staff" formula/scope (GamificationService::profileSummary()) -
+        // staff see their own badges, koordinator/senior tier see their
+        // team's pooled badges. Unchanged by the Gamification Phase 1 XP
+        // ledger refactor below.
         $gamification = GamificationService::profileSummary($user->area ?: 'Regional B', $user);
-        $xp = $gamification['points'];
-        ['level' => $level, 'level_progress' => $levelProgress, 'league' => $league] = GamificationService::levelFor($xp);
         $earnedBadges = $gamification['badges'];
+
+        // Gamification Phase 1: Level/XP/League now read from the lifetime
+        // XP ledger (rsm_gamification_transactions via XpService) instead
+        // of a live recalculation - syncPersonalActivity() banks any growth
+        // in the user's own personal point total since their last profile
+        // visit (idempotent, at most once per day), then the ledger's
+        // lifetime sum drives the level curve. Deliberately personal-only
+        // (not the pooled wilayah/area total profileSummary() above still
+        // uses for badges) - see GamificationService::personalProfileXp().
+        XpService::syncPersonalActivity($user);
+        $xp = XpService::getLifetimeXp($user);
+        $levelInfo = XpService::calculateLevel($xp);
+        $level = $levelInfo['level'];
+        $levelProgress = $levelInfo['progress_percent'];
+        $xpIntoLevel = $levelInfo['xp_into_level'];
+        $xpNeeded = $levelInfo['xp_needed'];
+        $league = GamificationService::leagueFor($xp);
         $badges = array_map(
             fn (string $name) => ['name' => $name, 'ok' => in_array($name, $earnedBadges, true)],
             GamificationService::BADGE_NAMES
@@ -111,7 +128,7 @@ class ProfileController extends Controller
         $monthResetAt = now()->endOfMonth()->toIso8601String();
 
         return view('profile.index', compact(
-            'user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'score', 'badges', 'dailyMissions',
+            'user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'xpIntoLevel', 'xpNeeded', 'league', 'score', 'badges', 'dailyMissions',
             'todayEnergy', 'weekEnergy', 'monthEnergy', 'dailyChestTiers', 'weeklyChestTiers', 'monthlyChestTiers',
             'missionResetAt', 'weekResetAt', 'monthResetAt'
         ));
