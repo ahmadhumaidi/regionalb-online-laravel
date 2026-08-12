@@ -259,7 +259,7 @@ class ScoringTableTest extends TestCase
         $senior->delete();
     }
 
-    public function test_zero_ad_realization_target_counts_as_achieved(): void
+    public function test_zero_ad_targets_count_as_achieved(): void
     {
         $this->migrate();
 
@@ -283,6 +283,7 @@ class ScoringTableTest extends TestCase
             'unit_name' => 'STIESIA Surabaya',
             'staff_name' => 'No Cap Staff',
             'indicator_targets' => [
+                'lap_iklan' => ['target' => 0, 'weight' => 4],
                 'realisasi_iklan' => ['target' => 0, 'weight' => 5],
             ],
         ]);
@@ -302,9 +303,10 @@ class ScoringTableTest extends TestCase
         $row = collect($table['rows'])->firstWhere('name', 'No Cap Staff');
 
         $this->assertNotNull($row);
+        $this->assertSame(4.0, $row['score_details']['lap_iklan']['score']);
         $this->assertSame(5.0, $row['score_details']['realisasi_iklan']['score']);
-        $this->assertSame(5.0, $row['total_score']);
-        $this->assertSame(5.0, $row['total_weight']);
+        $this->assertSame(9.0, $row['total_score']);
+        $this->assertSame(9.0, $row['total_weight']);
 
         $staff->delete();
         $senior->delete();

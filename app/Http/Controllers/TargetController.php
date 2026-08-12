@@ -57,7 +57,7 @@ class TargetController extends Controller
         $items = $all && $scope !== 'regional' ? $this->bulkItems($area, $scope) : [['wilayah' => $wilayah, 'unit_name' => $unit, 'staff_name' => $staff]];
         if ($items === []) return back()->withErrors(['scope_type' => 'Tidak ada data pada scope yang dipilih.'])->withInput();
         foreach ($items as $item) {
-            $indicatorTargets = $this->withAdBudgetTarget($baseIndicatorTargets, $area, $data['target_month'], $item, $scope);
+            $indicatorTargets = $this->withAdBudgetTargets($baseIndicatorTargets, $area, $data['target_month'], $item, $scope);
             $key = $scope === 'staff' ? 'staff:' . mb_strtolower(trim($item['staff_name'])) : ($scope === 'unit' ? 'unit:' . mb_strtolower(trim($item['unit_name'])) : ($scope === 'wilayah' ? 'wilayah:' . mb_strtolower(trim($item['wilayah'])) : 'regional'));
             RsmMonthlyTarget::updateOrCreate(['area' => $area, 'target_month' => $data['target_month'], 'scope_key' => $key], ['scope_type' => $scope, 'wilayah' => $item['wilayah'] ?: null, 'unit_name' => $item['unit_name'] ?: null, 'staff_name' => $item['staff_name'] ?: null, 'target_leads' => (int) ($indicatorTargets['leads']['target'] ?? 0), 'target_follow_up' => (int) ($indicatorTargets['fu']['target'] ?? 0), 'target_registrasi' => (int) ($indicatorTargets['reg']['target'] ?? 0), 'target_herregistrasi' => (int) ($indicatorTargets['herreg']['target'] ?? 0), 'target_anggaran' => (float) ($indicatorTargets['realisasi_iklan']['target'] ?? 0), 'indicator_targets' => $indicatorTargets, 'notes' => trim((string) ($data['notes'] ?? '')) ?: null, 'created_by_user_id' => $user->id, 'created_by_name' => $user->name]);
         }
@@ -94,13 +94,16 @@ class TargetController extends Controller
         return $targets;
     }
 
-    private function withAdBudgetTarget(array $indicatorTargets, string $area, string $targetMonth, array $item, string $scope): array
+    private function withAdBudgetTargets(array $indicatorTargets, string $area, string $targetMonth, array $item, string $scope): array
     {
-        if (! array_key_exists('realisasi_iklan', $indicatorTargets)) {
-            return $indicatorTargets;
-        }
+        $adBudgetTarget = $this->adBudgetTarget($area, $targetMonth, $item, $scope);
 
-        $indicatorTargets['realisasi_iklan']['target'] = $this->adBudgetTarget($area, $targetMonth, $item, $scope);
+        if (array_key_exists('lap_iklan', $indicatorTargets)) {
+            $indicatorTargets['lap_iklan']['target'] = $adBudgetTarget > 0 ? 1.0 : 0.0;
+        }
+        if (array_key_exists('realisasi_iklan', $indicatorTargets)) {
+            $indicatorTargets['realisasi_iklan']['target'] = $adBudgetTarget;
+        }
 
         return $indicatorTargets;
     }

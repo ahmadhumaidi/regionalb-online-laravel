@@ -88,6 +88,9 @@
                                         <p class="mt-1 text-[11px] text-ink-muted">Target mengikuti plafon anggaran kampus/periode.</p>
                                     @else
                                         <input type="number" min="0" step="1" name="indicator_targets[{{ $key }}][target]" value="{{ $targetOld }}" class="w-full rounded-lg border-border bg-surface-muted">
+                                        @if ($key === 'lap_iklan')
+                                            <p class="mt-1 text-[11px] text-ink-muted">Otomatis 1 jika ada plafon, 0 jika tanpa plafon.</p>
+                                        @endif
                                     @endif
                                 </td>
                                 <td class="px-3 py-2">

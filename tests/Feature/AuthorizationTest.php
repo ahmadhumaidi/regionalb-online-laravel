@@ -200,6 +200,7 @@ class AuthorizationTest extends TestCase
         $this->assertSame(40, (int) $target->target_leads);
         $this->assertSame(25, (int) $target->target_follow_up);
         $this->assertSame(1500000.0, (float) $target->target_anggaran);
+        $this->assertSame(1.0, (float) $target->indicator_targets['lap_iklan']['target']);
         $this->assertSame(1500000.0, (float) $target->indicator_targets['realisasi_iklan']['target']);
         $this->assertSame(10.0, (float) $target->indicator_targets['reg']['weight']);
         $this->assertSame('Herreg Kampus', $target->indicator_targets['herreg_kampus']['label']);
