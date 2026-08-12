@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 /**
  * "Scoring" menu: one wide table collecting every assessment indicator
  * already tracked elsewhere in the system (personal registrasi/herreg,
- * campus registrasi/herreg, ad reports, follow ups, leads, report volume)
+ * campus registrasi/herreg, ad efficiency, follow ups, report volume)
  * into a single row per staff member, then scoring it against the configured
  * monthly target and weight per indicator.
  *
@@ -63,8 +63,9 @@ class ScoringTableService
                     'herregistrasi_personal' => (float) ($personal['herregistrasi'] ?? 0),
                     'registrasi_kampus' => self::lookupCampus($unitName, $campusRegistrasi),
                     'herregistrasi_kampus' => self::lookupCampus($unitName, $campusHerreg),
-                    'laporan_iklan' => (int) ($indicator['uploaded_ad_reports'] ?? 0),
-                    'realisasi_iklan' => (float) ($indicator['spend_total'] ?? 0),
+                    'cpm' => (float) ($indicator['cpm'] ?? 0),
+                    'cpl_iklan' => (float) ($indicator['cpl_iklan'] ?? 0),
+                    'closing_iklan' => (int) ($indicator['closing_iklan'] ?? 0),
                     'follow_up_total' => (int) ($indicator['follow_up_total'] ?? 0),
                     'leads_total' => (int) ($indicator['leads_total'] ?? 0),
                     'laporan_total' => (int) ($indicator['report_total'] ?? 0),
@@ -152,8 +153,10 @@ class ScoringTableService
             $hasTargetRow = array_key_exists($key, $targetRows);
             $targetValue = $hasTargetRow ? (float) ($targetRows[$key]['target'] ?? 0) : 0.0;
             $weight = $hasTargetRow ? (float) ($targetRows[$key]['weight'] ?? $meta['default_weight'] ?? 0) : 0.0;
+            $direction = (string) ($meta['direction'] ?? 'higher');
             $score = match (true) {
-                in_array($key, ['lap_iklan', 'realisasi_iklan', 'leads'], true) && $hasTargetRow && $targetValue <= 0 && $weight > 0 => $weight,
+                in_array($key, ['cpm', 'cpl', 'closing_iklan'], true) && $hasTargetRow && $targetValue <= 0 && $weight > 0 => $weight,
+                $direction === 'lower' && $targetValue > 0 && $actual > 0 && $weight > 0 => min($targetValue / $actual, 1.0) * $weight,
                 $targetValue > 0 && $weight > 0 => min($actual / $targetValue, 1.0) * $weight,
                 default => 0.0,
             };
@@ -189,8 +192,6 @@ class ScoringTableService
             'reg' => ['target' => (float) $target->target_registrasi],
             'herreg' => ['target' => (float) $target->target_herregistrasi],
             'fu' => ['target' => (float) $target->target_follow_up],
-            'leads' => ['target' => (float) $target->target_leads],
-            'realisasi_iklan' => ['target' => (float) $target->target_anggaran],
         ];
     }
 

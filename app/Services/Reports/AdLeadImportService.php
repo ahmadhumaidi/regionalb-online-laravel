@@ -124,16 +124,19 @@ class AdLeadImportService
         return $changes;
     }
 
-    /** Recompute leads_count/closing_count (and the CPL that depends on it) from rsm_ad_leads, port of rsm_refresh_report_ad_counts(). */
+    /** Recompute leads_count/closing_count and derived CPM/CPL from rsm_ad_leads, port of rsm_refresh_report_ad_counts(). */
     public static function refreshCounts(RsmReport $report): void
     {
         $leadsCount = $report->adLeads()->count();
         $closingCount = $report->adLeads()->whereRaw('LOWER(closing_status) IN (?,?,?)', self::CLOSING_STATUSES)->count();
+        $realizationAmount = (float) $report->realization_amount;
+        $impressionsCount = (int) $report->impressions_count;
 
         $report->forceFill([
             'leads_count' => $leadsCount,
             'closing_count' => $closingCount,
-            'cpl' => $leadsCount > 0 ? round(((float) $report->realization_amount) / $leadsCount, 2) : 0.0,
+            'cpl' => $leadsCount > 0 ? round($realizationAmount / $leadsCount, 2) : 0.0,
+            'cpm' => $impressionsCount > 0 ? round(($realizationAmount / $impressionsCount) * 1000, 2) : 0.0,
         ])->save();
     }
 

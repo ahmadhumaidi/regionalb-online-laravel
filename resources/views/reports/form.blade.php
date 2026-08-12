@@ -39,8 +39,14 @@
                 @if (in_array('realization_amount', $adsFields))
                     <label class="grid gap-1 text-sm">Realisasi pemakaian<input type="number" min="0" step="0.01" name="realization_amount" value="{{ old('realization_amount', $report->realization_amount) }}" class="rounded-lg border-border bg-surface-muted"></label>
                 @endif
+                @if (in_array('impressions_count', $adsFields))
+                    <label class="grid gap-1 text-sm">Impresi iklan<input type="number" min="0" step="1" name="impressions_count" value="{{ old('impressions_count', $report->impressions_count ?: 0) }}" class="rounded-lg border-border bg-surface-muted"><span class="text-xs text-ink-muted">Dipakai untuk menghitung CPM.</span></label>
+                @endif
                 @if (in_array('cpl', $adsFields))
                     <label class="grid gap-1 text-sm">CPL / Cost per Lead<input type="text" readonly value="{{ number_format((float) $report->cpl, 2, ',', '.') }}" title="Otomatis dihitung: realisasi ÷ jumlah data hasil iklan yang sudah diupload" class="w-full max-w-full rounded-lg glass-card-muted bg-surface-muted text-ink-muted"><span class="text-xs text-ink-muted">Otomatis: realisasi ÷ jumlah data hasil iklan yang diupload.</span></label>
+                @endif
+                @if (in_array('cpm', $adsFields))
+                    <label class="grid gap-1 text-sm">CPM / Cost per 1.000 impresi<input type="text" readonly value="{{ number_format((float) $report->cpm, 2, ',', '.') }}" title="Otomatis dihitung: realisasi dibagi impresi dikali 1.000" class="w-full max-w-full rounded-lg glass-card-muted bg-surface-muted text-ink-muted"><span class="text-xs text-ink-muted">Otomatis: realisasi ÷ impresi × 1.000.</span></label>
                 @endif
                 @if (in_array('campaign_link', $adsFields))
                     <label class="grid gap-1 text-sm">Link campaign<input name="campaign_link" value="{{ old('campaign_link', $report->campaign_link) }}" class="rounded-lg border-border bg-surface-muted"></label>

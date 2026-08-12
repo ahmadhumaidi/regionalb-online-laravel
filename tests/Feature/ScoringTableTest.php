@@ -17,6 +17,7 @@ class ScoringTableTest extends TestCase
             'database/migrations/2026_08_05_105946_create_partner_campuses_table.php',
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
             'database/migrations/2026_08_09_120000_add_insight_attachment_path_to_rsm_reports_table.php',
             'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
@@ -283,9 +284,9 @@ class ScoringTableTest extends TestCase
             'unit_name' => 'STIESIA Surabaya',
             'staff_name' => 'No Cap Staff',
             'indicator_targets' => [
-                'lap_iklan' => ['target' => 0, 'weight' => 4],
-                'realisasi_iklan' => ['target' => 0, 'weight' => 5],
-                'leads' => ['target' => 0, 'weight' => 6],
+                'cpm' => ['target' => 0, 'weight' => 4],
+                'cpl' => ['target' => 0, 'weight' => 5],
+                'closing_iklan' => ['target' => 0, 'weight' => 6],
             ],
         ]);
 
@@ -304,12 +305,76 @@ class ScoringTableTest extends TestCase
         $row = collect($table['rows'])->firstWhere('name', 'No Cap Staff');
 
         $this->assertNotNull($row);
-        $this->assertSame(4.0, $row['score_details']['lap_iklan']['score']);
-        $this->assertSame(5.0, $row['score_details']['realisasi_iklan']['score']);
-        $this->assertSame(6.0, $row['score_details']['leads']['score']);
+        $this->assertSame(4.0, $row['score_details']['cpm']['score']);
+        $this->assertSame(5.0, $row['score_details']['cpl']['score']);
+        $this->assertSame(6.0, $row['score_details']['closing_iklan']['score']);
         $this->assertSame(15.0, $row['total_score']);
         $this->assertSame(15.0, $row['total_weight']);
 
+        $staff->delete();
+        $senior->delete();
+    }
+
+    public function test_cpm_and_cpl_use_lower_is_better_scoring(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900054, 'name' => 'Test Senior CPM', 'username' => 'test_senior_cpm_900054',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900055, 'name' => 'CPM Staff', 'username' => 'test_cpm_staff_900055',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+
+        RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'CPM Staff', 'created_by_role' => 'staff',
+            'status' => 'Diverifikasi', 'title' => 'CPM Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'CPM Campaign',
+            'budget_requested' => 10000, 'realization_amount' => 8000, 'impressions_count' => 1000, 'leads_count' => 2, 'closing_count' => 1,
+        ]);
+
+        RsmMonthlyTarget::create([
+            'area' => 'Regional B',
+            'target_month' => now()->format('Y-m'),
+            'scope_type' => 'staff',
+            'scope_key' => 'staff:cpm staff',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'CPM Staff',
+            'indicator_targets' => [
+                'cpm' => ['target' => 4000, 'weight' => 10],
+                'cpl' => ['target' => 2000, 'weight' => 10],
+                'closing_iklan' => ['target' => 2, 'weight' => 10],
+            ],
+        ]);
+
+        $table = \App\Services\Dashboard\ScoringTableService::build(
+            'Regional B',
+            [
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+                'wilayah' => '',
+                'unit_name' => '',
+                'staff_name' => '',
+            ],
+            $senior->fresh()
+        );
+
+        $row = collect($table['rows'])->firstWhere('name', 'CPM Staff');
+
+        $this->assertNotNull($row);
+        $this->assertSame(8000.0, $row['cpm']);
+        $this->assertSame(4000.0, $row['cpl_iklan']);
+        $this->assertSame(5.0, $row['score_details']['cpm']['score']);
+        $this->assertSame(5.0, $row['score_details']['cpl']['score']);
+        $this->assertSame(5.0, $row['score_details']['closing_iklan']['score']);
+        $this->assertSame(15.0, $row['total_score']);
+
+        RsmReport::where('staff_name', 'CPM Staff')->delete();
         $staff->delete();
         $senior->delete();
     }

@@ -23,6 +23,7 @@ class ProfileGamificationTest extends TestCase
             'database/migrations/2026_08_05_105946_create_partner_campuses_table.php',
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
             'database/migrations/2026_08_09_120000_add_insight_attachment_path_to_rsm_reports_table.php',
             'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
@@ -56,12 +57,12 @@ class ProfileGamificationTest extends TestCase
 
         // report_total*5=5, approved_reports*10=10, leads_total(10)*2=20,
         // follow_up_total(10)*4=40, closing_for_points(4)*20=80,
-        // herreg_for_points(1)*35=35, uploaded_ad_reports*10=10,
-        // complete_follow_up_notes(4)*5=20 -> 220 points.
+        // herreg_for_points(1)*35=35, closing_iklan(4)*10=40,
+        // complete_follow_up_notes(4)*5=20 -> 250 points.
         $response = $this->actingAs($staff)->get(route('profile'));
 
         $response->assertOk();
-        $response->assertSee('220 XP');
+        $response->assertSee('250 XP');
         $response->assertSee('Level 2');
         $response->assertSee('League Starter');
         $response->assertSee('✓ Follow Up Hero', false);
@@ -99,12 +100,12 @@ class ProfileGamificationTest extends TestCase
             $reports[] = $report;
         }
 
-        // Per staff: 5 + 10 + 4 + 8 + 40 + 0 + 10 + 0 = 77 points. Pooled
-        // across both staff in the koordinator's own wilayah: 154 points.
+        // Per staff: 5 + 10 + 4 + 8 + 40 + 0 + 20 + 0 = 87 points. Pooled
+        // across both staff in the koordinator's own wilayah: 174 points.
         $response = $this->actingAs($koordinator)->get(route('profile'));
 
         $response->assertOk();
-        $response->assertSee('154 XP');
+        $response->assertSee('174 XP');
         $response->assertSee('Level 1');
         $response->assertSee('League Starter');
         $response->assertSee('✓ Closing Hunter', false);

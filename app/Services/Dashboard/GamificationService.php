@@ -24,16 +24,13 @@ class GamificationService
 {
     private const STATUS_APPROVED = ['Diverifikasi', 'Disetujui', 'Disetujui Senior Manager', 'Selesai', 'Berjalan'];
 
-    /** "Laporan Iklan" indicator: counted once the staff unit has filed their report (status reaches "Dilaporkan Unit" or later in the ads workflow). */
-    private const AD_STAFF_REPORTED_STATUSES = ['dilaporkan unit', 'diverifikasi', 'selesai'];
-
-    /** "Realisasi Iklan" indicator: only counted once the koordinator wilayah has verified the report ("Diverifikasi" or later). */
+    /** Ad efficiency indicators only count spend once the koordinator wilayah has verified the report ("Diverifikasi" or later). */
     private const AD_KOORDINATOR_VERIFIED_STATUSES = ['diverifikasi', 'selesai'];
 
     /** The achievable badges scoreRow()/badges() can award - excludes the "On Progress" fallback shown when none are earned yet. */
     public const BADGE_NAMES = [
         'Closing Hunter', 'Herregistrasi Champion', 'Kampus Growth', 'Kampus Herreg Champion',
-        'Ads Reporter', 'Budget Mover', 'Budget Efficient', 'Follow Up Hero', 'Lead Generator',
+        'CPM Efisien', 'CPL Efisien', 'Closing Iklan Hunter', 'Budget Efficient', 'Follow Up Hero',
         'Report Consistent', 'Consistency Streak', 'Share FB Booster', 'Live Streamer',
         'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
     ];
@@ -43,11 +40,11 @@ class GamificationService
         'herregistrasi_champion' => ['name' => 'Herregistrasi Champion', 'target' => 1, 'metric_key' => 'herregistrasi_personal', 'source' => 'Herreg Personal Per Regional dari Collab.', 'tone' => 'purple'],
         'kampus_growth' => ['name' => 'Kampus Growth', 'target' => 5, 'metric_key' => 'registrasi_kampus', 'source' => 'Reg Kampus dari Closing Kampus Regional.', 'tone' => 'green'],
         'kampus_herreg_champion' => ['name' => 'Kampus Herreg Champion', 'target' => 2, 'metric_key' => 'herregistrasi_kampus', 'source' => 'Herreg Kampus dari Herreg Kampus Regional.', 'tone' => 'purple'],
-        'ads_reporter' => ['name' => 'Ads Reporter', 'target' => 1, 'metric_key' => 'laporan_iklan', 'source' => 'Lap. Iklan yang sudah dilaporkan unit.', 'tone' => 'orange'],
-        'budget_mover' => ['name' => 'Budget Mover', 'target' => 1000000, 'metric_key' => 'realisasi_iklan', 'source' => 'Realisasi Iklan yang sudah diverifikasi.', 'tone' => 'red'],
+        'cpm_efisien' => ['name' => 'CPM Efisien', 'target' => 4000, 'metric_key' => 'cpm', 'source' => 'CPM dari realisasi iklan dan impresi.', 'tone' => 'orange'],
+        'cpl_efisien' => ['name' => 'CPL Efisien', 'target' => 25000, 'metric_key' => 'cpl_iklan', 'source' => 'CPL dari realisasi iklan dan data hasil iklan.', 'tone' => 'red'],
+        'closing_iklan_hunter' => ['name' => 'Closing Iklan Hunter', 'target' => 1, 'metric_key' => 'closing_iklan', 'source' => 'Closing dari data hasil iklan.', 'tone' => 'green'],
         'budget_efficient' => ['name' => 'Budget Efficient', 'target' => 1, 'indicator_key' => 'reg', 'source' => 'Indikator pilihan pada periode/filter.', 'tone' => 'red'],
         'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'metric_key' => 'follow_up_total', 'source' => 'FU / follow_up_total dari data lead dan laporan.', 'tone' => 'blue'],
-        'lead_generator' => ['name' => 'Lead Generator', 'target' => 20, 'metric_key' => 'leads_total', 'source' => 'Leads dari upload lead dan laporan.', 'tone' => 'blue'],
         'report_consistent' => ['name' => 'Report Consistent', 'target' => 5, 'metric_key' => 'laporan_total', 'source' => 'Total laporan pada periode/filter.', 'tone' => 'orange'],
         'consistency_streak' => ['name' => 'Consistency Streak', 'target' => 5, 'metric_key' => 'hari_aktif', 'source' => 'Jumlah hari unik dari report_date laporan.', 'tone' => 'orange'],
         'share_fb_booster' => ['name' => 'Share FB Booster', 'target' => 10, 'metric_key' => 'share_fb_group', 'source' => 'Share FB Group dari Collab.', 'tone' => 'blue'],
@@ -70,6 +67,7 @@ class GamificationService
             }
             $indicatorLabel = (string) ($indicators[$indicatorKey]['label'] ?? $meta['name']);
             $target = (float) ($settings[$key]['target_value'] ?? $meta['target']);
+            $direction = (string) ($indicators[$indicatorKey]['direction'] ?? 'higher');
 
             return [
                 'key' => $key,
@@ -77,7 +75,7 @@ class GamificationService
                 'indicator_key' => $indicatorKey,
                 'indicator_label' => $indicatorLabel,
                 'target_value' => $target,
-                'condition' => self::conditionFor($indicatorLabel, $target),
+                'condition' => self::conditionFor($indicatorLabel, $target, $direction),
                 'source' => self::sourceForIndicator($indicatorKey, $indicators, $meta),
                 'tone' => $meta['tone'],
             ];
@@ -150,8 +148,9 @@ class GamificationService
             'badges' => self::badgesFromScoringRow([
                 'registrasi_personal' => (float) $scoredRows->sum('registrasi_personal'),
                 'herregistrasi_personal' => (float) $scoredRows->sum('herregistrasi_personal'),
-                'laporan_iklan' => (float) $scoredRows->sum('laporan_iklan'),
-                'realisasi_iklan' => (float) $scoredRows->sum('realisasi_iklan'),
+                'cpm' => (float) $scoredRows->avg('cpm'),
+                'cpl_iklan' => (float) $scoredRows->avg('cpl_iklan'),
+                'closing_iklan' => (float) $scoredRows->sum('closing_iklan'),
                 'follow_up_total' => (float) $scoredRows->sum('follow_up_total'),
                 'leads_total' => (float) $scoredRows->sum('leads_total'),
                 'laporan_total' => (float) $scoredRows->sum('laporan_total'),
@@ -222,9 +221,11 @@ class GamificationService
                 $followUp = 0;
                 $registrasi = 0;
                 $herreg = 0;
-                $uploadedAdReports = 0;
                 $completeFollowUpNotes = 0;
                 $spend = 0.0;
+                $adLeads = 0;
+                $adClosing = 0;
+                $impressions = 0;
 
                 foreach ($groupReports as $report) {
                     $leadRows = $report->adLeads;
@@ -242,11 +243,15 @@ class GamificationService
 
                     if ($report->report_type === RsmReport::TYPE_ADS) {
                         $adStatus = mb_strtolower(trim((string) $report->status));
-                        if (in_array($adStatus, self::AD_STAFF_REPORTED_STATUSES, true)) {
-                            $uploadedAdReports++;
-                        }
                         if (in_array($adStatus, self::AD_KOORDINATOR_VERIFIED_STATUSES, true)) {
+                            $reportAdLeads = $leadRows->isNotEmpty() ? $leadRows->count() : (int) $report->leads_count;
+                            $reportAdClosing = $leadRows->isNotEmpty()
+                                ? $leadRows->filter(fn ($lead) => in_array(mb_strtolower(trim((string) $lead->closing_status)), $buckets['registrasi'], true))->count()
+                                : (int) $report->closing_count;
                             $spend += (float) $report->realization_amount;
+                            $impressions += (int) $report->impressions_count;
+                            $adLeads += $reportAdLeads;
+                            $adClosing += $reportAdClosing;
                         }
                     }
                 }
@@ -264,7 +269,12 @@ class GamificationService
                     'registrasi_total' => $registrasi,
                     'herregistrasi_total' => $herreg,
                     'spend_total' => $spend,
-                    'uploaded_ad_reports' => $uploadedAdReports,
+                    'impressions_total' => $impressions,
+                    'ad_leads_total' => $adLeads,
+                    'ad_closing_total' => $adClosing,
+                    'cpm' => $impressions > 0 ? round(($spend / $impressions) * 1000, 2) : 0.0,
+                    'cpl_iklan' => $adLeads > 0 ? round($spend / $adLeads, 2) : 0.0,
+                    'closing_iklan' => $adClosing,
                     'complete_follow_up_notes' => $completeFollowUpNotes,
                 ];
             })
@@ -284,7 +294,7 @@ class GamificationService
             + $row['follow_up_total'] * 4
             + $closingForPoints * 20
             + $herregForPoints * 35
-            + $row['uploaded_ad_reports'] * 10
+            + $row['closing_iklan'] * 10
             + $row['complete_follow_up_notes'] * 5;
 
         $scoredRow = array_merge($row, [
@@ -292,8 +302,6 @@ class GamificationService
             'herreg_for_points' => $herregForPoints,
             'registrasi_personal' => (float) $closingForPoints,
             'herregistrasi_personal' => (float) $herregForPoints,
-            'laporan_iklan' => (float) $row['uploaded_ad_reports'],
-            'realisasi_iklan' => (float) $row['spend_total'],
             'laporan_total' => (float) $row['report_total'],
             'hari_aktif' => (float) $row['report_days'],
             'points' => (int) round($points),
@@ -342,7 +350,14 @@ class GamificationService
             if ($metricKey === '') {
                 continue;
             }
-            if ((float) ($row[$metricKey] ?? 0) >= (float) ($settings[$key]['target_value'] ?? $meta['target'])) {
+            $actual = (float) ($row[$metricKey] ?? 0);
+            $target = (float) ($settings[$key]['target_value'] ?? $meta['target']);
+            $direction = (string) ($indicators[$indicatorKey]['direction'] ?? 'higher');
+            $achieved = $direction === 'lower'
+                ? ($target > 0 && $actual > 0 && $actual <= $target)
+                : ($actual >= $target);
+
+            if ($achieved) {
                 $badges[] = $meta['name'];
             }
         }
@@ -420,11 +435,13 @@ class GamificationService
         return "Indikator {$indicator['label']} dari grup {$group}.";
     }
 
-    private static function conditionFor(string $indicatorLabel, float $target): string
+    private static function conditionFor(string $indicatorLabel, float $target, string $direction = 'higher'): string
     {
         $formatted = number_format($target, 0, ',', '.');
 
-        return "Minimal {$formatted} {$indicatorLabel} dalam periode/filter yang dipilih.";
+        $prefix = $direction === 'lower' ? 'Maksimal' : 'Minimal';
+
+        return "{$prefix} {$formatted} {$indicatorLabel} dalam periode/filter yang dipilih.";
     }
 
     /** @return list<string> */
@@ -448,7 +465,7 @@ class GamificationService
             '+4 poin per follow up',
             '+20 poin per registrasi',
             '+35 poin per herregistrasi',
-            '+10 poin per laporan iklan terunggah',
+            '+10 poin per closing iklan',
             '+5 poin per catatan follow up lengkap',
         ];
     }

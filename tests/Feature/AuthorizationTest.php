@@ -50,6 +50,7 @@ class AuthorizationTest extends TestCase
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
         ]]);
 
@@ -87,6 +88,7 @@ class AuthorizationTest extends TestCase
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
         ]]);
 
@@ -186,9 +188,10 @@ class AuthorizationTest extends TestCase
             'indicator_targets' => [
                 'reg' => ['target' => 12, 'weight' => 10],
                 'herreg' => ['target' => 8, 'weight' => 15],
-                'leads' => ['target' => 40, 'weight' => 8],
+                'cpm' => ['target' => 4000, 'weight' => 6],
+                'cpl' => ['target' => 25000, 'weight' => 6],
+                'closing_iklan' => ['target' => 3, 'weight' => 8],
                 'fu' => ['target' => 25, 'weight' => 10],
-                'realisasi_iklan' => ['target' => 999999, 'weight' => 7],
             ],
         ]);
 
@@ -197,11 +200,10 @@ class AuthorizationTest extends TestCase
         $this->assertNotNull($target);
         $this->assertSame(12, (int) $target->target_registrasi);
         $this->assertSame(8, (int) $target->target_herregistrasi);
-        $this->assertSame(40, (int) $target->target_leads);
         $this->assertSame(25, (int) $target->target_follow_up);
-        $this->assertSame(1500000.0, (float) $target->target_anggaran);
-        $this->assertSame(1.0, (float) $target->indicator_targets['lap_iklan']['target']);
-        $this->assertSame(1500000.0, (float) $target->indicator_targets['realisasi_iklan']['target']);
+        $this->assertSame(4000.0, (float) $target->indicator_targets['cpm']['target']);
+        $this->assertSame(25000.0, (float) $target->indicator_targets['cpl']['target']);
+        $this->assertSame(3.0, (float) $target->indicator_targets['closing_iklan']['target']);
         $this->assertSame(10.0, (float) $target->indicator_targets['reg']['weight']);
         $this->assertSame('Herreg Kampus', $target->indicator_targets['herreg_kampus']['label']);
 
@@ -230,7 +232,8 @@ class AuthorizationTest extends TestCase
         $response->assertOk();
         $response->assertSee('Target &amp; Bobot', false);
         $response->assertSee('Hasil Scoring');
-        $response->assertSee('Otomatis dari plafon');
+        $response->assertSee('CPM');
+        $response->assertSee('Semakin rendah semakin bagus');
 
         $superUser->delete();
     }

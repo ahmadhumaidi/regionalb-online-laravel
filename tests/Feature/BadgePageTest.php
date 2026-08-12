@@ -69,7 +69,7 @@ class BadgePageTest extends TestCase
                 'target_value' => (int) $badge['target_value'],
             ]])
             ->all();
-        $settings['follow_up_hero']['indicator_key'] = 'leads';
+        $settings['follow_up_hero']['indicator_key'] = 'closing_iklan';
         $settings['follow_up_hero']['target_value'] = 12;
         $settings['budget_efficient']['indicator_key'] = 'reg';
         $settings['budget_efficient']['target_value'] = 3;
@@ -78,11 +78,11 @@ class BadgePageTest extends TestCase
 
         $response->assertRedirect('/badges');
         $followUpHero = RsmBadgeSetting::where('badge_key', 'follow_up_hero')->first();
-        $this->assertSame('leads', $followUpHero->indicator_key);
+        $this->assertSame('closing_iklan', $followUpHero->indicator_key);
         $this->assertSame(12.0, (float) $followUpHero->target_value);
 
         $response = $this->actingAs($user)->get('/badges');
-        $response->assertSee('Minimal 12 Leads');
+        $response->assertSee('Minimal 12 Closing Iklan');
         $response->assertSee('Minimal 3 Reg');
 
         $user->delete();

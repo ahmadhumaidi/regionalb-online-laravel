@@ -76,23 +76,20 @@
                     <tbody>
                         @foreach($indicators as $key => $indicator)
                             @php
-                                $targetOld = old("indicator_targets.$key.target", 0);
+                                $targetOld = old("indicator_targets.$key.target", $indicator['default_target'] ?? 0);
                                 $weightOld = old("indicator_targets.$key.weight", $indicator['default_weight']);
+                                $targetStep = $indicator['step'] ?? '1';
                             @endphp
                             <tr class="border-b border-border/60">
                                 <td class="px-3 py-2 text-xs font-semibold text-ink-muted">{{ $indicator['group'] }}</td>
                                 <td class="px-3 py-2 font-semibold text-ink">{{ $indicator['label'] }}</td>
                                 <td class="px-3 py-2">
-                                    @if ($key === 'realisasi_iklan')
-                                        <input type="text" value="Otomatis dari plafon" disabled class="w-full rounded-lg border-border bg-surface-muted text-ink-muted">
-                                        <p class="mt-1 text-[11px] text-ink-muted">Target mengikuti plafon anggaran kampus/periode.</p>
-                                    @else
-                                        <input type="number" min="0" step="1" name="indicator_targets[{{ $key }}][target]" value="{{ $targetOld }}" class="w-full rounded-lg border-border bg-surface-muted">
-                                        @if ($key === 'lap_iklan')
-                                            <p class="mt-1 text-[11px] text-ink-muted">Otomatis 1 jika ada plafon, 0 jika tanpa plafon.</p>
-                                        @elseif ($key === 'leads')
-                                            <p class="mt-1 text-[11px] text-ink-muted">Jika tanpa plafon, target otomatis 0 dan dianggap tercapai.</p>
-                                        @endif
+                                    <input type="number" min="0" step="{{ $targetStep }}" name="indicator_targets[{{ $key }}][target]" value="{{ $targetOld }}" class="w-full rounded-lg border-border bg-surface-muted">
+                                    @if (($indicator['direction'] ?? 'higher') === 'lower')
+                                        <p class="mt-1 text-[11px] text-ink-muted">Semakin rendah semakin bagus.</p>
+                                    @endif
+                                    @if (in_array($key, ['cpm', 'cpl', 'closing_iklan'], true))
+                                        <p class="mt-1 text-[11px] text-ink-muted">Jika kampus tanpa plafon, target otomatis 0 dan dianggap tercapai.</p>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2">
@@ -126,7 +123,9 @@
                     <th class="py-2 pr-3">Staff</th>
                     <th class="py-2 pr-3">Reg</th>
                     <th class="py-2 pr-3">Herreg</th>
-                    <th class="py-2 pr-3">Leads</th>
+                    <th class="py-2 pr-3">CPM</th>
+                    <th class="py-2 pr-3">CPL</th>
+                    <th class="py-2 pr-3">Closing Iklan</th>
                     <th class="py-2 pr-3">FU</th>
                     <th class="py-2 pr-3">Bobot</th>
                     <th class="py-2">Indikator Terisi</th>
@@ -138,6 +137,7 @@
                         $indicatorRows = is_array($target->indicator_targets) ? $target->indicator_targets : [];
                         $weightTotal = collect($indicatorRows)->sum(fn ($row) => (float) ($row['weight'] ?? 0));
                         $filledCount = collect($indicatorRows)->filter(fn ($row) => (float) ($row['target'] ?? 0) > 0 || (float) ($row['weight'] ?? 0) > 0)->count();
+                        $targetFor = fn (string $key) => (float) ($indicatorRows[$key]['target'] ?? 0);
                     @endphp
                     <tr class="border-b border-border/60">
                         <td class="py-2 pr-3">{{ $target->target_month }}</td>
@@ -146,13 +146,15 @@
                         <td class="py-2 pr-3">{{ $target->staff_name ?: '-' }}</td>
                         <td class="py-2 pr-3">{{ number_format((float) $target->target_registrasi, 0, ',', '.') }}</td>
                         <td class="py-2 pr-3">{{ number_format((float) $target->target_herregistrasi, 0, ',', '.') }}</td>
-                        <td class="py-2 pr-3">{{ number_format((float) $target->target_leads, 0, ',', '.') }}</td>
+                        <td class="py-2 pr-3">{{ number_format($targetFor('cpm'), 0, ',', '.') }}</td>
+                        <td class="py-2 pr-3">{{ number_format($targetFor('cpl'), 0, ',', '.') }}</td>
+                        <td class="py-2 pr-3">{{ number_format($targetFor('closing_iklan'), 0, ',', '.') }}</td>
                         <td class="py-2 pr-3">{{ number_format((float) $target->target_follow_up, 0, ',', '.') }}</td>
                         <td class="py-2 pr-3">{{ number_format($weightTotal, 2, ',', '.') }}%</td>
                         <td class="py-2">{{ $filledCount }} indikator</td>
                     </tr>
                 @empty
-                    <tr><td colspan="10" class="py-8 text-center text-ink-muted">Belum ada target staff.</td></tr>
+                    <tr><td colspan="12" class="py-8 text-center text-ink-muted">Belum ada target staff.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -17,6 +17,7 @@ class NotificationOpenReportActionTest extends TestCase
             'database/migrations/2026_08_05_105946_create_partner_campuses_table.php',
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
             'database/migrations/2026_08_11_090000_add_escalated_to_role_to_rsm_reports_table.php',
             'database/migrations/2026_08_11_090002_add_leader_follow_up_text_to_rsm_reports_table.php',

@@ -99,7 +99,7 @@ class ReportFormService
     public static function adsEditFieldsForRole(string $role): array
     {
         return match ($role) {
-            RsmUser::ROLE_STAFF => ['campaign_name', 'ad_goal', 'realization_amount', 'cpl', 'campaign_link', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
+            RsmUser::ROLE_STAFF => ['campaign_name', 'ad_goal', 'realization_amount', 'impressions_count', 'cpl', 'cpm', 'campaign_link', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
             RsmUser::ROLE_KOORDINATOR => ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
             default => in_array($role, self::SENIOR_ROLES, true)
                 ? ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'budget_approved', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes']
@@ -233,7 +233,9 @@ class ReportFormService
             'budget_requested' => (float) ($data['budget_requested'] ?? 0),
             'budget_approved' => $isSeniorExpense ? (float) ($data['budget_requested'] ?? 0) : ($existing?->budget_approved ?? 0),
             'realization_amount' => $existing?->realization_amount ?? 0,
+            'impressions_count' => $existing?->impressions_count ?? 0,
             'cpl' => $existing?->cpl ?? 0,
+            'cpm' => $existing?->cpm ?? 0,
             'campaign_link' => $data['campaign_link'] ?? null,
             'category' => $data['category'] ?? null,
             'obstacle_text' => $data['obstacle_text'] ?? null,
@@ -264,15 +266,17 @@ class ReportFormService
             throw ValidationException::withMessages(['unit_name' => 'Kampus tersebut bukan bagian dari wilayah Anda.']);
         }
 
-        // CPL is derived, not staff-entered: realisasi / jumlah data hasil
-        // iklan yang sudah diupload. leads_count reflects whatever was
+        // CPM/CPL are derived, not staff-entered: realisasi / impresi * 1000
+        // and realisasi / jumlah data hasil iklan. leads_count reflects whatever was
         // imported in an *earlier* request; if a new ad_leads_file is also
         // uploaded in this same submission, AdLeadImportService::refreshCounts()
-        // recomputes both leads_count and cpl again afterwards with the
+        // recomputes leads_count, closing_count, CPL, and CPM again with the
         // fresh count, so this is just the best estimate available now.
         $newRealizationAmount = (float) $posted('realization_amount', $existing->realization_amount);
+        $newImpressionsCount = max(0, (int) $posted('impressions_count', $existing->impressions_count ?? 0));
         $existingLeadsCount = (int) $existing->leads_count;
         $computedCpl = $existingLeadsCount > 0 ? round($newRealizationAmount / $existingLeadsCount, 2) : 0.0;
+        $computedCpm = $newImpressionsCount > 0 ? round(($newRealizationAmount / $newImpressionsCount) * 1000, 2) : 0.0;
 
         $base = [
             'area' => $user->area ?: 'Regional B',
@@ -294,9 +298,11 @@ class ReportFormService
             'budget_requested' => (float) $posted('budget_requested', $existing->budget_requested),
             'budget_approved' => (float) $posted('budget_approved', $existing->budget_approved),
             'realization_amount' => $newRealizationAmount,
+            'impressions_count' => $newImpressionsCount,
             'leads_count' => $existingLeadsCount,
             'closing_count' => (int) $existing->closing_count,
             'cpl' => $computedCpl,
+            'cpm' => $computedCpm,
             'campaign_link' => $posted('campaign_link', $existing->campaign_link),
             'notes' => $posted('notes', $existing->notes),
         ];
@@ -318,11 +324,15 @@ class ReportFormService
             $user->role === RsmUser::ROLE_KOORDINATOR => array_merge($base, [
                 'budget_approved' => (float) $existing->budget_approved,
                 'realization_amount' => (float) $existing->realization_amount,
+                'impressions_count' => (int) $existing->impressions_count,
                 'cpl' => (float) $existing->cpl,
+                'cpm' => (float) $existing->cpm,
             ]),
             in_array($user->role, self::SENIOR_ROLES, true) => array_merge($base, [
                 'realization_amount' => (float) $existing->realization_amount,
+                'impressions_count' => (int) $existing->impressions_count,
                 'cpl' => (float) $existing->cpl,
+                'cpm' => (float) $existing->cpm,
             ]),
             default => $base,
         };

@@ -16,6 +16,7 @@ class NotificationServiceTest extends TestCase
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
             'database/migrations/2026_08_11_090000_add_escalated_to_role_to_rsm_reports_table.php',
             'database/migrations/2026_08_11_090001_create_rsm_notifications_table.php',
         ]]);

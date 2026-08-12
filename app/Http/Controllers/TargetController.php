@@ -59,7 +59,7 @@ class TargetController extends Controller
         foreach ($items as $item) {
             $indicatorTargets = $this->withAdBudgetTargets($baseIndicatorTargets, $area, $data['target_month'], $item, $scope);
             $key = $scope === 'staff' ? 'staff:' . mb_strtolower(trim($item['staff_name'])) : ($scope === 'unit' ? 'unit:' . mb_strtolower(trim($item['unit_name'])) : ($scope === 'wilayah' ? 'wilayah:' . mb_strtolower(trim($item['wilayah'])) : 'regional'));
-            RsmMonthlyTarget::updateOrCreate(['area' => $area, 'target_month' => $data['target_month'], 'scope_key' => $key], ['scope_type' => $scope, 'wilayah' => $item['wilayah'] ?: null, 'unit_name' => $item['unit_name'] ?: null, 'staff_name' => $item['staff_name'] ?: null, 'target_leads' => (int) ($indicatorTargets['leads']['target'] ?? 0), 'target_follow_up' => (int) ($indicatorTargets['fu']['target'] ?? 0), 'target_registrasi' => (int) ($indicatorTargets['reg']['target'] ?? 0), 'target_herregistrasi' => (int) ($indicatorTargets['herreg']['target'] ?? 0), 'target_anggaran' => (float) ($indicatorTargets['realisasi_iklan']['target'] ?? 0), 'indicator_targets' => $indicatorTargets, 'notes' => trim((string) ($data['notes'] ?? '')) ?: null, 'created_by_user_id' => $user->id, 'created_by_name' => $user->name]);
+            RsmMonthlyTarget::updateOrCreate(['area' => $area, 'target_month' => $data['target_month'], 'scope_key' => $key], ['scope_type' => $scope, 'wilayah' => $item['wilayah'] ?: null, 'unit_name' => $item['unit_name'] ?: null, 'staff_name' => $item['staff_name'] ?: null, 'target_leads' => 0, 'target_follow_up' => (int) ($indicatorTargets['fu']['target'] ?? 0), 'target_registrasi' => (int) ($indicatorTargets['reg']['target'] ?? 0), 'target_herregistrasi' => (int) ($indicatorTargets['herreg']['target'] ?? 0), 'target_anggaran' => 0, 'indicator_targets' => $indicatorTargets, 'notes' => trim((string) ($data['notes'] ?? '')) ?: null, 'created_by_user_id' => $user->id, 'created_by_name' => $user->name]);
         }
         return redirect()->route('scoring.targets')->with('status', 'Target bulanan berhasil disimpan.');
     }
@@ -71,17 +71,12 @@ class TargetController extends Controller
             'reg' => $data['target_registrasi'] ?? null,
             'herreg' => $data['target_herregistrasi'] ?? null,
             'fu' => $data['target_follow_up'] ?? null,
-            'leads' => $data['target_leads'] ?? null,
-            'realisasi_iklan' => $data['target_anggaran'] ?? null,
         ];
 
         $targets = [];
         foreach ($this->indicators() as $key => $meta) {
             $row = is_array($submitted[$key] ?? null) ? $submitted[$key] : [];
-            $target = $row['target'] ?? $legacyTargets[$key] ?? 0;
-            if ($key === 'realisasi_iklan') {
-                $target = 0;
-            }
+            $target = $row['target'] ?? $legacyTargets[$key] ?? $meta['default_target'] ?? 0;
             $weight = $row['weight'] ?? $meta['default_weight'];
             $targets[$key] = [
                 'label' => $meta['label'],
@@ -98,14 +93,12 @@ class TargetController extends Controller
     {
         $adBudgetTarget = $this->adBudgetTarget($area, $targetMonth, $item, $scope);
 
-        if (array_key_exists('lap_iklan', $indicatorTargets)) {
-            $indicatorTargets['lap_iklan']['target'] = $adBudgetTarget > 0 ? 1.0 : 0.0;
-        }
-        if ($adBudgetTarget <= 0 && array_key_exists('leads', $indicatorTargets)) {
-            $indicatorTargets['leads']['target'] = 0.0;
-        }
-        if (array_key_exists('realisasi_iklan', $indicatorTargets)) {
-            $indicatorTargets['realisasi_iklan']['target'] = $adBudgetTarget;
+        if ($adBudgetTarget <= 0) {
+            foreach (['cpm', 'cpl', 'closing_iklan'] as $key) {
+                if (array_key_exists($key, $indicatorTargets)) {
+                    $indicatorTargets[$key]['target'] = 0.0;
+                }
+            }
         }
 
         return $indicatorTargets;

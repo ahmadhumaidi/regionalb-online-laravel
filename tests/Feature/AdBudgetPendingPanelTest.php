@@ -18,6 +18,7 @@ class AdBudgetPendingPanelTest extends TestCase
             'database/migrations/2026_08_05_105946_create_partner_campuses_table.php',
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
             'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_12_093000_add_unit_name_to_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',

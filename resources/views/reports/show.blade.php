@@ -12,9 +12,11 @@
             ['Periode Iklan', $report->ad_period],
             ['Anggaran Disetujui', number_format($report->budget_approved, 0, ',', '.')],
             ['Realisasi', number_format($report->realization_amount, 0, ',', '.')],
+            ['Impresi', number_format($report->impressions_count, 0, ',', '.')],
             ['Leads', number_format($report->leads_count, 0, ',', '.')],
             ['Closing', number_format($report->closing_count, 0, ',', '.')],
             ['CPL', number_format($report->cpl, 0, ',', '.')],
+            ['CPM', number_format($report->cpm, 0, ',', '.')],
         ]);
     }
 @endphp

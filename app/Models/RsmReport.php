@@ -40,7 +40,9 @@ class RsmReport extends Model
         'budget_requested',
         'budget_approved',
         'realization_amount',
+        'impressions_count',
         'cpl',
+        'cpm',
         'campaign_link',
         'category',
         'obstacle_text',
@@ -58,7 +60,9 @@ class RsmReport extends Model
             'budget_requested' => 'decimal:2',
             'budget_approved' => 'decimal:2',
             'realization_amount' => 'decimal:2',
+            'impressions_count' => 'integer',
             'cpl' => 'decimal:2',
+            'cpm' => 'decimal:2',
         ];
     }
 
