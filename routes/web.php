@@ -97,6 +97,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/scoring/targets', [TargetController::class, 'index'])->name('scoring.targets');
     Route::post('/scoring/targets', [TargetController::class, 'store'])->name('scoring.targets.store');
     Route::get('/badges', [BadgeController::class, 'index'])->name('badges');
+    Route::post('/badges', [BadgeController::class, 'update'])->name('badges.update');
     Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');

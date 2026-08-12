@@ -2,9 +2,11 @@
 
 namespace App\Services\Dashboard;
 
+use App\Models\RsmBadgeSetting;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Ports rsm_gamification_summary() (rsm_db.php:6887) for the "Arena
@@ -31,41 +33,31 @@ class GamificationService
     /** The 5 achievable badges scoreRow()/badges() can award - excludes the "On Progress" fallback shown when none are earned yet. */
     public const BADGE_NAMES = ['Follow Up Hero', 'Closing Hunter', 'Herregistrasi Champion', 'Consistency Streak', 'Budget Efficient'];
 
-    /** @return list<array{name: string, condition: string, source: string, tone: string}> */
+    private const BADGE_DEFAULTS = [
+        'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'source' => 'Kolom FU / follow_up_total dari data lead dan laporan.', 'tone' => 'blue'],
+        'closing_hunter' => ['name' => 'Closing Hunter', 'target' => 3, 'source' => 'Closing Personal Per Regional dari Collab, fallback ke status registrasi lead.', 'tone' => 'green'],
+        'herregistrasi_champion' => ['name' => 'Herregistrasi Champion', 'target' => 1, 'source' => 'Herreg Personal Per Regional dari Collab, fallback ke status herregistrasi lead.', 'tone' => 'purple'],
+        'consistency_streak' => ['name' => 'Consistency Streak', 'target' => 5, 'source' => 'Jumlah hari unik dari report_date laporan.', 'tone' => 'orange'],
+        'budget_efficient' => ['name' => 'Budget Efficient', 'target' => 1, 'source' => 'Realisasi Iklan dan registrasi pada periode/filter.', 'tone' => 'red'],
+    ];
+
+    /** @return list<array{key: string, name: string, target_value: float, condition: string, source: string, tone: string}> */
     public static function badgeDefinitions(): array
     {
-        return [
-            [
-                'name' => 'Follow Up Hero',
-                'condition' => 'Minimal 10 follow up lead dalam periode/filter yang dipilih.',
-                'source' => 'Kolom FU / follow_up_total dari data lead dan laporan.',
-                'tone' => 'blue',
-            ],
-            [
-                'name' => 'Closing Hunter',
-                'condition' => 'Minimal 3 registrasi dalam periode/filter yang dipilih.',
-                'source' => 'Closing Personal Per Regional dari Collab, fallback ke status registrasi lead.',
-                'tone' => 'green',
-            ],
-            [
-                'name' => 'Herregistrasi Champion',
-                'condition' => 'Minimal 1 herregistrasi dalam periode/filter yang dipilih.',
-                'source' => 'Herreg Personal Per Regional dari Collab, fallback ke status herregistrasi lead.',
-                'tone' => 'purple',
-            ],
-            [
-                'name' => 'Consistency Streak',
-                'condition' => 'Aktif mengirim laporan pada minimal 5 hari berbeda.',
-                'source' => 'Jumlah hari unik dari report_date laporan.',
-                'tone' => 'orange',
-            ],
-            [
-                'name' => 'Budget Efficient',
-                'condition' => 'Ada realisasi iklan dan menghasilkan minimal 1 registrasi.',
-                'source' => 'Realisasi Iklan dan registrasi pada periode/filter.',
-                'tone' => 'red',
-            ],
-        ];
+        $thresholds = self::badgeThresholds();
+
+        return collect(self::BADGE_DEFAULTS)->map(function (array $meta, string $key) use ($thresholds) {
+            $target = (float) ($thresholds[$key] ?? $meta['target']);
+
+            return [
+                'key' => $key,
+                'name' => $meta['name'],
+                'target_value' => $target,
+                'condition' => self::conditionFor($key, $target),
+                'source' => $meta['source'],
+                'tone' => $meta['tone'],
+            ];
+        })->values()->all();
     }
 
     public static function build(string $area, array $filters, RsmUser $user): array
@@ -280,24 +272,57 @@ class GamificationService
     private static function badges(float $followUp, float $closing, float $herreg, int $reportDays, float $spend): array
     {
         $badges = [];
+        $thresholds = self::badgeThresholds();
 
-        if ($followUp >= 10) {
+        if ($followUp >= (float) $thresholds['follow_up_hero']) {
             $badges[] = 'Follow Up Hero';
         }
-        if ($closing >= 3) {
+        if ($closing >= (float) $thresholds['closing_hunter']) {
             $badges[] = 'Closing Hunter';
         }
-        if ($herreg >= 1) {
+        if ($herreg >= (float) $thresholds['herregistrasi_champion']) {
             $badges[] = 'Herregistrasi Champion';
         }
-        if ($reportDays >= 5) {
+        if ($reportDays >= (float) $thresholds['consistency_streak']) {
             $badges[] = 'Consistency Streak';
         }
-        if ($spend > 0 && $closing > 0) {
+        if ($spend > 0 && $closing >= (float) $thresholds['budget_efficient']) {
             $badges[] = 'Budget Efficient';
         }
 
         return $badges === [] ? ['On Progress'] : $badges;
+    }
+
+    /** @return array<string, float> */
+    private static function badgeThresholds(): array
+    {
+        $thresholds = collect(self::BADGE_DEFAULTS)->mapWithKeys(fn (array $meta, string $key) => [$key => (float) $meta['target']])->all();
+
+        if (! Schema::hasTable('rsm_badge_settings')) {
+            return $thresholds;
+        }
+
+        RsmBadgeSetting::query()->pluck('target_value', 'badge_key')->each(function (mixed $value, string $key) use (&$thresholds) {
+            if (array_key_exists($key, $thresholds)) {
+                $thresholds[$key] = (float) $value;
+            }
+        });
+
+        return $thresholds;
+    }
+
+    private static function conditionFor(string $key, float $target): string
+    {
+        $formatted = number_format($target, 0, ',', '.');
+
+        return match ($key) {
+            'follow_up_hero' => "Minimal {$formatted} follow up lead dalam periode/filter yang dipilih.",
+            'closing_hunter' => "Minimal {$formatted} registrasi dalam periode/filter yang dipilih.",
+            'herregistrasi_champion' => "Minimal {$formatted} herregistrasi dalam periode/filter yang dipilih.",
+            'consistency_streak' => "Aktif mengirim laporan pada minimal {$formatted} hari berbeda.",
+            'budget_efficient' => "Ada realisasi iklan dan minimal {$formatted} registrasi.",
+            default => "Minimal {$formatted} capaian pada periode/filter yang dipilih.",
+        };
     }
 
     /** @return list<string> */
