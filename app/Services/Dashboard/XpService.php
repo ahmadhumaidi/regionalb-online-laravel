@@ -8,31 +8,15 @@ use App\Models\RsmUser;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Gamification Refactor Phase 1: "Lifetime XP Ledger + Level Progression".
+ * Lifetime XP ledger + progressive level calculation.
  *
- * Before this, the Profile page's XP was a live recalculation of report/
- * Collab stats (see GamificationService::profileSummary()) - it could go up
- * OR down as source data changed, and never persisted. XpService turns XP
- * into an append-only ledger (rsm_gamification_transactions): once awarded,
- * XP is never clawed back just because the report/lead it was earned from
- * later gets edited, rejected, or deleted.
- *
- * GamificationService is intentionally left owning the point FORMULA
- * (report/lead/Collab weights) and the League thresholds - this class only
- * owns the ledger (award/read) and the level curve.
- *
- * Phase 2 added real-time awarding: syncReportEventXp() is called from
- * every authoritative report/lead mutation point (see its own docblock)
- * instead of waiting for syncPersonalActivity()'s daily reconciliation to
- * notice the change next time the user opens their Profile page.
- * syncPersonalActivity() still exists and still runs - it now only covers
- * the Collab-sourced (registrasi/herreg) slice for staff, which has no
- * real-time trigger point in this codebase (see
- * GamificationService::profileSyncXp()).
+ * Report/lead XP is awarded in real time at its authoritative mutation
+ * points. Collab-sourced registration/herregistration XP is reconciled
+ * separately because Collab arrives as periodic aggregate snapshots rather
+ * than individual local events.
  */
 class XpService
 {
-    /** Mirrors GamificationService::STATUS_APPROVED - a report currently sitting in one of these statuses counts as "approved" for the report_approved event, fired once regardless of how many approved statuses it passes through afterward. */
     private const STATUS_APPROVED = ['Diverifikasi', 'Disetujui', 'Disetujui Senior Manager', 'Selesai', 'Berjalan'];
 
     private const AD_VERIFIED_STATUSES = ['diverifikasi', 'selesai'];
@@ -45,19 +29,8 @@ class XpService
 
     private const LEVEL_EXP_POWER = 1.5;
 
-    /** Safety bound so a corrupt/absurd XP value can't spin this into an unbounded loop. */
     private const MAX_LEVEL_ITERATIONS = 1000;
 
-    /**
-     * Idempotent XP award. Two calls with the same
-     * (user, event_type, source_type, source_id) - or, for source-less
-     * events, the same (user, event_type, idempotency_key) - only ever
-     * insert one row; the second call just returns the existing one.
-     *
-     * Every award needs a source_id OR an idempotency_key (never neither),
-     * since a unique index can't dedupe a row where every distinguishing
-     * column is NULL.
-     */
     public static function awardXp(
         RsmUser $user,
         string $eventType,
@@ -108,29 +81,19 @@ class XpService
     }
 
     /**
-     * One-time-per-day reconciliation for whatever ISN'T covered by
-     * real-time events (see syncReportEventXp()) - compares
-     * GamificationService::profileSyncXp() (live) against what's already
-     * banked, and awards the difference if the live total has grown. Never
-     * awards a negative delta, so XP already banked survives a later drop
-     * in the live total.
+     * Compatibility entry point used by ProfileController.
      *
-     * Gamification Phase 2: this used to cover the *entire* point formula
-     * (report_total, approved_reports, leads_total, follow_up_total,
-     * closing_iklan, complete_follow_up_notes, registrasi, herreg) for
-     * staff. Now that report/lead-driven components are awarded in real
-     * time at their source, profileSyncXp() only returns the
-     * Collab-sourced remainder (registrasi/herreg) for staff, so this can't
-     * double-count them. Koordinator/senior tier are unchanged (still the
-     * full team-average formula - no real-time equivalent exists for an
-     * average).
-     *
-     * Idempotency key is per user per day, so repeat page loads the same
-     * day never double-award - the first view of a day banks whatever
-     * growth happened since the last visit.
+     * Staff Collab XP is now reconciled against its own Collab watermark,
+     * never against total lifetime XP (which also contains legacy/report XP).
+     * Non-staff keep the previous team-average reconciliation until their
+     * gamification model is redesigned in a later phase.
      */
     public static function syncPersonalActivity(RsmUser $user): ?RsmGamificationTransaction
     {
+        if ($user->role === RsmUser::ROLE_STAFF) {
+            return self::syncCollabActivity($user);
+        }
+
         $livePoints = GamificationService::profileSyncXp($user);
         $banked = self::getLifetimeXp($user);
         $delta = $livePoints - $banked;
@@ -149,19 +112,62 @@ class XpService
     }
 
     /**
-     * Gamification Phase 2: real-time XP at the authoritative source,
-     * called from every place a report/lead is actually created or
-     * transitioned - ReportFormService::create()/update(),
-     * ReportStatusController/AdBudgetActionController/
-     * ObstacleFollowUpController's transition() methods, and
-     * AdLeadImportService::import()/bulkUpdate(). Idempotent per
-     * (event_type, source_type, source_id) via awardXp() - safe to call
-     * redundantly from multiple mutation paths on the same report, since
-     * each event can only ever be inserted once regardless of how many
-     * times this runs. Deliberately staff-only (see
-     * GamificationService::resolveStaffAuthor()) - a koordinator/senior's
-     * XP is a team average with no single-event equivalent.
+     * Reconcile Collab registration/herregistration XP from aggregate data.
+     *
+     * The first run only records a zero-XP baseline because historical Collab
+     * activity is already included in legacy_xp_import. Later runs award only
+     * growth above the highest Collab target ever observed. This makes the
+     * process safe when a source temporarily drops/re-syncs and prevents the
+     * same historical growth being awarded twice.
      */
+    public static function syncCollabActivity(RsmUser $user): ?RsmGamificationTransaction
+    {
+        if ($user->role !== RsmUser::ROLE_STAFF) {
+            return null;
+        }
+
+        $currentTarget = max(0, GamificationService::personalCollabOnlyXp($user));
+        $history = RsmGamificationTransaction::query()
+            ->where('user_id', $user->id)
+            ->whereIn('event_type', ['collab_xp_baseline', 'collab_xp_sync'])
+            ->get(['metadata_json']);
+
+        if ($history->isEmpty()) {
+            return self::awardXp(
+                user: $user,
+                eventType: 'collab_xp_baseline',
+                xp: 0,
+                reason: 'Collab XP baseline after lifetime-ledger cutover',
+                idempotencyKey: 'collab_xp_baseline:'.$user->id,
+                metadata: ['collab_target_xp' => $currentTarget],
+            );
+        }
+
+        $highestTarget = $history->reduce(function (int $max, RsmGamificationTransaction $transaction): int {
+            $metadata = is_array($transaction->metadata_json) ? $transaction->metadata_json : [];
+
+            return max($max, (int) ($metadata['collab_target_xp'] ?? 0));
+        }, 0);
+
+        if ($currentTarget <= $highestTarget) {
+            return null;
+        }
+
+        $delta = $currentTarget - $highestTarget;
+
+        return self::awardXp(
+            user: $user,
+            eventType: 'collab_xp_sync',
+            xp: $delta,
+            reason: 'Registrasi/herregistrasi Collab bertambah',
+            idempotencyKey: 'collab_xp_sync:'.$user->id.':'.$currentTarget,
+            metadata: [
+                'collab_target_xp' => $currentTarget,
+                'previous_target_xp' => $highestTarget,
+            ],
+        );
+    }
+
     public static function syncReportEventXp(RsmReport $report): void
     {
         $staff = GamificationService::resolveStaffAuthor($report);
@@ -204,17 +210,6 @@ class XpService
         }
     }
 
-    /**
-     * @return array{
-     *     level: int,
-     *     current_xp: int,
-     *     current_level_start_xp: int,
-     *     next_level_xp: int,
-     *     xp_into_level: int,
-     *     xp_needed: int,
-     *     progress_percent: int,
-     * }
-     */
     public static function calculateLevel(int $xp): array
     {
         $xp = max(0, $xp);
@@ -249,14 +244,6 @@ class XpService
         ];
     }
 
-    /**
-     * XP required to go from level $level to $level + 1. Progressive curve
-     * (starting point suggested during Phase 1 planning): early levels are
-     * cheap, cost grows both linearly and via a super-linear (^1.5) term so
-     * higher levels take meaningfully longer - replaces the old flat
-     * "200 XP = 1 level" rule that produced unrealistic levels (200+) once
-     * lifetime XP got into the tens of thousands.
-     */
     private static function xpStepForLevel(int $level): int
     {
         return (int) (self::LEVEL_BASE
