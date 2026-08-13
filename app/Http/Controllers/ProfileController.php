@@ -136,7 +136,7 @@ class ProfileController extends Controller
         );
         $score = min(100, ($stats['reports'] * 4) + ($stats['leads'] * 2) + ($stats['closing'] * 8));
 
-        $todayEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)->where('claim_date', now()->toDateString())->sum('energy');
+        $todayEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)->whereDate('claim_date', now()->toDateString())->sum('energy');
         $weekEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)
             ->whereBetween('claim_date', [now()->startOfWeek()->toDateString(), now()->endOfWeek()->toDateString()])
             ->sum('energy');
@@ -198,7 +198,7 @@ class ProfileController extends Controller
         $registrasi = CollabMetricsService::personalTotal($filters, $area, $user, 'Closing Personal Per Regional');
 
         $claimedToday = RsmDailyMissionClaim::where('user_id', $user->id)
-            ->where('claim_date', $today)
+            ->whereDate('claim_date', $today)
             ->pluck('mission_key')
             ->all();
 
@@ -310,7 +310,7 @@ class ProfileController extends Controller
             ->exists();
 
         $claimedToday = RsmDailyMissionClaim::where('user_id', $user->id)
-            ->where('claim_date', $today)
+            ->whereDate('claim_date', $today)
             ->pluck('mission_key')
             ->all();
 
@@ -380,13 +380,30 @@ class ProfileController extends Controller
         abort_unless($mission['done'], 422, 'Misi ini belum selesai.');
         abort_if($mission['claimed'], 422, 'Reward misi ini sudah diklaim hari ini.');
 
-        RsmDailyMissionClaim::create([
+        $claim = RsmDailyMissionClaim::create([
             'user_id' => $user->id,
             'mission_key' => $missionKey,
             'claim_date' => now()->toDateString(),
             'energy' => $mission['energy'],
             'stars' => $mission['stars'],
         ]);
+
+        // Daily Mission-XP unification: claiming a mission also banks XP
+        // into the lifetime ledger (1 energy = 1 XP), on top of whatever
+        // per-event XP the underlying activity already earned in real time
+        // (e.g. Follow Up leads already award lead_follow_up XP as they're
+        // filled in) - an intentional daily-quest bonus layer, not a
+        // duplicate of that per-event XP. Keyed off the claim row's own id,
+        // which the (user_id, mission_key, claim_date) unique constraint on
+        // rsm_daily_mission_claims already guarantees is one-per-day.
+        XpService::awardXp(
+            user: $user,
+            eventType: 'daily_mission_claim',
+            xp: $mission['energy'],
+            sourceType: 'daily_mission_claim',
+            sourceId: $claim->id,
+            reason: 'Misi harian diklaim: '.$mission['label'],
+        );
 
         return back()->with('notice', 'Reward misi diklaim!');
     }
