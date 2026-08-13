@@ -327,26 +327,22 @@
         border-radius: 0 !important;
         background:
             linear-gradient(145deg, rgba(0, 2, 8, 0.38), rgba(3, 5, 14, 0.78)),
-            radial-gradient(circle at 4% 76%, rgba(255, 190, 72, 0.58) 0 6.2rem, rgba(255, 190, 72, 0.17) 9.5rem, transparent 18rem),
-            radial-gradient(circle at 18% 9%, rgba(207, 113, 38, 0.46) 0 3.2rem, rgba(207, 113, 38, 0.13) 5.8rem, transparent 10rem),
-            radial-gradient(circle at 51% 42%, rgba(205, 130, 47, 0.34) 0 8rem, rgba(205, 130, 47, 0.1) 12rem, transparent 21rem),
-            radial-gradient(circle at 79% 19%, rgba(192, 167, 132, 0.28) 0 4.6rem, rgba(129, 107, 84, 0.1) 7.4rem, transparent 13rem),
-            radial-gradient(circle at 68% 4%, rgba(83, 120, 144, 0.2) 0 10rem, rgba(72, 104, 132, 0.07) 15rem, transparent 25rem),
-            radial-gradient(circle at 24% 49%, rgba(88, 123, 46, 0.2) 0 2.1rem, rgba(88, 123, 46, 0.08) 4.4rem, transparent 8rem),
-            radial-gradient(circle at 91% 74%, rgba(255, 232, 186, 0.24) 0 1rem, rgba(255, 232, 186, 0.08) 2.2rem, transparent 4.6rem),
-            radial-gradient(circle at 35% 18%, rgba(163, 194, 220, 0.15) 0 0.35rem, rgba(163, 194, 220, 0.07) 1rem, transparent 2.4rem),
+            radial-gradient(circle at 6% 71%, rgba(255, 190, 72, 0.6) 0 4.4rem, rgba(255, 190, 72, 0.19) 6.8rem, transparent 12rem),
+            radial-gradient(circle at 16% 13%, rgba(207, 113, 38, 0.45) 0 3.9rem, rgba(207, 113, 38, 0.15) 6.5rem, transparent 11rem),
+            radial-gradient(circle at 49% 39%, rgba(205, 130, 47, 0.38) 0 5rem, rgba(205, 130, 47, 0.11) 8rem, transparent 14rem),
+            radial-gradient(circle at 77% 21%, rgba(192, 167, 132, 0.3) 0 5.4rem, rgba(129, 107, 84, 0.11) 8.8rem, transparent 15rem),
+            radial-gradient(circle at 67% 5%, rgba(83, 120, 144, 0.22) 0 6rem, rgba(72, 104, 132, 0.08) 9.8rem, transparent 17rem),
+            radial-gradient(circle at 23% 48%, rgba(88, 123, 46, 0.21) 0 4.8rem, rgba(88, 123, 46, 0.08) 8.8rem, transparent 15rem),
             #02040a;
         background-attachment: fixed;
         background-position:
             center,
-            4% 76%,
-            18% 9%,
-            51% 42%,
-            79% 19%,
-            68% 4%,
-            24% 49%,
-            91% 74%,
-            35% 18%,
+            6% 71%,
+            16% 13%,
+            49% 39%,
+            77% 21%,
+            67% 5%,
+            23% 48%,
             center;
         background-size: auto;
         box-shadow:
@@ -385,38 +381,27 @@
         opacity: 0.46;
         mix-blend-mode: screen;
         background-image:
-            radial-gradient(circle, rgba(255, 211, 130, 0.46) 0 6.8rem, rgba(255, 211, 130, 0.13) 10rem, transparent 18rem),
-            radial-gradient(circle, rgba(125, 211, 252, 0.3) 0 3.1rem, rgba(125, 211, 252, 0.1) 6rem, transparent 11rem),
-            radial-gradient(circle, rgba(196, 181, 253, 0.25) 0 1.55rem, rgba(196, 181, 253, 0.09) 3.3rem, transparent 7.2rem),
-            radial-gradient(circle, rgba(255, 255, 255, 0.3) 0 0.55rem, rgba(255, 255, 255, 0.1) 1.4rem, transparent 3.2rem),
-            radial-gradient(circle, rgba(244, 149, 64, 0.4) 0 9rem, rgba(244, 149, 64, 0.11) 13rem, transparent 22rem),
-            radial-gradient(circle, rgba(255, 244, 214, 0.28) 0 0.18rem, rgba(255, 244, 214, 0.13) 0.55rem, transparent 1.4rem),
-            radial-gradient(circle, rgba(121, 186, 143, 0.22) 0 2.1rem, rgba(121, 186, 143, 0.08) 4.4rem, transparent 8.5rem),
-            radial-gradient(circle, rgba(255, 162, 75, 0.31) 0 0.9rem, rgba(255, 162, 75, 0.1) 2rem, transparent 4.6rem);
+            radial-gradient(circle, rgba(255, 211, 130, 0.5) 0 3.4rem, rgba(255, 211, 130, 0.15) 6rem, transparent 10rem),
+            radial-gradient(circle, rgba(125, 211, 252, 0.33) 0 2.8rem, rgba(125, 211, 252, 0.1) 5.8rem, transparent 11rem),
+            radial-gradient(circle, rgba(196, 181, 253, 0.27) 0 2.5rem, rgba(196, 181, 253, 0.09) 5.4rem, transparent 10rem),
+            radial-gradient(circle, rgba(255, 255, 255, 0.25) 0 1.9rem, rgba(255, 255, 255, 0.07) 4rem, transparent 8rem),
+            radial-gradient(circle, rgba(244, 149, 64, 0.42) 0 3.9rem, rgba(244, 149, 64, 0.12) 7rem, transparent 12rem);
         background-position:
-            -7% 28%,
-            83% 8%,
-            27% 89%,
-            94% 58%,
-            43% 49%,
-            58% 18%,
-            11% 53%,
-            76% 82%;
+            3% 23%,
+            81% 11%,
+            29% 86%,
+            92% 61%,
+            43% 47%;
         background-size:
-            1180px 920px,
-            690px 540px,
-            430px 360px,
-            240px 190px,
-            1380px 1040px,
-            170px 130px,
-            560px 430px,
-            310px 240px;
+            760px 590px,
+            850px 660px,
+            690px 560px,
+            920px 710px,
+            800px 640px;
         filter: blur(8px);
-        transform-origin: 43% 62%;
         animation:
-            bokeh-particles-drift 53s linear infinite alternate,
-            bokeh-particles-shimmer 7.3s ease-in-out infinite alternate,
-            bokeh-particles-wobble 19s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+            bokeh-particles-drift 47s linear infinite alternate,
+            bokeh-particles-shimmer 8.2s ease-in-out infinite alternate;
     }
 
     .profile-glass-shell > *,
@@ -576,26 +561,22 @@
         z-index: -1;
         background:
             linear-gradient(145deg, rgba(0, 2, 8, 0.42), rgba(3, 5, 14, 0.8)),
-            radial-gradient(circle at 4% 76%, rgba(255, 190, 72, 0.58) 0 6.2rem, rgba(255, 190, 72, 0.17) 9.5rem, transparent 18rem),
-            radial-gradient(circle at 18% 9%, rgba(207, 113, 38, 0.46) 0 3.2rem, rgba(207, 113, 38, 0.13) 5.8rem, transparent 10rem),
-            radial-gradient(circle at 51% 42%, rgba(205, 130, 47, 0.34) 0 8rem, rgba(205, 130, 47, 0.1) 12rem, transparent 21rem),
-            radial-gradient(circle at 79% 19%, rgba(192, 167, 132, 0.28) 0 4.6rem, rgba(129, 107, 84, 0.1) 7.4rem, transparent 13rem),
-            radial-gradient(circle at 68% 4%, rgba(83, 120, 144, 0.2) 0 10rem, rgba(72, 104, 132, 0.07) 15rem, transparent 25rem),
-            radial-gradient(circle at 24% 49%, rgba(88, 123, 46, 0.2) 0 2.1rem, rgba(88, 123, 46, 0.08) 4.4rem, transparent 8rem),
-            radial-gradient(circle at 91% 74%, rgba(255, 232, 186, 0.24) 0 1rem, rgba(255, 232, 186, 0.08) 2.2rem, transparent 4.6rem),
-            radial-gradient(circle at 35% 18%, rgba(163, 194, 220, 0.15) 0 0.35rem, rgba(163, 194, 220, 0.07) 1rem, transparent 2.4rem),
+            radial-gradient(circle at 6% 71%, rgba(255, 190, 72, 0.6) 0 4.4rem, rgba(255, 190, 72, 0.19) 6.8rem, transparent 12rem),
+            radial-gradient(circle at 16% 13%, rgba(207, 113, 38, 0.45) 0 3.9rem, rgba(207, 113, 38, 0.15) 6.5rem, transparent 11rem),
+            radial-gradient(circle at 49% 39%, rgba(205, 130, 47, 0.38) 0 5rem, rgba(205, 130, 47, 0.11) 8rem, transparent 14rem),
+            radial-gradient(circle at 77% 21%, rgba(192, 167, 132, 0.3) 0 5.4rem, rgba(129, 107, 84, 0.11) 8.8rem, transparent 15rem),
+            radial-gradient(circle at 67% 5%, rgba(83, 120, 144, 0.22) 0 6rem, rgba(72, 104, 132, 0.08) 9.8rem, transparent 17rem),
+            radial-gradient(circle at 23% 48%, rgba(88, 123, 46, 0.21) 0 4.8rem, rgba(88, 123, 46, 0.08) 8.8rem, transparent 15rem),
             #02040a;
         background-attachment: fixed;
         background-position:
             center,
-            4% 76%,
-            18% 9%,
-            51% 42%,
-            79% 19%,
-            68% 4%,
-            24% 49%,
-            91% 74%,
-            35% 18%,
+            6% 71%,
+            16% 13%,
+            49% 39%,
+            77% 21%,
+            67% 5%,
+            23% 48%,
             center;
         animation: profile-bokeh-drift 41s ease-in-out infinite alternate;
         pointer-events: none;
@@ -685,66 +666,45 @@
         0% {
             background-position:
                 center,
-                4% 76%,
-                18% 9%,
-                51% 42%,
-                79% 19%,
-                68% 4%,
-                24% 49%,
-                91% 74%,
-                35% 18%,
+                6% 71%,
+                16% 13%,
+                49% 39%,
+                77% 21%,
+                67% 5%,
+                23% 48%,
                 center;
         }
-        19% {
+        27% {
             background-position:
                 center,
-                9% 69%,
-                13% 20%,
-                47% 38%,
-                85% 27%,
-                61% -3%,
-                28% 42%,
-                87% 81%,
-                42% 12%,
+                11% 63%,
+                13% 21%,
+                54% 34%,
+                72% 27%,
+                71% 2%,
+                19% 55%,
                 center;
         }
-        43% {
+        63% {
             background-position:
                 center,
-                -2% 84%,
-                24% 6%,
-                58% 47%,
-                72% 14%,
-                74% 9%,
-                18% 57%,
-                96% 68%,
-                31% 25%,
-                center;
-        }
-        71% {
-            background-position:
-                center,
-                11% 73%,
-                15% 15%,
-                45% 33%,
-                83% 22%,
-                64% 2%,
-                30% 46%,
-                88% 79%,
-                39% 9%,
+                3% 77%,
+                21% 9%,
+                44% 43%,
+                82% 17%,
+                60% 11%,
+                29% 40%,
                 center;
         }
         100% {
             background-position:
                 center,
-                6% 80%,
-                21% 11%,
-                54% 36%,
-                76% 18%,
-                70% 7%,
-                22% 53%,
-                93% 72%,
-                33% 21%,
+                9% 67%,
+                18% 17%,
+                52% 31%,
+                74% 24%,
+                69% 8%,
+                25% 51%,
                 center;
         }
     }
@@ -752,84 +712,35 @@
     @keyframes bokeh-particles-drift {
         0% {
             background-position:
-                -7% 28%,
-                83% 8%,
-                27% 89%,
-                94% 58%,
-                43% 49%,
-                58% 18%,
-                11% 53%,
-                76% 82%;
+                3% 23%,
+                81% 11%,
+                29% 86%,
+                92% 61%,
+                43% 47%;
         }
-        14% {
+        23% {
             background-position:
-                3% 17%,
-                75% 24%,
-                36% 82%,
-                88% 69%,
-                35% 56%,
-                63% 11%,
-                6% 61%,
-                82% 74%;
+                13% 16%,
+                74% 20%,
+                21% 78%,
+                88% 72%,
+                51% 39%;
         }
-        37% {
+        58% {
             background-position:
-                -12% 39%,
-                90% 2%,
-                20% 94%,
-                97% 52%,
-                49% 41%,
-                54% 26%,
-                18% 46%,
-                68% 91%;
-        }
-        61% {
-            background-position:
-                11% 24%,
-                67% 17%,
-                34% 76%,
-                81% 66%,
-                57% 59%,
-                70% 15%,
-                14% 58%,
-                88% 86%;
-        }
-        82% {
-            background-position:
-                -4% 20%,
-                86% 31%,
-                25% 91%,
-                91% 44%,
-                39% 36%,
-                49% 21%,
-                4% 49%,
-                72% 79%;
+                9% 31%,
+                86% 6%,
+                36% 91%,
+                77% 57%,
+                39% 55%;
         }
         100% {
             background-position:
-                8% 34%,
-                72% 5%,
-                41% 84%,
-                86% 75%,
-                51% 45%,
-                66% 9%,
-                19% 64%,
-                80% 70%;
-        }
-    }
-
-    @keyframes bokeh-particles-wobble {
-        0% {
-            transform: translate3d(-1.8%, 0.8%, 0) rotate(-0.45deg) scale(1.01);
-        }
-        29% {
-            transform: translate3d(1.1%, -1.4%, 0) rotate(0.25deg) scale(1.035);
-        }
-        54% {
-            transform: translate3d(-0.6%, 1.9%, 0) rotate(-0.15deg) scale(0.995);
-        }
-        100% {
-            transform: translate3d(1.7%, -0.7%, 0) rotate(0.5deg) scale(1.025);
+                17% 12%,
+                68% 24%,
+                33% 73%,
+                84% 80%,
+                56% 35%;
         }
     }
 
