@@ -195,3 +195,128 @@
         border-bottom-color: rgba(255, 255, 255, 0.18);
     }
 }
+
+/*
+ * Progress bar fill animation: any bar carrying this class grows from 0 to
+ * its target width on page load instead of appearing instantly at full
+ * size (see the DOMContentLoaded handler in app.js that drives it), plus a
+ * looping diagonal-stripe shimmer over the filled portion. Stripe tile is
+ * 10px (not the classic ~50px Bootstrap size) since these bars run 4-8px
+ * tall - a full-size tile would just look like one diagonal blob instead
+ * of a repeating pattern. border-radius: inherit keeps the stripes clipped
+ * to the same rounded-full shape as the bar itself.
+ */
+.progress-fill {
+    position: relative;
+    overflow: hidden;
+    transition: width 700ms cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.4) 0,
+        rgba(255, 255, 255, 0.4) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0.4) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 10px 10px;
+    animation: progress-fill-stripes 1s linear infinite;
+}
+
+@keyframes progress-fill-stripes {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 10px 10px;
+    }
+}
+
+/*
+ * Click-burst cursor effect: a small firework of circles/triangles/a
+ * shockwave ring at every click point, purely decorative. Elements are
+ * generated per click by app.js and removed after their animation ends -
+ * see the click-fx listener there.
+ */
+.click-fx {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.click-fx-disc {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-brand-400);
+    animation: click-fx-disc 550ms ease-out forwards;
+}
+
+.click-fx-circle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    border-radius: 9999px;
+    background: var(--dot-color, var(--color-brand-500));
+    animation: click-fx-circle 550ms ease-out forwards;
+}
+
+.click-fx-triangle {
+    position: absolute;
+    width: 0;
+    height: 0;
+    margin-top: -8px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 8px solid var(--color-tone-amber);
+    animation: click-fx-triangle 550ms ease-out forwards;
+}
+
+@keyframes click-fx-disc {
+    0% {
+        transform: scale(0.2);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(1.7);
+        opacity: 0;
+    }
+}
+
+@keyframes click-fx-circle {
+    0% {
+        transform: rotate(var(--angle)) translateX(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(var(--angle)) translateX(38px) scale(0);
+        opacity: 0;
+    }
+}
+
+@keyframes click-fx-triangle {
+    0% {
+        transform: rotate(var(--angle)) translateX(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(var(--angle)) translateX(46px) scale(0.2);
+        opacity: 0;
+    }
+}

@@ -31,7 +31,7 @@
                         @endif
                     </p>
                     <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface">
-                        <div class="h-full rounded-full" style="width: {{ $regRate }}%; background-color: var(--color-tone-{{ $tone }})"></div>
+                        <div class="h-full rounded-full progress-fill" style="width: {{ $regRate }}%; background-color: var(--color-tone-{{ $tone }})"></div>
                     </div>
                     <p class="mt-3 text-xs text-ink-muted">Herregistrasi</p>
                     <p class="text-sm font-semibold text-ink">{{ number_format($row['herregistrasi'], 0, ',', '.') }}

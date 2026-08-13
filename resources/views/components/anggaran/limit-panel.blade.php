@@ -34,7 +34,7 @@
                     @if ($row['budget_limit'] > 0)
                         <p class="mt-1 text-xs text-ink-muted">Plafon: Rp {{ number_format($row['budget_limit'], 0, ',', '.') }}</p>
                         <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-muted">
-                            <div class="h-full rounded-full {{ $over ? 'bg-tone-red' : 'bg-brand-600' }}" style="width: {{ $rate }}%"></div>
+                            <div class="h-full rounded-full progress-fill {{ $over ? 'bg-tone-red' : 'bg-brand-600' }}" style="width: {{ $rate }}%"></div>
                         </div>
                         <p class="mt-2 text-xs font-medium {{ $over ? 'text-tone-red' : 'text-ink-muted' }}">
                             Sisa: Rp {{ number_format($row['remaining'], 0, ',', '.') }}

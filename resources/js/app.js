@@ -124,3 +124,64 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target) window.startCountdown(el, target);
     });
 });
+
+/**
+ * Progress bar "grow from 0" animation on page load - the .progress-fill
+ * bars (Level XP, Daily Mission, Pencapaian Kampus/Staff, Anggaran limit,
+ * etc) all render with their final width already inline, so without this
+ * they'd just appear instantly instead of filling in. Double rAF makes
+ * sure the browser paints width:0 first before the transition to the
+ * target width kicks in - a single rAF sometimes lands in the same frame
+ * as the initial render and the transition never fires.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.progress-fill').forEach((el) => {
+        const target = el.style.width;
+        el.style.width = '0%';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                el.style.width = target;
+            });
+        });
+    });
+});
+
+/**
+ * Click-burst cursor effect (circles/triangles/a shockwave disc) at the
+ * click point - purely decorative, see the .click-fx* rules in app.css.
+ * Builds a fresh element per click and removes it once its animation
+ * finishes, rather than reusing a fixed pool, so overlapping rapid clicks
+ * don't fight over shared nodes.
+ */
+const CLICK_FX_COLORS = [
+    'var(--color-brand-400)', 'var(--color-brand-500)', 'var(--color-brand-600)',
+    'var(--color-tone-green)', 'var(--color-tone-amber)', 'var(--color-tone-red)',
+];
+document.addEventListener('click', (event) => {
+    const fx = document.createElement('div');
+    fx.className = 'click-fx';
+    fx.style.left = event.clientX + 'px';
+    fx.style.top = event.clientY + 'px';
+
+    const disc = document.createElement('span');
+    disc.className = 'click-fx-disc';
+    fx.appendChild(disc);
+
+    for (let i = 0; i < 6; i++) {
+        const circle = document.createElement('span');
+        circle.className = 'click-fx-circle';
+        circle.style.setProperty('--angle', (i * 60) + 'deg');
+        circle.style.setProperty('--dot-color', CLICK_FX_COLORS[i % CLICK_FX_COLORS.length]);
+        fx.appendChild(circle);
+    }
+
+    for (let i = 0; i < 3; i++) {
+        const triangle = document.createElement('span');
+        triangle.className = 'click-fx-triangle';
+        triangle.style.setProperty('--angle', (i * 120 + 30) + 'deg');
+        fx.appendChild(triangle);
+    }
+
+    document.body.appendChild(fx);
+    setTimeout(() => fx.remove(), 600);
+});

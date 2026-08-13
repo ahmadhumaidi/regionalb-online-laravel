@@ -24,7 +24,7 @@
                                 <b class="shrink-0 font-semibold text-ink">{{ number_format($row['registrasi'], 0, ',', '.') }}</b>
                             </div>
                             <span class="text-xs text-ink-muted">{{ $row['regional'] }}</span>
-                            <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted"><div class="h-full rounded-full bg-brand-600" style="width: {{ $rate }}%"></div></div>
+                            <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted"><div class="h-full rounded-full bg-brand-600 progress-fill" style="width: {{ $rate }}%"></div></div>
                         </div>
                     </div>
                 @endforeach
@@ -61,7 +61,7 @@
                                 <b class="shrink-0 font-semibold text-ink">{{ number_format($row['registrasi'], 0, ',', '.') }}</b>
                             </div>
                             <span class="text-xs text-ink-muted">{{ $row['regional'] }}</span>
-                            <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted"><div class="h-full rounded-full bg-brand-600" style="width: {{ $rate }}%"></div></div>
+                            <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted"><div class="h-full rounded-full bg-brand-600 progress-fill" style="width: {{ $rate }}%"></div></div>
                         </div>
                     </div>
                 @endforeach

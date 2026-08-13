@@ -13,7 +13,7 @@
                 <h2 class="mt-4 text-lg font-bold">{{ $user->name }}</h2>
                 <p class="text-xs text-indigo-200">{{ $user->username }}</p>
                 <div class="mt-3 flex flex-wrap justify-center gap-x-2 text-xs font-semibold text-indigo-100"><span>{{ $user->jabatan ?: \App\Support\RsmRole::label($user->role) }}</span><span>•</span><span>{{ $user->regional ?: 'Wilayah belum diatur' }}</span></div>
-                <div class="mt-5 rounded-2xl bg-[#090b1e]/60 p-4 text-left"><div class="flex justify-between text-xs text-indigo-200"><span>Level {{ $level }}</span><strong class="text-white">{{ number_format($xp,0,',','.') }} XP</strong></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400" style="width:{{ $levelProgress }}%"></div></div><p class="mt-2 text-xs text-indigo-200">League {{ $league }}</p><p class="mt-1 text-[11px] text-indigo-300">{{ number_format($xpIntoLevel,0,',','.') }} / {{ number_format($xpNeeded,0,',','.') }} XP menuju Level {{ $level + 1 }}</p></div>
+                <div class="mt-5 rounded-2xl bg-[#090b1e]/60 p-4 text-left"><div class="flex justify-between text-xs text-indigo-200"><span>Level {{ $level }}</span><strong class="text-white">{{ number_format($xp,0,',','.') }} XP</strong></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 progress-fill" style="width:{{ $levelProgress }}%"></div></div><p class="mt-2 text-xs text-indigo-200">League {{ $league }}</p><p class="mt-1 text-[11px] text-indigo-300">{{ number_format($xpIntoLevel,0,',','.') }} / {{ number_format($xpNeeded,0,',','.') }} XP menuju Level {{ $level + 1 }}</p></div>
                 <nav class="mt-5 grid gap-1 text-left text-sm font-semibold text-indigo-100"><a href="#ringkasan" class="rounded-xl bg-black/25 px-3 py-2">Ringkasan</a><a href="#daily-mission" class="rounded-xl px-3 py-2 hover:bg-black/25">Daily Mission</a><a href="#pencapaian" class="rounded-xl px-3 py-2 hover:bg-black/25">Pencapaian</a><a href="#aktivitas" class="rounded-xl px-3 py-2 hover:bg-black/25">Aktivitas</a><a href="#pengaturan" class="rounded-xl px-3 py-2 hover:bg-black/25">Pengaturan Profil</a></nav>
             </aside>
             <div class="space-y-5">
@@ -32,7 +32,7 @@
 
                     <div class="relative mb-6 px-2">
                         <div class="absolute top-4 right-6 left-6 h-1 rounded-full bg-white/10">
-                            <div class="h-full rounded-full bg-gradient-to-r from-amber-300 to-emerald-300" style="width: {{ min(100, ($todayEnergy / max($dailyChestTiers)) * 100) }}%"></div>
+                            <div class="h-full rounded-full bg-gradient-to-r from-amber-300 to-emerald-300 progress-fill" style="width: {{ min(100, ($todayEnergy / max($dailyChestTiers)) * 100) }}%"></div>
                         </div>
                         <div class="relative flex justify-between">
                             @foreach($dailyChestTiers as $tier)
@@ -53,7 +53,7 @@
                                 <div class="min-w-0 flex-1">
                                     <p class="truncate text-sm font-bold tracking-wide uppercase">{{ $mission['label'] }}@if($mission['tier'])<span class="ml-1.5 text-[10px] font-semibold text-indigo-300">({{ $mission['tier'] }})</span>@endif</p>
                                     @unless($mission['done'])
-                                        <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-sky-300" style="width: {{ $mission['progress'] }}%"></div></div>
+                                        <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-sky-300 progress-fill" style="width: {{ $mission['progress'] }}%"></div></div>
                                     @endunless
                                 </div>
                                 <div class="flex w-16 shrink-0 flex-col items-end gap-0.5 text-[11px] leading-none">
