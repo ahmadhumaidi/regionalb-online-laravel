@@ -201,9 +201,9 @@
         overflow: hidden;
         border-right-color: rgba(255, 255, 255, 0.16) !important;
         background:
-            radial-gradient(circle at 18% 8%, rgba(99, 102, 241, 0.34), transparent 28%),
-            radial-gradient(circle at 88% 34%, rgba(14, 165, 233, 0.18), transparent 30%),
-            radial-gradient(circle at 16% 86%, rgba(245, 158, 11, 0.13), transparent 34%),
+            radial-gradient(circle at 12% 7%, rgba(255, 180, 76, 0.34) 0 3.2rem, transparent 8.5rem),
+            radial-gradient(circle at 94% 31%, rgba(76, 111, 154, 0.24) 0 4rem, transparent 10rem),
+            radial-gradient(circle at 19% 78%, rgba(70, 109, 51, 0.16) 0 3.8rem, transparent 9rem),
             linear-gradient(180deg, rgba(31, 35, 75, 0.94), rgba(13, 16, 39, 0.98));
         -webkit-backdrop-filter: blur(18px) saturate(145%);
         backdrop-filter: blur(18px) saturate(145%);
@@ -218,23 +218,34 @@
         content: '';
         position: absolute;
         inset: 0;
-        z-index: -1;
+        z-index: 0;
         pointer-events: none;
     }
 
     .app-sidebar::before {
         background:
-            linear-gradient(105deg, rgba(255, 255, 255, 0.12), transparent 22%, rgba(255, 255, 255, 0.04) 52%, transparent 74%),
-            repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 18px);
-        opacity: 0.7;
+            radial-gradient(circle at 7% 16%, rgba(255, 210, 135, 0.3) 0 2.8rem, rgba(255, 210, 135, 0.08) 5.5rem, transparent 9rem),
+            radial-gradient(circle at 82% 9%, rgba(129, 188, 224, 0.22) 0 2.2rem, rgba(129, 188, 224, 0.08) 5rem, transparent 8.5rem),
+            radial-gradient(circle at 63% 57%, rgba(178, 123, 76, 0.24) 0 3.2rem, rgba(178, 123, 76, 0.07) 6rem, transparent 10rem),
+            linear-gradient(105deg, rgba(255, 255, 255, 0.1), transparent 24%, rgba(255, 255, 255, 0.035) 58%, transparent 82%);
+        opacity: 0.62;
+        filter: blur(2px);
+        animation: sidebar-bokeh-drift 31s ease-in-out infinite alternate;
     }
 
     .app-sidebar::after {
-        inset: auto 16px 18px 16px;
-        height: 190px;
-        border-radius: 999px;
-        background: radial-gradient(circle, rgba(99, 102, 241, 0.18), transparent 68%);
-        filter: blur(24px);
+        background:
+            radial-gradient(circle at 28% 36%, rgba(250, 182, 76, 0.22) 0 1.7rem, rgba(250, 182, 76, 0.08) 3.7rem, transparent 7rem),
+            radial-gradient(circle at 74% 73%, rgba(170, 190, 230, 0.18) 0 1.4rem, rgba(170, 190, 230, 0.07) 3.4rem, transparent 6.2rem),
+            radial-gradient(circle at 42% 92%, rgba(255, 255, 255, 0.14) 0 1rem, rgba(255, 255, 255, 0.05) 2.8rem, transparent 5.8rem);
+        opacity: 0.56;
+        filter: blur(5px) saturate(145%);
+        animation: sidebar-particles-drift 43s linear infinite, sidebar-particles-shimmer 7.8s ease-in-out infinite alternate;
+    }
+
+    .app-sidebar > * {
+        position: relative;
+        z-index: 1;
     }
 
     .app-sidebar > a:first-of-type {
@@ -316,22 +327,22 @@
         border-radius: 0 !important;
         background:
             linear-gradient(145deg, rgba(0, 2, 8, 0.38), rgba(3, 5, 14, 0.78)),
-            radial-gradient(circle at 8% 64%, rgba(255, 190, 72, 0.58) 0 2.8rem, rgba(255, 190, 72, 0.2) 4.2rem, transparent 7.8rem),
-            radial-gradient(circle at 17% 18%, rgba(207, 113, 38, 0.44) 0 2.6rem, rgba(207, 113, 38, 0.16) 4.3rem, transparent 7.4rem),
-            radial-gradient(circle at 53% 36%, rgba(205, 130, 47, 0.36) 0 3.4rem, rgba(205, 130, 47, 0.12) 5.2rem, transparent 9rem),
-            radial-gradient(circle at 74% 25%, rgba(192, 167, 132, 0.28) 0 3.8rem, rgba(129, 107, 84, 0.12) 5.8rem, transparent 10rem),
-            radial-gradient(circle at 66% 9%, rgba(83, 120, 144, 0.2) 0 4.4rem, rgba(72, 104, 132, 0.08) 7.4rem, transparent 12rem),
-            radial-gradient(circle at 24% 45%, rgba(88, 123, 46, 0.2) 0 3.2rem, rgba(88, 123, 46, 0.08) 5.8rem, transparent 10rem),
+            radial-gradient(circle at 6% 71%, rgba(255, 190, 72, 0.6) 0 4.4rem, rgba(255, 190, 72, 0.19) 6.8rem, transparent 12rem),
+            radial-gradient(circle at 16% 13%, rgba(207, 113, 38, 0.45) 0 3.9rem, rgba(207, 113, 38, 0.15) 6.5rem, transparent 11rem),
+            radial-gradient(circle at 49% 39%, rgba(205, 130, 47, 0.38) 0 5rem, rgba(205, 130, 47, 0.11) 8rem, transparent 14rem),
+            radial-gradient(circle at 77% 21%, rgba(192, 167, 132, 0.3) 0 5.4rem, rgba(129, 107, 84, 0.11) 8.8rem, transparent 15rem),
+            radial-gradient(circle at 67% 5%, rgba(83, 120, 144, 0.22) 0 6rem, rgba(72, 104, 132, 0.08) 9.8rem, transparent 17rem),
+            radial-gradient(circle at 23% 48%, rgba(88, 123, 46, 0.21) 0 4.8rem, rgba(88, 123, 46, 0.08) 8.8rem, transparent 15rem),
             #02040a;
         background-attachment: fixed;
         background-position:
             center,
-            8% 64%,
-            17% 18%,
-            53% 36%,
-            74% 25%,
-            66% 9%,
-            24% 45%,
+            6% 71%,
+            16% 13%,
+            49% 39%,
+            77% 21%,
+            67% 5%,
+            23% 48%,
             center;
         background-size: auto;
         box-shadow:
@@ -370,27 +381,27 @@
         opacity: 0.46;
         mix-blend-mode: screen;
         background-image:
-            radial-gradient(circle, rgba(255, 211, 130, 0.5) 0 1.9rem, rgba(255, 211, 130, 0.16) 3.4rem, transparent 6.4rem),
-            radial-gradient(circle, rgba(125, 211, 252, 0.34) 0 1.6rem, rgba(125, 211, 252, 0.12) 3.2rem, transparent 6.8rem),
-            radial-gradient(circle, rgba(196, 181, 253, 0.28) 0 1.4rem, rgba(196, 181, 253, 0.1) 3rem, transparent 6rem),
-            radial-gradient(circle, rgba(255, 255, 255, 0.28) 0 1rem, rgba(255, 255, 255, 0.08) 2.2rem, transparent 5.2rem),
-            radial-gradient(circle, rgba(244, 149, 64, 0.42) 0 2.2rem, rgba(244, 149, 64, 0.13) 4rem, transparent 7.6rem);
+            radial-gradient(circle, rgba(255, 211, 130, 0.5) 0 3.4rem, rgba(255, 211, 130, 0.15) 6rem, transparent 10rem),
+            radial-gradient(circle, rgba(125, 211, 252, 0.33) 0 2.8rem, rgba(125, 211, 252, 0.1) 5.8rem, transparent 11rem),
+            radial-gradient(circle, rgba(196, 181, 253, 0.27) 0 2.5rem, rgba(196, 181, 253, 0.09) 5.4rem, transparent 10rem),
+            radial-gradient(circle, rgba(255, 255, 255, 0.25) 0 1.9rem, rgba(255, 255, 255, 0.07) 4rem, transparent 8rem),
+            radial-gradient(circle, rgba(244, 149, 64, 0.42) 0 3.9rem, rgba(244, 149, 64, 0.12) 7rem, transparent 12rem);
         background-position:
-            7% 18%,
-            72% 14%,
-            24% 78%,
-            88% 68%,
-            46% 42%;
+            3% 23%,
+            81% 11%,
+            29% 86%,
+            92% 61%,
+            43% 47%;
         background-size:
-            580px 460px,
-            660px 520px,
-            520px 420px,
-            720px 560px,
-            610px 480px;
-        filter: blur(5px);
+            760px 590px,
+            850px 660px,
+            690px 560px,
+            920px 710px,
+            800px 640px;
+        filter: blur(8px);
         animation:
-            bokeh-particles-drift 34s linear infinite,
-            bokeh-particles-shimmer 6.5s ease-in-out infinite alternate;
+            bokeh-particles-drift 47s linear infinite,
+            bokeh-particles-shimmer 8.2s ease-in-out infinite alternate;
     }
 
     .profile-glass-shell > *,
@@ -527,24 +538,24 @@
         z-index: -1;
         background:
             linear-gradient(145deg, rgba(0, 2, 8, 0.42), rgba(3, 5, 14, 0.8)),
-            radial-gradient(circle at 8% 64%, rgba(255, 190, 72, 0.58) 0 2.8rem, rgba(255, 190, 72, 0.2) 4.2rem, transparent 7.8rem),
-            radial-gradient(circle at 17% 18%, rgba(207, 113, 38, 0.44) 0 2.6rem, rgba(207, 113, 38, 0.16) 4.3rem, transparent 7.4rem),
-            radial-gradient(circle at 53% 36%, rgba(205, 130, 47, 0.36) 0 3.4rem, rgba(205, 130, 47, 0.12) 5.2rem, transparent 9rem),
-            radial-gradient(circle at 74% 25%, rgba(192, 167, 132, 0.28) 0 3.8rem, rgba(129, 107, 84, 0.12) 5.8rem, transparent 10rem),
-            radial-gradient(circle at 66% 9%, rgba(83, 120, 144, 0.2) 0 4.4rem, rgba(72, 104, 132, 0.08) 7.4rem, transparent 12rem),
-            radial-gradient(circle at 24% 45%, rgba(88, 123, 46, 0.2) 0 3.2rem, rgba(88, 123, 46, 0.08) 5.8rem, transparent 10rem),
+            radial-gradient(circle at 6% 71%, rgba(255, 190, 72, 0.6) 0 4.4rem, rgba(255, 190, 72, 0.19) 6.8rem, transparent 12rem),
+            radial-gradient(circle at 16% 13%, rgba(207, 113, 38, 0.45) 0 3.9rem, rgba(207, 113, 38, 0.15) 6.5rem, transparent 11rem),
+            radial-gradient(circle at 49% 39%, rgba(205, 130, 47, 0.38) 0 5rem, rgba(205, 130, 47, 0.11) 8rem, transparent 14rem),
+            radial-gradient(circle at 77% 21%, rgba(192, 167, 132, 0.3) 0 5.4rem, rgba(129, 107, 84, 0.11) 8.8rem, transparent 15rem),
+            radial-gradient(circle at 67% 5%, rgba(83, 120, 144, 0.22) 0 6rem, rgba(72, 104, 132, 0.08) 9.8rem, transparent 17rem),
+            radial-gradient(circle at 23% 48%, rgba(88, 123, 46, 0.21) 0 4.8rem, rgba(88, 123, 46, 0.08) 8.8rem, transparent 15rem),
             #02040a;
         background-attachment: fixed;
         background-position:
             center,
-            8% 64%,
-            17% 18%,
-            53% 36%,
-            74% 25%,
-            66% 9%,
-            24% 45%,
+            6% 71%,
+            16% 13%,
+            49% 39%,
+            77% 21%,
+            67% 5%,
+            23% 48%,
             center;
-        animation: profile-bokeh-drift 38s ease-in-out infinite alternate;
+        animation: profile-bokeh-drift 41s ease-in-out infinite alternate;
         pointer-events: none;
     }
 
@@ -632,69 +643,169 @@
         0% {
             background-position:
                 center,
-                8% 64%,
-                17% 18%,
-                53% 36%,
-                74% 25%,
-                66% 9%,
-                24% 45%,
+                6% 71%,
+                16% 13%,
+                49% 39%,
+                77% 21%,
+                67% 5%,
+                23% 48%,
                 center;
         }
-        45% {
+        27% {
             background-position:
                 center,
-                11% 59%,
-                20% 22%,
-                50% 39%,
-                71% 29%,
-                69% 12%,
-                22% 49%,
+                11% 63%,
+                13% 21%,
+                54% 34%,
+                72% 27%,
+                71% 2%,
+                19% 55%,
+                center;
+        }
+        63% {
+            background-position:
+                center,
+                3% 77%,
+                21% 9%,
+                44% 43%,
+                82% 17%,
+                60% 11%,
+                29% 40%,
                 center;
         }
         100% {
             background-position:
                 center,
-                6% 68%,
-                14% 16%,
-                56% 33%,
-                78% 21%,
-                62% 7%,
-                27% 42%,
+                9% 67%,
+                18% 17%,
+                52% 31%,
+                74% 24%,
+                69% 8%,
+                25% 51%,
                 center;
         }
     }
 
     @keyframes bokeh-particles-drift {
-        from {
+        0% {
             background-position:
-                7% 18%,
-                72% 14%,
-                24% 78%,
-                88% 68%,
-                46% 42%;
+                3% 23%,
+                81% 11%,
+                29% 86%,
+                92% 61%,
+                43% 47%;
         }
-        to {
+        23% {
             background-position:
-                15% 10%,
-                64% 25%,
-                32% 66%,
-                80% 82%,
-                52% 34%;
+                13% 16%,
+                74% 20%,
+                21% 78%,
+                88% 72%,
+                51% 39%;
+        }
+        58% {
+            background-position:
+                9% 31%,
+                86% 6%,
+                36% 91%,
+                77% 57%,
+                39% 55%;
+        }
+        100% {
+            background-position:
+                17% 12%,
+                68% 24%,
+                33% 73%,
+                84% 80%,
+                56% 35%;
         }
     }
 
     @keyframes bokeh-particles-shimmer {
         0% {
             opacity: 0.28;
-            filter: blur(4px) saturate(120%);
+            filter: blur(7px) saturate(120%);
         }
         50% {
-            opacity: 0.64;
-            filter: blur(8px) saturate(165%);
+            opacity: 0.66;
+            filter: blur(11px) saturate(170%);
         }
         100% {
             opacity: 0.4;
-            filter: blur(5px) saturate(140%);
+            filter: blur(8px) saturate(140%);
+        }
+    }
+
+    @keyframes sidebar-bokeh-drift {
+        0% {
+            background-position:
+                7% 16%,
+                82% 9%,
+                63% 57%,
+                center;
+        }
+        36% {
+            background-position:
+                18% 12%,
+                73% 19%,
+                55% 62%,
+                center;
+        }
+        74% {
+            background-position:
+                10% 25%,
+                91% 6%,
+                70% 49%,
+                center;
+        }
+        100% {
+            background-position:
+                22% 18%,
+                77% 26%,
+                58% 70%,
+                center;
+        }
+    }
+
+    @keyframes sidebar-particles-drift {
+        0% {
+            background-position:
+                28% 36%,
+                74% 73%,
+                42% 92%;
+        }
+        31% {
+            background-position:
+                18% 44%,
+                86% 65%,
+                51% 82%;
+        }
+        69% {
+            background-position:
+                36% 29%,
+                68% 81%,
+                30% 96%;
+        }
+        100% {
+            background-position:
+                15% 52%,
+                91% 59%,
+                56% 88%;
+        }
+    }
+
+    @keyframes sidebar-particles-shimmer {
+        0% {
+            opacity: 0.36;
+            filter: blur(4px) saturate(120%);
+        }
+        52% {
+            opacity: 0.7;
+            filter: blur(8px) saturate(160%);
+        }
+        100% {
+            opacity: 0.44;
+            filter: blur(6px) saturate(135%);
         }
     }
 }
