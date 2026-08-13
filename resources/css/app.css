@@ -271,18 +271,32 @@
     .profile-glass-shell .profile-stat-strip,
     .profile-glass-shell .profile-stat-strip article {
         background: transparent !important;
-        border-color: transparent !important;
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
         box-shadow: none !important;
         transform: none !important;
     }
 
+    .profile-glass-shell .profile-stat-strip {
+        border-color: transparent !important;
+    }
+
+    .profile-glass-shell .profile-stat-strip article {
+        border-color: rgba(255, 255, 255, 0.26) !important;
+    }
+
     .profile-glass-shell .profile-stat-strip:hover,
     .profile-glass-shell .profile-stat-strip article:hover {
         transform: none !important;
-        border-color: transparent !important;
         box-shadow: none !important;
+    }
+
+    .profile-glass-shell .profile-stat-strip:hover {
+        border-color: transparent !important;
+    }
+
+    .profile-glass-shell .profile-stat-strip article:hover {
+        border-color: rgba(255, 255, 255, 0.38) !important;
     }
 
     .profile-glass-shell nav a,
