@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\RsmUser;
 use App\Services\BdcReportUsersService;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class BdcUsersPageTest extends TestCase
@@ -20,6 +22,7 @@ class BdcUsersPageTest extends TestCase
         $property = new \ReflectionProperty(BdcReportUsersService::class, 'requestSnapshot');
         $property->setAccessible(true);
         $property->setValue(null, null);
+        Storage::disk('local')->delete('bdc_report_users.json');
     }
 
     public function test_bdc_users_page_renders(): void
@@ -28,6 +31,7 @@ class BdcUsersPageTest extends TestCase
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_110004_create_rsm_bdc_report_user_snapshots_table.php',
         ]]);
+        DB::table('rsm_bdc_report_user_snapshots')->delete();
 
         Http::fake([
             '*' => Http::response('{}', 200),
@@ -52,6 +56,7 @@ class BdcUsersPageTest extends TestCase
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_110004_create_rsm_bdc_report_user_snapshots_table.php',
         ]]);
+        DB::table('rsm_bdc_report_user_snapshots')->delete();
 
         Http::fake([
             '*' => Http::response([
