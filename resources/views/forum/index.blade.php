@@ -1,6 +1,6 @@
 <x-layouts.app title="Forum Diskusi" active="forum">
     @php $canModerate = \App\Support\RsmRole::canModerateForum(auth()->user()); @endphp
-    <div class="mx-auto max-w-2xl space-y-4">
+    <div class="forum-glass-shell mx-auto max-w-3xl space-y-4">
         @if($errors->any())
             <div class="rounded-lg border border-tone-red/30 bg-tone-red/10 px-4 py-3 text-sm text-tone-red">{{ $errors->first() }}</div>
         @endif
