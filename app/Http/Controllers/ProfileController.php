@@ -85,6 +85,29 @@ class ProfileController extends Controller
 
     private const MONTHLY_CHEST_TIERS = [1500, 3000, 4500, 6000];
 
+    /**
+     * Badge & Achievement card icons, keyed by GamificationService's badge
+     * key - placeholders from the existing icon library
+     * (resources/views/components/icon.blade.php) until dedicated badge
+     * artwork is ready.
+     */
+    private const BADGE_ICONS = [
+        'closing_hunter' => 'flag',
+        'herregistrasi_champion' => 'shield',
+        'kampus_growth' => 'chart-bar',
+        'kampus_herreg_champion' => 'user-group',
+        'efisiensi_iklan' => 'currency',
+        'closing_iklan_hunter' => 'bolt',
+        'budget_efficient' => 'briefcase',
+        'follow_up_hero' => 'chat',
+        'activity_helper' => 'document',
+        'consistency_streak' => 'calendar',
+        'share_fb_booster' => 'cloud',
+        'live_streamer' => 'photo',
+        'affiliator_mahasiswa' => 'users',
+        'affiliator_non_mahasiswa' => 'user-group',
+    ];
+
     public function show(): View
     {
         $user = Auth::user();
@@ -110,7 +133,6 @@ class ProfileController extends Controller
         // team's pooled badges. Unchanged by the Gamification Phase 1 XP
         // ledger refactor below.
         $gamification = GamificationService::profileSummary($user->area ?: 'Regional B', $user);
-        $earnedBadges = $gamification['badges'];
 
         // Gamification Phase 1: Level/XP/League now read from the lifetime
         // XP ledger (rsm_gamification_transactions via XpService) instead
@@ -127,21 +149,34 @@ class ProfileController extends Controller
         $levelInfo = XpService::calculateLevel($xp);
         $level = $levelInfo['level'];
         $levelProgress = $levelInfo['progress_percent'];
-        $xpIntoLevel = $levelInfo['xp_into_level'];
-        $xpNeeded = $levelInfo['xp_needed'];
         $league = GamificationService::leagueFor($xp);
-        $badges = array_map(
-            fn (string $name) => ['name' => $name, 'ok' => in_array($name, $earnedBadges, true)],
-            GamificationService::BADGE_NAMES
-        );
-        // Aura ("Skor Performa"): a 30-day rolling snapshot, not all-time -
-        // see GamificationService::recentPerformanceScore() for why (the
-        // old all-time version hit its cap once and stayed there forever).
-        // $stats above stays all-time on purpose - those "Kegiatan/Leads/
-        // Closing/Hari aktif" cards are a lifetime activity summary, a
-        // different concept from this current-performance score.
-        $score = GamificationService::recentPerformanceScore($user);
+        // Placeholder icons (existing icon library) until dedicated badge
+        // artwork is ready - swap self::BADGE_ICONS's values then, nothing
+        // else about this mapping needs to change.
+        $badges = array_map(function (array $badge) {
+            $percent = 0;
+            if ($badge['target'] > 0) {
+                // "lower is better" badges (e.g. CPM/CPL efficiency) invert
+                // the ratio - being further under target means more filled,
+                // not less, and 0 actual (no data yet) reads as 0% instead
+                // of a division-by-zero "full bar".
+                $percent = $badge['direction'] === 'lower'
+                    ? ($badge['actual'] > 0 ? min(100, ($badge['target'] / $badge['actual']) * 100) : 0)
+                    : min(100, ($badge['actual'] / $badge['target']) * 100);
+            }
 
+            return [
+                'key' => $badge['key'],
+                'name' => $badge['name'],
+                'tone' => $badge['tone'],
+                'icon' => self::BADGE_ICONS[$badge['key']] ?? 'trophy',
+                'condition' => $badge['condition'],
+                'actual' => $badge['actual'],
+                'target' => $badge['target'],
+                'progress_percent' => (int) round($percent),
+                'ok' => $badge['achieved'],
+            ];
+        }, $gamification['badge_progress']);
         $todayEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)->whereDate('claim_date', now()->toDateString())->sum('energy');
         $weekEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)
             ->whereBetween('claim_date', [now()->startOfWeek()->toDateString(), now()->endOfWeek()->toDateString()])
@@ -149,6 +184,14 @@ class ProfileController extends Controller
         $monthEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)
             ->whereBetween('claim_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
             ->sum('energy');
+        // Aura ("Skor Performa"): now Energy-based, not report/lead/closing
+        // volume - Daily Mission's monthly chest tops out at 6000 energy
+        // (self::MONTHLY_CHEST_TIERS), so /60 maps a maxed-out month to
+        // exactly 100. Energy stays its own currency (separate from the
+        // XP ledger even though claiming also banks XP 1:1 - see
+        // claimMission()) - this just reads the same monthEnergy total the
+        // chest progress bar below already uses, not a new source.
+        $score = min(100, (int) round($monthEnergy / 60));
         $dailyChestTiers = self::DAILY_CHEST_TIERS;
         $weeklyChestTiers = self::WEEKLY_CHEST_TIERS;
         $monthlyChestTiers = self::MONTHLY_CHEST_TIERS;
@@ -157,7 +200,7 @@ class ProfileController extends Controller
         $monthResetAt = now()->endOfMonth()->toIso8601String();
 
         return view('profile.index', compact(
-            'user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'xpIntoLevel', 'xpNeeded', 'league', 'score', 'badges', 'dailyMissions',
+            'user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'score', 'badges', 'dailyMissions',
             'todayEnergy', 'weekEnergy', 'monthEnergy', 'dailyChestTiers', 'weeklyChestTiers', 'monthlyChestTiers',
             'missionResetAt', 'weekResetAt', 'monthResetAt'
         ));

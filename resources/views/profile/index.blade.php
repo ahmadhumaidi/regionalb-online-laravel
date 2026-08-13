@@ -11,11 +11,15 @@
                 <h2 class="mt-4 text-lg font-bold">{{ $user->name }}</h2>
                 <p class="text-xs text-indigo-200">{{ $user->username }}</p>
                 <div class="mt-3 flex flex-wrap justify-center gap-x-2 text-xs font-semibold text-indigo-100"><span>{{ $user->jabatan ?: \App\Support\RsmRole::label($user->role) }}</span><span>•</span><span>{{ $user->regional ?: 'Wilayah belum diatur' }}</span></div>
-                <div class="mt-5 rounded-2xl bg-[#090b1e]/60 p-4 text-left"><div class="flex justify-between text-xs text-indigo-200"><span>Level {{ $level }}</span><strong class="text-white">{{ number_format($xp,0,',','.') }} XP</strong></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 progress-fill" style="width:{{ $levelProgress }}%"></div></div><p class="mt-2 text-xs text-indigo-200">League {{ $league }}</p><p class="mt-1 text-[11px] text-indigo-300">{{ number_format($xpIntoLevel,0,',','.') }} / {{ number_format($xpNeeded,0,',','.') }} XP menuju Level {{ $level + 1 }}</p></div>
+                <div class="mt-5 rounded-2xl bg-[#090b1e]/60 p-4 text-left"><div class="flex justify-between text-xs text-indigo-200"><span>Level {{ $level }}</span><strong class="text-white">{{ number_format($xp,0,',','.') }} XP</strong></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 progress-fill" style="width:{{ $levelProgress }}%"></div></div>@php $nextLeague = \App\Services\Dashboard\GamificationService::nextLeagueThreshold($xp); @endphp<p class="mt-2 text-xs text-indigo-200">League {{ $league }}</p><p class="mt-1 text-[11px] text-indigo-300">@if ($nextLeague){{ number_format($xp,0,',','.') }} / {{ number_format($nextLeague['threshold'],0,',','.') }} XP menuju League {{ $nextLeague['name'] }}@else League tertinggi tercapai @endif</p></div>
                 <nav class="mt-5 grid gap-1 text-left text-sm font-semibold text-indigo-100"><a href="#ringkasan" class="rounded-xl bg-black/25 px-3 py-2">Ringkasan</a><a href="#daily-mission" class="rounded-xl px-3 py-2 hover:bg-black/25">Daily Mission</a><a href="#pencapaian" class="rounded-xl px-3 py-2 hover:bg-black/25">Pencapaian</a><a href="#aktivitas" class="rounded-xl px-3 py-2 hover:bg-black/25">Aktivitas</a><a href="#pengaturan" class="rounded-xl px-3 py-2 hover:bg-black/25">Pengaturan Profil</a></nav>
             </aside>
             <div class="space-y-5">
-                <section id="ringkasan" class="grid gap-3 sm:grid-cols-3"><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">League</span><strong class="mt-2 block text-xl">{{ $league }}</strong><small class="text-indigo-200">XP dan konsistensi</small></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">Badge</span><strong class="mt-2 block text-xl">{{ collect($badges)->where('ok', true)->count() }}/{{ count($badges) }}</strong><small class="text-indigo-200">Achievement diraih</small></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">Aura</span><strong class="mt-2 block text-xl">{{ $score }}/100</strong><small class="text-indigo-200">Skor performa</small></article></section>
+                @php
+                    $leagueTiers = ['Starter', 'Silver', 'Gold', 'Platinum', 'Diamond'];
+                    $leagueGridCols = implode(' ', array_map(fn ($t) => strtolower($t) === strtolower($league) ? '1.4fr' : '1fr', $leagueTiers));
+                @endphp
+                <section id="ringkasan" class="grid gap-3 sm:grid-cols-3"><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">League</span><strong class="mt-2 block text-xl">{{ $league }}</strong><div class="mt-2 grid items-end gap-1" style="grid-template-columns: {{ $leagueGridCols }}">@foreach ($leagueTiers as $tier)<img src="{{ asset('images/league/'.strtolower($tier).'.png') }}" alt="League {{ $tier }}" title="{{ $tier }}" class="{{ strtolower($league) === strtolower($tier) ? 'drop-shadow-[0_0_4px_rgba(250,204,21,0.7)]' : 'opacity-30 grayscale' }} aspect-square w-full transition-all">@endforeach</div><small class="mt-2 block text-indigo-200">XP dan konsistensi</small></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">Badge</span><strong class="mt-2 block text-xl">{{ collect($badges)->where('ok', true)->count() }}/{{ count($badges) }}</strong>@if(collect($badges)->where('ok', true)->isNotEmpty())<div class="mt-2 grid grid-cols-7 gap-1.5">@foreach (collect($badges)->where('ok', true)->take(7) as $badge)<span class="group relative flex aspect-square w-full items-center justify-center rounded-full" style="background: color-mix(in srgb, var(--color-tone-{{ $badge['tone'] }}) 25%, transparent); color: var(--color-tone-{{ $badge['tone'] }})"><x-icon name="{{ $badge['icon'] }}" class="h-1/2 w-1/2" /><span class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 rounded-md bg-black/90 px-2 py-1 text-[10px] font-semibold whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ $badge['name'] }}</span></span>@endforeach</div>@endif<a href="#pencapaian" class="mt-2 inline-block text-[11px] font-semibold text-sky-300 hover:underline">Lihat Semua Achievement &rarr;</a></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">Aura</span><strong class="mt-2 block text-xl">{{ $score }}/100</strong><small class="text-indigo-200">Skor performa</small></article></section>
                 <section id="daily-mission" class="rounded-2xl border border-white/10 bg-gradient-to-b from-[#1c2b52] to-[#111a33] p-5">
                     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                         <div>
@@ -116,9 +120,51 @@
                         </div>
                     </div>
                 </section>
-                <section class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-widest text-sky-300">Profil User</p><h2 class="mt-1 text-2xl font-bold">{{ $user->name }}</h2><p class="mt-2 text-sm text-indigo-100">{{ $user->bio_text ?: 'Biodata singkat belum diisi.' }}</p></div><div class="relative h-24 w-24 shrink-0"><x-league-photo :league="$league" :user="$user" text-size="text-base" /></div></div></section>
                 <section class="grid gap-3 sm:grid-cols-5">@foreach([['Kegiatan',$stats['reports']],['Leads',$stats['leads']],['Closing',$stats['closing']],['Hari aktif',$stats['active_days']],['Skor',$score]] as [$label,$value])<article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">{{ $label }}</span><strong class="mt-2 block text-2xl">{{ number_format($value,0,',','.') }}</strong></article>@endforeach</section>
-                <section id="pencapaian" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="mb-3 text-base font-bold">Badge dan Achievement</h2><div class="flex flex-wrap gap-2">@foreach($badges as $badge)<span class="rounded-full px-3 py-1 text-xs font-semibold {{ $badge['ok'] ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-200' }}">{{ $badge['ok'] ? '✓' : '○' }} {{ $badge['name'] }}</span>@endforeach</div></section>
+                <section id="pencapaian" class="rounded-2xl border border-white/10 bg-[#35385f] p-5">
+                    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+                        <h2 class="text-base font-bold">Badge & Achievement</h2>
+                        <span class="rounded-lg bg-white/10 px-3 py-1 text-xs font-semibold text-indigo-200">{{ collect($badges)->where('ok', true)->count() }}/{{ count($badges) }} terbuka</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-2 sm:gap-3">
+                        @foreach ($badges as $badge)
+                            <div x-data="{ open: false }">
+                                <button type="button" @click="open = true" class="flex w-full flex-col items-center gap-2 rounded-2xl border {{ $badge['ok'] ? 'border-white/15' : 'border-white/5' }} bg-[#212446] p-3 text-center transition hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/30">
+                                    <span class="relative flex h-14 w-14 items-center justify-center rounded-full" style="background: {{ $badge['ok'] ? 'color-mix(in srgb, var(--color-tone-'.$badge['tone'].') 22%, transparent)' : 'rgba(255,255,255,.06)' }}; color: {{ $badge['ok'] ? 'var(--color-tone-'.$badge['tone'].')' : 'rgba(199,210,254,.5)' }}">
+                                        <x-icon name="{{ $badge['icon'] }}" class="h-7 w-7 {{ $badge['ok'] ? '' : 'opacity-70 grayscale' }}" />
+                                        @unless ($badge['ok'])
+                                            <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[#212446] bg-[#101227] text-indigo-300"><x-icon name="lock" class="h-3 w-3" /></span>
+                                        @endunless
+                                    </span>
+                                    <span class="line-clamp-2 text-[11px] font-bold {{ $badge['ok'] ? 'text-white' : 'text-indigo-300' }}">{{ $badge['name'] }}</span>
+                                    @if ($badge['target'] > 0)
+                                        <div class="w-full">
+                                            <div class="h-1 overflow-hidden rounded-full bg-white/10"><div class="progress-fill h-full rounded-full {{ $badge['ok'] ? 'bg-emerald-400' : 'bg-indigo-400/60' }}" style="width: {{ $badge['progress_percent'] }}%"></div></div>
+                                            <span class="mt-1 block text-[10px] text-indigo-300">{{ number_format(min($badge['actual'], $badge['target']), 0, ',', '.') }}/{{ number_format($badge['target'], 0, ',', '.') }}</span>
+                                        </div>
+                                    @endif
+                                </button>
+
+                                <div x-show="open" x-cloak @keydown.escape.window="open = false" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(15,23,42,0.65)">
+                                    <div @click.outside="open = false" class="w-full max-w-sm rounded-2xl border border-white/10 bg-[#212446] p-5 text-white shadow-2xl">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="flex items-center gap-3">
+                                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style="background: {{ $badge['ok'] ? 'color-mix(in srgb, var(--color-tone-'.$badge['tone'].') 22%, transparent)' : 'rgba(255,255,255,.06)' }}; color: {{ $badge['ok'] ? 'var(--color-tone-'.$badge['tone'].')' : 'rgba(199,210,254,.5)' }}"><x-icon name="{{ $badge['icon'] }}" class="h-5 w-5 {{ $badge['ok'] ? '' : 'opacity-70 grayscale' }}" /></span>
+                                                <h3 class="text-base font-bold">{{ $badge['name'] }}</h3>
+                                            </div>
+                                            <button type="button" @click="open = false" class="rounded-md border border-white/10 px-2 py-1 text-xs text-indigo-200 hover:text-white">Tutup</button>
+                                        </div>
+                                        <span class="mt-3 inline-block rounded-full px-2.5 py-1 text-xs font-semibold {{ $badge['ok'] ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-indigo-200' }}">{{ $badge['ok'] ? 'Unlocked' : 'Locked' }}</span>
+                                        <p class="mt-3 text-sm text-indigo-100">{{ $badge['condition'] }}</p>
+                                        @if ($badge['target'] > 0)
+                                            <p class="mt-2 text-xs text-indigo-300">Progress: {{ number_format($badge['actual'], 0, ',', '.') }} / {{ number_format($badge['target'], 0, ',', '.') }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
                 <section id="aktivitas" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="mb-3 text-base font-bold">Aktivitas Terbaru</h2><div class="space-y-2">@forelse($reports as $report)<a href="{{ route('reports.show',$report) }}" class="block rounded-xl border border-white/10 p-3 hover:bg-white/10"><div class="flex justify-between gap-3"><strong class="text-sm">{{ $report->title ?: $report->campaign_name }}</strong><span class="text-xs text-indigo-200">{{ optional($report->report_date)->format('d/m/Y') }}</span></div><p class="text-xs text-indigo-200">{{ $report->report_type }} · {{ $report->status }} · {{ $report->leads_count }} leads · {{ $report->closing_count }} closing</p></a>@empty<p class="text-sm text-indigo-200">Belum ada aktivitas.</p>@endforelse</div></section>
                 <section id="pengaturan" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="text-base font-bold">Pengaturan Profil</h2><form class="mt-4 grid gap-3" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">@csrf<textarea name="bio_text" maxlength="800" rows="4" class="rounded-lg border-white/10 bg-[#212446] text-white" placeholder="Biodata singkat">{{ old('bio_text', $user->bio_text) }}</textarea><input type="file" id="profile_photo" name="profile_photo" accept="image/jpeg,image/png,image/webp" class="text-sm text-indigo-100"><button class="w-fit rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-white">Simpan Profil</button></form></section>
             </div>

@@ -96,11 +96,15 @@ class ProfileGamificationTest extends TestCase
         $response->assertSee('250 XP');
         $response->assertSee('Level 2');
         $response->assertSee('League Starter');
-        $response->assertSee('✓ Follow Up Hero', false);
-        $response->assertSee('✓ Closing Hunter', false);
-        $response->assertSee('✓ Herregistrasi Champion', false);
-        $response->assertSee('✓ Budget Efficient', false);
-        $response->assertSee('○ Consistency Streak', false);
+        // Badge & Achievement redesign: cards no longer render a leading
+        // ✓/○ glyph - unlocked/locked now shows via the name span's own
+        // color class (text-white vs text-indigo-300), which this asserts
+        // precisely per badge.
+        $response->assertSee('font-bold text-white">Follow Up Hero</span>', false);
+        $response->assertSee('font-bold text-white">Closing Hunter</span>', false);
+        $response->assertSee('font-bold text-white">Herregistrasi Champion</span>', false);
+        $response->assertSee('font-bold text-white">Budget Efficient</span>', false);
+        $response->assertSee('font-bold text-indigo-300">Consistency Streak</span>', false);
 
         RsmAdLead::where('report_id', $report->id)->delete();
         $report->delete();
@@ -157,12 +161,14 @@ class ProfileGamificationTest extends TestCase
         $response->assertSee('87 XP');
         $response->assertSee('Level 1');
         $response->assertSee('League Starter');
-        // Badges still reflect the pooled team total - unchanged by this refactor.
-        $response->assertSee('✓ Closing Hunter', false);
-        $response->assertSee('✓ Budget Efficient', false);
-        $response->assertSee('○ Follow Up Hero', false);
-        $response->assertSee('○ Herregistrasi Champion', false);
-        $response->assertSee('○ Consistency Streak', false);
+        // Badges still reflect the pooled team total - unchanged by this
+        // refactor. See the sibling staff test for why these assert the
+        // name span's color class instead of a leading ✓/○ glyph.
+        $response->assertSee('font-bold text-white">Closing Hunter</span>', false);
+        $response->assertSee('font-bold text-white">Budget Efficient</span>', false);
+        $response->assertSee('font-bold text-indigo-300">Follow Up Hero</span>', false);
+        $response->assertSee('font-bold text-indigo-300">Herregistrasi Champion</span>', false);
+        $response->assertSee('font-bold text-indigo-300">Consistency Streak</span>', false);
 
         foreach ($reports as $report) {
             RsmAdLead::where('report_id', $report->id)->delete();

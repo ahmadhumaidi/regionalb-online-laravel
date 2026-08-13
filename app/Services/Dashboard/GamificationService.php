@@ -132,29 +132,33 @@ class GamificationService
 
         if ($user->role === RsmUser::ROLE_STAFF) {
             $mine = $scoredRows->first(fn (array $row) => $row['user_id'] === $user->id)
-                ?? $scoredRows->first(fn (array $row) => mb_strtolower(trim($row['name'])) === mb_strtolower(trim((string) $user->name)));
+                ?? $scoredRows->first(fn (array $row) => mb_strtolower(trim($row['name'])) === mb_strtolower(trim((string) $user->name)))
+                ?? [];
 
             return [
                 'points' => (int) ($mine['points'] ?? 0),
                 'badges' => $mine['badges'] ?? ['On Progress'],
+                'badge_progress' => self::badgeProgressFor($mine),
             ];
         }
 
         $reportDays = $reports->pluck('report_date')->filter()->map(fn ($date) => $date->toDateString())->unique()->count();
+        $pooledRow = [
+            'registrasi_personal' => (float) $scoredRows->sum('registrasi_personal'),
+            'herregistrasi_personal' => (float) $scoredRows->sum('herregistrasi_personal'),
+            'cpm_cpl' => (float) $scoredRows->avg('cpm_cpl'),
+            'closing_iklan' => (float) $scoredRows->sum('closing_iklan'),
+            'follow_up_total' => (float) $scoredRows->sum('follow_up_total'),
+            'leads_total' => (float) $scoredRows->sum('leads_total'),
+            'laporan_total' => (float) $scoredRows->sum('laporan_total'),
+            'aktivitas_lain_total' => (float) $scoredRows->sum('aktivitas_lain_total'),
+            'hari_aktif' => $reportDays,
+        ];
 
         return [
             'points' => (int) $scoredRows->sum('points'),
-            'badges' => self::badgesFromScoringRow([
-                'registrasi_personal' => (float) $scoredRows->sum('registrasi_personal'),
-                'herregistrasi_personal' => (float) $scoredRows->sum('herregistrasi_personal'),
-                'cpm_cpl' => (float) $scoredRows->avg('cpm_cpl'),
-                'closing_iklan' => (float) $scoredRows->sum('closing_iklan'),
-                'follow_up_total' => (float) $scoredRows->sum('follow_up_total'),
-                'leads_total' => (float) $scoredRows->sum('leads_total'),
-                'laporan_total' => (float) $scoredRows->sum('laporan_total'),
-                'aktivitas_lain_total' => (float) $scoredRows->sum('aktivitas_lain_total'),
-                'hari_aktif' => $reportDays,
-            ]),
+            'badges' => self::badgesFromScoringRow($pooledRow),
+            'badge_progress' => self::badgeProgressFor($pooledRow),
         ];
     }
 
@@ -192,73 +196,22 @@ class GamificationService
     }
 
     /**
-     * "Skor Performa" (Profile page's Aura card) - a 30-day rolling snapshot
-     * of report/lead/closing volume, capped at 100, so it reflects current
-     * activity instead of growing forever. The previous formula summed
-     * ALL-TIME counts, so any staff with a moderate history (~25 reports)
-     * hit the cap once and stayed at 100 permanently, even after months of
-     * inactivity - not a "performance" signal at that point. Deliberately
-     * stays a live calculation, not part of the XP ledger.
+     * The next League tier's XP threshold above the given lifetime XP, or
+     * null once already at the top tier (Diamond) - reuses leagueFor()'s
+     * exact thresholds so this stays in sync if they ever change. Purely a
+     * display helper for "X XP menuju League Y" progress text.
      *
-     * Staff use their own personal report counts - the same narrow
-     * user_id/staff_name match personalProfileXp() uses, NOT
-     * ScopedReports/ReportScope, which widens visibility (e.g. every ads
-     * report in a staff's campus, not just their own) for viewing purposes
-     * and would leak teammates' activity into what's supposed to be a
-     * personal score. Koordinator/senior use their team's pooled recent
-     * counts in scope, averaged across active staff headcount - the same
-     * "average, not raw pooled total" principle averageTeamProfileXp()
-     * already applies to XP, so wilayah size alone can't inflate/deflate a
-     * koordinator's score.
+     * @return array{name: string, threshold: int}|null
      */
-    public static function recentPerformanceScore(RsmUser $user): int
+    public static function nextLeagueThreshold(int $points): ?array
     {
-        $area = $user->area ?: 'Regional B';
-        $since = now()->subDays(30)->startOfDay();
-
-        if ($user->role === RsmUser::ROLE_STAFF) {
-            $query = RsmReport::query()
-                ->where('area', $area)
-                ->where('report_date', '>=', $since)
-                ->where(fn ($q) => $q->where('user_id', $user->id)->orWhere('staff_name', $user->name));
-
-            return self::scoreFromVolume(
-                (clone $query)->count(),
-                (int) (clone $query)->sum('leads_count'),
-                (int) (clone $query)->sum('closing_count')
-            );
+        foreach (['Silver' => 500, 'Gold' => 1000, 'Platinum' => 2500, 'Diamond' => 5000] as $name => $threshold) {
+            if ($points < $threshold) {
+                return ['name' => $name, 'threshold' => $threshold];
+            }
         }
 
-        $filters = [
-            'date_from' => $since->toDateString(),
-            'date_to' => now()->endOfDay()->toDateTimeString(),
-            'wilayah' => '', 'unit_name' => '', 'staff_name' => '',
-        ];
-        $query = ScopedReports::query($area, $filters, $user);
-        $reports = (clone $query)->count();
-        $leads = (int) (clone $query)->sum('leads_count');
-        $closing = (int) (clone $query)->sum('closing_count');
-
-        $staffQuery = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('area', $area)->where('is_active', true);
-        if ($user->role === RsmUser::ROLE_KOORDINATOR && trim((string) $user->regional) !== '') {
-            $staffQuery->where('regional', $user->regional);
-        }
-        $staffCount = $staffQuery->count();
-
-        if ($staffCount === 0) {
-            return 0;
-        }
-
-        return self::scoreFromVolume(
-            (int) round($reports / $staffCount),
-            (int) round($leads / $staffCount),
-            (int) round($closing / $staffCount)
-        );
-    }
-
-    private static function scoreFromVolume(int $reports, int $leads, int $closing): int
-    {
-        return min(100, ($reports * 4) + ($leads * 2) + ($closing * 8));
+        return null;
     }
 
     /**
@@ -642,9 +595,29 @@ class GamificationService
     /** @return list<string> */
     private static function badgesFromScoringRow(array $row, array $fallbackBadges = []): array
     {
-        $badges = [];
+        $badges = array_column(array_filter(self::badgeProgressFor($row), fn (array $b) => $b['achieved']), 'name');
+
+        if ($badges === [] && $fallbackBadges !== []) {
+            $badges = array_values(array_filter($fallbackBadges, fn (string $badge) => $badge !== 'On Progress'));
+        }
+
+        return $badges === [] ? ['On Progress'] : $badges;
+    }
+
+    /**
+     * Full per-badge breakdown (actual/target/achieved, not just the
+     * achieved names badgesFromScoringRow() reduces this down to) for one
+     * scored row - same settings/indicators/actual/target/achieved
+     * computation either way, just exposing the whole thing for progress
+     * displays (Profile page badge cards).
+     *
+     * @return list<array{key: string, name: string, tone: string, indicator_label: string, target: float, actual: float, direction: string, achieved: bool, condition: string}>
+     */
+    public static function badgeProgressFor(array $row): array
+    {
         $settings = self::badgeSettings();
         $indicators = self::scoringIndicators();
+        $result = [];
 
         foreach (self::BADGE_DEFAULTS as $key => $meta) {
             $indicatorKey = (string) ($settings[$key]['indicator_key'] ?? self::defaultIndicatorKey($meta, $indicators));
@@ -654,21 +627,26 @@ class GamificationService
             }
             $actual = (float) ($row[$metricKey] ?? 0);
             $target = (float) ($settings[$key]['target_value'] ?? $meta['target']);
+            $indicatorLabel = (string) ($indicators[$indicatorKey]['label'] ?? $meta['name']);
             $direction = (string) ($indicators[$indicatorKey]['direction'] ?? 'higher');
             $achieved = $direction === 'lower'
                 ? ($target > 0 && $actual > 0 && $actual <= $target)
                 : ($actual >= $target);
 
-            if ($achieved) {
-                $badges[] = $meta['name'];
-            }
+            $result[] = [
+                'key' => $key,
+                'name' => $meta['name'],
+                'tone' => $meta['tone'],
+                'indicator_label' => $indicatorLabel,
+                'target' => $target,
+                'actual' => $actual,
+                'direction' => $direction,
+                'achieved' => $achieved,
+                'condition' => self::conditionFor($indicatorLabel, $target, $direction),
+            ];
         }
 
-        if ($badges === [] && $fallbackBadges !== []) {
-            $badges = array_values(array_filter($fallbackBadges, fn (string $badge) => $badge !== 'On Progress'));
-        }
-
-        return $badges === [] ? ['On Progress'] : $badges;
+        return $result;
     }
 
     /** @return array<string, float> */
