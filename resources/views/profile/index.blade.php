@@ -4,15 +4,12 @@
             <aside class="rounded-2xl border border-white/10 bg-[#212446] p-5 text-center">
                 <div class="relative mx-auto h-40 w-40">
                     <x-league-photo :league="$league" :user="$user" text-size="text-lg" />
-                    <label for="profile_photo" title="Ganti foto profil" class="absolute -bottom-2 -right-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 border-[#212446] bg-emerald-500 text-white shadow-lg hover:bg-emerald-400">
-                        <x-icon name="edit" class="h-4 w-4" />
-                    </label>
                 </div>
                 <h2 class="mt-4 text-lg font-bold">{{ $user->name }}</h2>
                 <p class="text-xs text-indigo-200">{{ $user->username }}</p>
                 <div class="mt-3 flex flex-wrap justify-center gap-x-2 text-xs font-semibold text-indigo-100"><span>{{ $user->jabatan ?: \App\Support\RsmRole::label($user->role) }}</span><span>•</span><span>{{ $user->regional ?: 'Wilayah belum diatur' }}</span></div>
                 <div class="mt-5 rounded-2xl bg-[#090b1e]/60 p-4 text-left"><div class="flex justify-between text-xs text-indigo-200"><span>Level {{ $level }}</span><strong class="text-white">{{ number_format($xp,0,',','.') }} XP</strong></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 progress-fill" style="width:{{ $levelProgress }}%"></div></div>@php $nextLeague = \App\Services\Dashboard\GamificationService::nextLeagueThreshold($xp); @endphp<p class="mt-2 text-xs text-indigo-200">League {{ $league }}</p><p class="mt-1 text-[11px] text-indigo-300">@if ($nextLeague){{ number_format($xp,0,',','.') }} / {{ number_format($nextLeague['threshold'],0,',','.') }} XP menuju League {{ $nextLeague['name'] }}@else League tertinggi tercapai @endif</p></div>
-                <nav class="mt-5 grid gap-1 text-left text-sm font-semibold text-indigo-100"><a href="#ringkasan" class="rounded-xl bg-black/25 px-3 py-2">Ringkasan</a><a href="#daily-mission" class="rounded-xl px-3 py-2 hover:bg-black/25">Daily Mission</a><a href="#pencapaian" class="rounded-xl px-3 py-2 hover:bg-black/25">Pencapaian</a><a href="#aktivitas" class="rounded-xl px-3 py-2 hover:bg-black/25">Aktivitas</a><a href="#pengaturan" class="rounded-xl px-3 py-2 hover:bg-black/25">Pengaturan Profil</a></nav>
+                <nav class="mt-5 grid gap-1 text-left text-sm font-semibold text-indigo-100"><a href="#ringkasan" class="rounded-xl bg-black/25 px-3 py-2">Ringkasan</a><a href="#daily-mission" class="rounded-xl px-3 py-2 hover:bg-black/25">Daily Mission</a><a href="#pencapaian" class="rounded-xl px-3 py-2 hover:bg-black/25">Pencapaian</a><a href="#aktivitas" class="rounded-xl px-3 py-2 hover:bg-black/25">Aktivitas</a></nav>
             </aside>
             <div class="space-y-5">
                 @php
@@ -166,7 +163,6 @@
                     </div>
                 </section>
                 <section id="aktivitas" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="mb-3 text-base font-bold">Aktivitas Terbaru</h2><div class="space-y-2">@forelse($reports as $report)<a href="{{ route('reports.show',$report) }}" class="block rounded-xl border border-white/10 p-3 hover:bg-white/10"><div class="flex justify-between gap-3"><strong class="text-sm">{{ $report->title ?: $report->campaign_name }}</strong><span class="text-xs text-indigo-200">{{ optional($report->report_date)->format('d/m/Y') }}</span></div><p class="text-xs text-indigo-200">{{ $report->report_type }} · {{ $report->status }} · {{ $report->leads_count }} leads · {{ $report->closing_count }} closing</p></a>@empty<p class="text-sm text-indigo-200">Belum ada aktivitas.</p>@endforelse</div></section>
-                <section id="pengaturan" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="text-base font-bold">Pengaturan Profil</h2><form class="mt-4 grid gap-3" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">@csrf<textarea name="bio_text" maxlength="800" rows="4" class="rounded-lg border-white/10 bg-[#212446] text-white" placeholder="Biodata singkat">{{ old('bio_text', $user->bio_text) }}</textarea><input type="file" id="profile_photo" name="profile_photo" accept="image/jpeg,image/png,image/webp" class="text-sm text-indigo-100"><button class="w-fit rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-white">Simpan Profil</button></form></section>
             </div>
         </div>
     </div>
