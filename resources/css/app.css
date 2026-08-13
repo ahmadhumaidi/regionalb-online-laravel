@@ -197,43 +197,6 @@
 }
 
 /*
- * League profile-photo frame (Profile page): a colored gradient ring
- * around the avatar matching the staff's current League tier (see
- * GamificationService::leagueFor()) - a static gradient + glow, no
- * animation, since a purely decorative ring doesn't need one and the
- * progress-bar shimmer above already showed animated background
- * properties can get throttled by some browsers.
- */
-.league-frame {
-    box-shadow: 0 0 20px 0 var(--league-glow, transparent);
-}
-
-.league-frame-starter {
-    background: linear-gradient(135deg, #8b5a2b, #d9975a, #6b4423, #cd8a54);
-    --league-glow: rgba(180, 110, 50, 0.45);
-}
-
-.league-frame-silver {
-    background: linear-gradient(135deg, #cbd5e1, #f8fafc, #94a3b8, #e2e8f0);
-    --league-glow: rgba(203, 213, 225, 0.5);
-}
-
-.league-frame-gold {
-    background: linear-gradient(135deg, #eab308, #fde68a, #b45309, #fef3c7);
-    --league-glow: rgba(234, 179, 8, 0.5);
-}
-
-.league-frame-platinum {
-    background: linear-gradient(135deg, #a5b4cb, #f0f9ff, #7d93ad, #dbeafe);
-    --league-glow: rgba(165, 180, 203, 0.55);
-}
-
-.league-frame-diamond {
-    background: linear-gradient(135deg, #8b5cf6, #ddd6fe, #6d28d9, #c4b5fd);
-    --league-glow: rgba(139, 92, 246, 0.55);
-}
-
-/*
  * Progress bar fill animation: any bar carrying this class grows from 0 to
  * its target width on page load instead of appearing instantly at full
  * size (see the DOMContentLoaded handler in app.js that drives it), plus a
