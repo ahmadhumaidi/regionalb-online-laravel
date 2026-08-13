@@ -4,7 +4,6 @@ namespace App\Services\Dashboard;
 
 use App\Models\RsmReport;
 use App\Models\RsmUser;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -63,7 +62,6 @@ class DashboardOverviewService
                 'cpl' => DashboardNumbers::divide($spend, $adsLeads),
                 'cost_per_registrasi' => DashboardNumbers::divide($spend, $adsRegistrasi),
             ],
-            'ranking' => self::ranking($rows, $area),
             'daily_reports' => self::dailyReports($area, $filters, $user),
         ];
     }
@@ -87,8 +85,6 @@ class DashboardOverviewService
 
         return [
             'report_id' => $report->id,
-            'partner_campus_id' => $report->partner_campus_id,
-            'unit_name' => $report->unit_name,
             'leads' => $leads,
             'follow_up' => $followUp,
             'registrasi' => $registrasi,
@@ -98,58 +94,6 @@ class DashboardOverviewService
             'budget_approved' => (float) $report->budget_approved,
             'realization_amount' => (float) $report->realization_amount,
         ];
-    }
-
-    /** @param \Illuminate\Support\Collection $rows */
-    private static function ranking($rows, string $area): array
-    {
-        $names = DB::table('partner_campuses')->get(['id', 'name', 'display_name'])
-            ->mapWithKeys(fn ($c) => [$c->id => $c->display_name ?: $c->name]);
-
-        $groups = $rows->groupBy(fn ($row) => $row['partner_campus_id']
-            ? 'campus:'.$row['partner_campus_id']
-            : 'unit:'.$row['unit_name']);
-
-        $ranking = $groups->map(function ($groupRows, $key) use ($names) {
-            $first = $groupRows->first();
-            $label = $first['partner_campus_id']
-                ? ($names[$first['partner_campus_id']] ?? $first['unit_name'])
-                : ($first['unit_name'] ?: '-');
-
-            $leads = (float) $groupRows->sum('leads');
-            $registrasi = (float) $groupRows->sum('registrasi');
-            $herregistrasi = (float) $groupRows->sum('herregistrasi');
-            $adsRows = $groupRows->filter(fn ($row) => $row['report_type'] === RsmReport::TYPE_ADS);
-            $spend = (float) $adsRows->sum('realization_amount');
-            $adsLeads = (float) $adsRows->sum('leads');
-            $adsRegistrasi = (float) $adsRows->sum('registrasi');
-
-            return [
-                'unit_label' => $label,
-                'leads' => $leads,
-                'registrasi' => $registrasi,
-                'herregistrasi' => $herregistrasi,
-                'conversion_rate' => DashboardNumbers::percent($registrasi, $leads),
-                'spend' => $spend,
-                'cpl' => DashboardNumbers::divide($spend, $adsLeads),
-                'cost_per_registrasi' => DashboardNumbers::divide($spend, $adsRegistrasi),
-            ];
-        })->values();
-
-        // Reports without a specific campus/unit (e.g. "Aktivitas Lain")
-        // fall back to unit_name = the area itself ("Regional B") rather
-        // than a real campus - exclude that row so the area doesn't show
-        // up ranked alongside actual units/kampus.
-        return $ranking
-            ->reject(fn (array $row) => mb_strtolower(trim($row['unit_label'])) === mb_strtolower(trim($area)))
-            ->sortBy([
-                ['registrasi', 'desc'],
-                ['leads', 'desc'],
-                ['unit_label', 'asc'],
-            ])
-            ->values()
-            ->take(10)
-            ->all();
     }
 
     private static function dailyReports(string $area, array $filters, RsmUser $user): array

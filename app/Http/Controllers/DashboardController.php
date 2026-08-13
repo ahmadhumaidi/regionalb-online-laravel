@@ -107,7 +107,6 @@ class DashboardController extends Controller
             'topStaffAchievement' => $topStaffAchievement,
             'topStaffMaxValue' => $topStaffMaxValue,
             'gamification' => $gamification,
-            'ranking' => $overview['ranking'],
             'dailyReports' => $overview['daily_reports'],
         ]);
     }

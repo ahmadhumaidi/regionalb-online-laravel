@@ -10,6 +10,5 @@
         :top-staff-max-value="$topStaffMaxValue"
     />
     <x-dashboard.gamification-panel :gamification="$gamification" />
-    <x-dashboard.ranking-table :ranking="$ranking" />
     <x-dashboard.daily-report-table :reports="$dailyReports" />
 </x-layouts.app>
