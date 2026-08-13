@@ -200,11 +200,14 @@
  * Progress bar fill animation: any bar carrying this class grows from 0 to
  * its target width on page load instead of appearing instantly at full
  * size (see the DOMContentLoaded handler in app.js that drives it), plus a
- * looping diagonal-stripe shimmer over the filled portion. Stripe tile is
- * 10px (not the classic ~50px Bootstrap size) since these bars run 4-8px
- * tall - a full-size tile would just look like one diagonal blob instead
- * of a repeating pattern. border-radius: inherit keeps the stripes clipped
- * to the same rounded-full shape as the bar itself.
+ * looping diagonal-stripe shimmer over the filled portion.
+ *
+ * background-position travels 0 -> 100% (relative to the bar's own current
+ * width, so it scales with however wide each bar is) instead of a small
+ * fixed pixel offset - a 10px shift was mathematically a seamless loop but
+ * visually too subtle to notice at a glance. will-change hints the browser
+ * to keep this on its own compositor layer. border-radius: inherit keeps
+ * the stripes clipped to the same rounded-full shape as the bar itself.
  */
 .progress-fill {
     position: relative;
@@ -219,17 +222,18 @@
     border-radius: inherit;
     background-image: repeating-linear-gradient(
         45deg,
-        rgba(255, 255, 255, 0.4) 0,
-        rgba(255, 255, 255, 0.4) 25%,
+        rgba(255, 255, 255, 0.45) 0,
+        rgba(255, 255, 255, 0.45) 25%,
         transparent 25%,
         transparent 50%,
-        rgba(255, 255, 255, 0.4) 50%,
-        rgba(255, 255, 255, 0.4) 75%,
+        rgba(255, 255, 255, 0.45) 50%,
+        rgba(255, 255, 255, 0.45) 75%,
         transparent 75%,
         transparent
     );
-    background-size: 10px 10px;
-    animation: progress-fill-stripes 1s linear infinite;
+    background-size: 16px 16px;
+    will-change: background-position;
+    animation: progress-fill-stripes 900ms linear infinite;
 }
 
 @keyframes progress-fill-stripes {
@@ -237,7 +241,7 @@
         background-position: 0 0;
     }
     100% {
-        background-position: 10px 10px;
+        background-position: 100% 100%;
     }
 }
 
