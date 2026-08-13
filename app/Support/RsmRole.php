@@ -141,6 +141,14 @@ class RsmRole
         return self::ROLE_LABELS[$role] ?? ucwords(str_replace('_', ' ', $role));
     }
 
+    /** Hierarchy position (0 = highest, super_user) per ROLE_LABELS' key order - for sorting a user list by role rather than name/regional. */
+    public static function roleRank(string $role): int
+    {
+        $index = array_search($role, array_keys(self::ROLE_LABELS), true);
+
+        return $index === false ? count(self::ROLE_LABELS) : $index;
+    }
+
     /**
      * Roles a Kendala-flow responder (ObstacleFollowUpController) can hand
      * a laporan off to next, based on their own role: koordinator only to

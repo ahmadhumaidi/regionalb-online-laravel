@@ -40,7 +40,12 @@ class App extends Component
         $this->impersonationUsers = RsmRole::canImpersonate($user)
             ? RsmUser::where('is_active', true)
                 ->where(fn ($q) => $q->where('area', $user->area)->orWhereNull('area')->orWhere('area', ''))
-                ->orderBy('regional')->orderBy('name')->get()
+                ->get()
+                ->sortBy([
+                    fn (RsmUser $a, RsmUser $b) => RsmRole::roleRank($a->role) <=> RsmRole::roleRank($b->role),
+                    fn (RsmUser $a, RsmUser $b) => strcasecmp((string) $a->name, (string) $b->name),
+                ])
+                ->values()
             : collect();
         if (Schema::hasTable('rsm_notifications')) {
             $this->unreadNotificationCount = RsmNotification::where('recipient_user_id', $user->id)->unread()->count();
