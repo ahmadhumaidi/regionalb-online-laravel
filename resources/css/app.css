@@ -268,6 +268,7 @@
     }
 
     .profile-glass-shell #daily-mission > div:first-child > div,
+    .profile-glass-shell #ringkasan,
     .profile-glass-shell .profile-stat-strip,
     .profile-glass-shell .profile-stat-strip article {
         background: transparent !important;
@@ -281,17 +282,27 @@
         border-color: transparent !important;
     }
 
+    .profile-glass-shell #ringkasan {
+        border-color: transparent !important;
+    }
+
     .profile-glass-shell .profile-stat-strip article {
         border-color: rgba(255, 255, 255, 0.26) !important;
     }
 
     .profile-glass-shell .profile-stat-strip:hover,
+    .profile-glass-shell #ringkasan:hover,
     .profile-glass-shell .profile-stat-strip article:hover {
         box-shadow: none !important;
     }
 
     .profile-glass-shell .profile-stat-strip:hover {
         border-color: transparent !important;
+    }
+
+    .profile-glass-shell #ringkasan:hover {
+        border-color: transparent !important;
+        transform: none !important;
     }
 
     .profile-glass-shell .profile-stat-strip article:hover {
