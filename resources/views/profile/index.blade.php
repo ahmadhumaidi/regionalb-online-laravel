@@ -120,7 +120,7 @@
                         </div>
                     </div>
                 </section>
-                <section class="grid gap-3 sm:grid-cols-5">@foreach([['Kegiatan',$stats['reports']],['Leads',$stats['leads']],['Closing',$stats['closing']],['Hari aktif',$stats['active_days']],['Skor',$score]] as [$label,$value])<article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">{{ $label }}</span><strong class="mt-2 block text-2xl">{{ number_format($value,0,',','.') }}</strong></article>@endforeach</section>
+                <section class="profile-stat-strip grid gap-3 sm:grid-cols-5">@foreach([['Kegiatan',$stats['reports']],['Leads',$stats['leads']],['Closing',$stats['closing']],['Hari aktif',$stats['active_days']],['Skor',$score]] as [$label,$value])<article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">{{ $label }}</span><strong class="mt-2 block text-2xl">{{ number_format($value,0,',','.') }}</strong></article>@endforeach</section>
                 <section id="pencapaian" class="rounded-2xl border border-white/10 bg-[#35385f] p-5">
                     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                         <h2 class="text-base font-bold">Badge & Achievement</h2>

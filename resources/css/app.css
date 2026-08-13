@@ -222,8 +222,6 @@
 
     .profile-glass-shell aside,
     .profile-glass-shell section,
-    .profile-glass-shell article,
-    .profile-glass-shell #daily-mission > div > div,
     .profile-glass-shell #aktivitas a,
     .profile-glass-shell #pengaturan textarea {
         background: linear-gradient(145deg, rgba(82, 87, 141, 0.36), rgba(20, 25, 59, 0.52)) !important;
@@ -240,7 +238,6 @@
 
     .profile-glass-shell aside,
     .profile-glass-shell section,
-    .profile-glass-shell article,
     .profile-glass-shell #daily-mission .space-y-2 > div,
     .profile-glass-shell #aktivitas a {
         transition:
@@ -252,7 +249,6 @@
 
     .profile-glass-shell aside:hover,
     .profile-glass-shell section:hover,
-    .profile-glass-shell article:hover,
     .profile-glass-shell #daily-mission .space-y-2 > div:hover,
     .profile-glass-shell #aktivitas a:hover {
         transform: translateY(-4px) rotateX(1.2deg);
@@ -269,6 +265,24 @@
             radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.24), transparent 32%),
             radial-gradient(circle at 86% 16%, rgba(251, 191, 36, 0.13), transparent 24%),
             linear-gradient(145deg, rgba(35, 52, 101, 0.66), rgba(13, 18, 43, 0.72)) !important;
+    }
+
+    .profile-glass-shell #daily-mission > div:first-child > div,
+    .profile-glass-shell .profile-stat-strip,
+    .profile-glass-shell .profile-stat-strip article {
+        background: transparent !important;
+        border-color: transparent !important;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        box-shadow: none !important;
+        transform: none !important;
+    }
+
+    .profile-glass-shell .profile-stat-strip:hover,
+    .profile-glass-shell .profile-stat-strip article:hover {
+        transform: none !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
     }
 
     .profile-glass-shell nav a,
