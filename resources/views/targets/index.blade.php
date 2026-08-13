@@ -123,15 +123,10 @@
         <table class="w-full min-w-[1080px] text-left text-sm">
             <thead>
                 <tr class="border-b border-border text-xs text-ink-muted">
-                    <th class="py-2 pr-3">Bulan</th>
-                    <th class="py-2 pr-3">Wilayah</th>
-                    <th class="py-2 pr-3">Unit</th>
                     <th class="py-2 pr-3">Staff</th>
-                    <th class="py-2 pr-3">Reg</th>
-                    <th class="py-2 pr-3">Herreg</th>
-                    <th class="py-2 pr-3">CPM/CPL</th>
-                    <th class="py-2 pr-3">Closing Iklan</th>
-                    <th class="py-2 pr-3">FU</th>
+                    @foreach ($indicators as $indicator)
+                        <th class="py-2 pr-3">{{ $indicator['label'] }}</th>
+                    @endforeach
                     <th class="py-2 pr-3">Bobot</th>
                     <th class="py-2">Indikator Terisi</th>
                 </tr>
@@ -145,20 +140,15 @@
                         $targetFor = fn (string $key) => (float) ($indicatorRows[$key]['target'] ?? 0);
                     @endphp
                     <tr class="border-b border-border/60">
-                        <td class="py-2 pr-3">{{ $target->target_month }}</td>
-                        <td class="py-2 pr-3">{{ $target->wilayah ?: '-' }}</td>
-                        <td class="py-2 pr-3">{{ $target->unit_name ?: '-' }}</td>
                         <td class="py-2 pr-3">{{ $target->staff_name ?: '-' }}</td>
-                        <td class="py-2 pr-3">{{ number_format((float) $target->target_registrasi, 0, ',', '.') }}</td>
-                        <td class="py-2 pr-3">{{ number_format((float) $target->target_herregistrasi, 0, ',', '.') }}</td>
-                        <td class="py-2 pr-3">{{ number_format($targetFor('cpm_cpl'), 0, ',', '.') }}</td>
-                        <td class="py-2 pr-3">{{ number_format($targetFor('closing_iklan'), 0, ',', '.') }}</td>
-                        <td class="py-2 pr-3">{{ number_format((float) $target->target_follow_up, 0, ',', '.') }}</td>
+                        @foreach ($indicators as $key => $indicator)
+                            <td class="py-2 pr-3">{{ number_format($targetFor($key), 0, ',', '.') }}</td>
+                        @endforeach
                         <td class="py-2 pr-3">{{ number_format($weightTotal, 2, ',', '.') }}%</td>
                         <td class="py-2">{{ $filledCount }} indikator</td>
                     </tr>
                 @empty
-                    <tr><td colspan="11" class="py-8 text-center text-ink-muted">Belum ada target staff.</td></tr>
+                    <tr><td colspan="{{ count($indicators) + 3 }}" class="py-8 text-center text-ink-muted">Belum ada target staff.</td></tr>
                 @endforelse
             </tbody>
         </table>
