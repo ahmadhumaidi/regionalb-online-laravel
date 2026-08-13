@@ -202,15 +202,15 @@
  * size (see the DOMContentLoaded handler in app.js that drives it), plus a
  * looping diagonal-stripe shimmer over the filled portion.
  *
- * background-position travels exactly one tile (16px) - a fixed pixel
- * distance keeps the speed consistent no matter how wide a given bar is
- * (a percentage-based travel distance made wide bars race by, since the
- * same 0->100% happened over the same short duration regardless of how
- * many pixels that actually was). 2.2s is a gentle, unhurried shimmer -
- * quick enough to read as "moving", slow enough not to look frantic.
- * will-change hints the browser to keep this on its own compositor layer.
- * border-radius: inherit keeps the stripes clipped to the same
- * rounded-full shape as the bar itself.
+ * The shimmer moves via `transform: translateX`, not an animated
+ * `background-position` - background-position animation isn't
+ * compositor-only (it needs a repaint every frame), and some
+ * Chromium-based browsers throttle or skip exactly that kind of animation
+ * under battery-saver/efficiency modes, which reads as "the stripes are
+ * there but frozen". transform is always GPU-composited and exempt from
+ * that throttling. The pseudo-element is drawn one tile (16px) wider than
+ * the bar and slid left by exactly one tile, so the loop point is
+ * seamless - overflow: hidden on .progress-fill clips the overhang.
  */
 .progress-fill {
     position: relative;
@@ -221,7 +221,10 @@
 .progress-fill::after {
     content: '';
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: calc(100% + 16px);
     border-radius: inherit;
     background-image: repeating-linear-gradient(
         45deg,
@@ -235,16 +238,16 @@
         transparent
     );
     background-size: 16px 16px;
-    will-change: background-position;
+    will-change: transform;
     animation: progress-fill-stripes 2.2s linear infinite;
 }
 
 @keyframes progress-fill-stripes {
-    0% {
-        background-position: 0 0;
+    from {
+        transform: translateX(0);
     }
-    100% {
-        background-position: 16px 16px;
+    to {
+        transform: translateX(-16px);
     }
 }
 
