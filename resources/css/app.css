@@ -240,7 +240,7 @@
             radial-gradient(circle at 42% 92%, rgba(255, 255, 255, 0.14) 0 1rem, rgba(255, 255, 255, 0.05) 2.8rem, transparent 5.8rem);
         opacity: 0.56;
         filter: blur(5px) saturate(145%);
-        animation: sidebar-particles-drift 43s linear infinite, sidebar-particles-shimmer 7.8s ease-in-out infinite alternate;
+        animation: sidebar-particles-drift 43s linear infinite alternate, sidebar-particles-shimmer 7.8s ease-in-out infinite alternate;
     }
 
     .app-sidebar > * {
@@ -414,7 +414,7 @@
         filter: blur(8px);
         transform-origin: 43% 62%;
         animation:
-            bokeh-particles-drift 53s linear infinite,
+            bokeh-particles-drift 53s linear infinite alternate,
             bokeh-particles-shimmer 7.3s ease-in-out infinite alternate,
             bokeh-particles-wobble 19s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
     }
