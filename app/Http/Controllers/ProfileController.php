@@ -134,7 +134,13 @@ class ProfileController extends Controller
             fn (string $name) => ['name' => $name, 'ok' => in_array($name, $earnedBadges, true)],
             GamificationService::BADGE_NAMES
         );
-        $score = min(100, ($stats['reports'] * 4) + ($stats['leads'] * 2) + ($stats['closing'] * 8));
+        // Aura ("Skor Performa"): a 30-day rolling snapshot, not all-time -
+        // see GamificationService::recentPerformanceScore() for why (the
+        // old all-time version hit its cap once and stayed there forever).
+        // $stats above stays all-time on purpose - those "Kegiatan/Leads/
+        // Closing/Hari aktif" cards are a lifetime activity summary, a
+        // different concept from this current-performance score.
+        $score = GamificationService::recentPerformanceScore($user);
 
         $todayEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)->whereDate('claim_date', now()->toDateString())->sum('energy');
         $weekEnergy = (int) RsmDailyMissionClaim::where('user_id', $user->id)

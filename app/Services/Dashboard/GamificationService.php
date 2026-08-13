@@ -192,6 +192,76 @@ class GamificationService
     }
 
     /**
+     * "Skor Performa" (Profile page's Aura card) - a 30-day rolling snapshot
+     * of report/lead/closing volume, capped at 100, so it reflects current
+     * activity instead of growing forever. The previous formula summed
+     * ALL-TIME counts, so any staff with a moderate history (~25 reports)
+     * hit the cap once and stayed at 100 permanently, even after months of
+     * inactivity - not a "performance" signal at that point. Deliberately
+     * stays a live calculation, not part of the XP ledger.
+     *
+     * Staff use their own personal report counts - the same narrow
+     * user_id/staff_name match personalProfileXp() uses, NOT
+     * ScopedReports/ReportScope, which widens visibility (e.g. every ads
+     * report in a staff's campus, not just their own) for viewing purposes
+     * and would leak teammates' activity into what's supposed to be a
+     * personal score. Koordinator/senior use their team's pooled recent
+     * counts in scope, averaged across active staff headcount - the same
+     * "average, not raw pooled total" principle averageTeamProfileXp()
+     * already applies to XP, so wilayah size alone can't inflate/deflate a
+     * koordinator's score.
+     */
+    public static function recentPerformanceScore(RsmUser $user): int
+    {
+        $area = $user->area ?: 'Regional B';
+        $since = now()->subDays(30)->startOfDay();
+
+        if ($user->role === RsmUser::ROLE_STAFF) {
+            $query = RsmReport::query()
+                ->where('area', $area)
+                ->where('report_date', '>=', $since)
+                ->where(fn ($q) => $q->where('user_id', $user->id)->orWhere('staff_name', $user->name));
+
+            return self::scoreFromVolume(
+                (clone $query)->count(),
+                (int) (clone $query)->sum('leads_count'),
+                (int) (clone $query)->sum('closing_count')
+            );
+        }
+
+        $filters = [
+            'date_from' => $since->toDateString(),
+            'date_to' => now()->endOfDay()->toDateTimeString(),
+            'wilayah' => '', 'unit_name' => '', 'staff_name' => '',
+        ];
+        $query = ScopedReports::query($area, $filters, $user);
+        $reports = (clone $query)->count();
+        $leads = (int) (clone $query)->sum('leads_count');
+        $closing = (int) (clone $query)->sum('closing_count');
+
+        $staffQuery = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('area', $area)->where('is_active', true);
+        if ($user->role === RsmUser::ROLE_KOORDINATOR && trim((string) $user->regional) !== '') {
+            $staffQuery->where('regional', $user->regional);
+        }
+        $staffCount = $staffQuery->count();
+
+        if ($staffCount === 0) {
+            return 0;
+        }
+
+        return self::scoreFromVolume(
+            (int) round($reports / $staffCount),
+            (int) round($leads / $staffCount),
+            (int) round($closing / $staffCount)
+        );
+    }
+
+    private static function scoreFromVolume(int $reports, int $leads, int $closing): int
+    {
+        return min(100, ($reports * 4) + ($leads * 2) + ($closing * 8));
+    }
+
+    /**
      * Personal-only point total for the lifetime XP ledger (Gamification
      * Phase 1) - deliberately does NOT go through ScopedReports/ReportScope,
      * since that widens visibility to a koordinator's whole wilayah or a
