@@ -91,6 +91,20 @@ class AchievementController extends Controller
                 return $row;
             })
             ->reject(fn (array $row) => in_array($row['matched_role'] ?? null, self::NON_STAFF_ROLES, true))
+            ->values();
+
+        // Grouped by regional into its own card, each staff list sorted by
+        // registrasi (highest first) - the regional groups themselves are
+        // also ordered by their combined registrasi, highest first, so the
+        // page reads as a ranking rather than a flat alphabetical table.
+        $rowsByRegional = $rows
+            ->groupBy(fn (array $row) => $row['regional'] ?: '-')
+            ->map(fn ($group, $regional) => [
+                'regional' => $regional,
+                'total_registrasi' => (float) $group->sum('registrasi'),
+                'rows' => $group->sortByDesc('registrasi')->values()->all(),
+            ])
+            ->sortByDesc('total_registrasi')
             ->values()
             ->all();
 
@@ -101,7 +115,7 @@ class AchievementController extends Controller
             'summaryCards' => $summaryCards,
             'sources' => $performance['sources'],
             'regionalSummary' => $regionalSummary,
-            'rows' => $rows,
+            'rowsByRegional' => $rowsByRegional,
         ]);
     }
 }
