@@ -346,6 +346,42 @@
         pointer-events: none;
     }
 
+    .profile-glass-shell::after,
+    .forum-glass-shell::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.46;
+        mix-blend-mode: screen;
+        background-image:
+            radial-gradient(circle, rgba(255, 211, 130, 0.58) 0 2px, transparent 9px),
+            radial-gradient(circle, rgba(125, 211, 252, 0.42) 0 1.5px, transparent 8px),
+            radial-gradient(circle, rgba(196, 181, 253, 0.38) 0 1px, transparent 7px),
+            radial-gradient(circle, rgba(255, 255, 255, 0.34) 0 1px, transparent 6px);
+        background-position:
+            7% 18%,
+            72% 14%,
+            24% 78%,
+            88% 68%;
+        background-size:
+            360px 300px,
+            420px 340px,
+            310px 260px,
+            470px 390px;
+        filter: blur(0.4px);
+        animation:
+            bokeh-particles-drift 28s linear infinite,
+            bokeh-particles-shimmer 5.5s ease-in-out infinite alternate;
+    }
+
+    .profile-glass-shell > *,
+    .forum-glass-shell > * {
+        position: relative;
+        z-index: 1;
+    }
+
     .profile-glass-shell aside,
     .profile-glass-shell section,
     .profile-glass-shell #aktivitas a,
@@ -572,6 +608,38 @@
         100% {
             background-position: center, 50% 56%;
             background-size: auto, 110% auto;
+        }
+    }
+
+    @keyframes bokeh-particles-drift {
+        from {
+            background-position:
+                7% 18%,
+                72% 14%,
+                24% 78%,
+                88% 68%;
+        }
+        to {
+            background-position:
+                15% 10%,
+                64% 25%,
+                32% 66%,
+                80% 82%;
+        }
+    }
+
+    @keyframes bokeh-particles-shimmer {
+        0% {
+            opacity: 0.28;
+            filter: blur(0.3px) saturate(120%);
+        }
+        50% {
+            opacity: 0.58;
+            filter: blur(0.8px) saturate(160%);
+        }
+        100% {
+            opacity: 0.38;
+            filter: blur(0.45px) saturate(140%);
         }
     }
 }
