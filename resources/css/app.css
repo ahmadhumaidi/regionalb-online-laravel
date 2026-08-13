@@ -202,12 +202,15 @@
  * size (see the DOMContentLoaded handler in app.js that drives it), plus a
  * looping diagonal-stripe shimmer over the filled portion.
  *
- * background-position travels 0 -> 100% (relative to the bar's own current
- * width, so it scales with however wide each bar is) instead of a small
- * fixed pixel offset - a 10px shift was mathematically a seamless loop but
- * visually too subtle to notice at a glance. will-change hints the browser
- * to keep this on its own compositor layer. border-radius: inherit keeps
- * the stripes clipped to the same rounded-full shape as the bar itself.
+ * background-position travels exactly one tile (16px) - a fixed pixel
+ * distance keeps the speed consistent no matter how wide a given bar is
+ * (a percentage-based travel distance made wide bars race by, since the
+ * same 0->100% happened over the same short duration regardless of how
+ * many pixels that actually was). 2.2s is a gentle, unhurried shimmer -
+ * quick enough to read as "moving", slow enough not to look frantic.
+ * will-change hints the browser to keep this on its own compositor layer.
+ * border-radius: inherit keeps the stripes clipped to the same
+ * rounded-full shape as the bar itself.
  */
 .progress-fill {
     position: relative;
@@ -233,7 +236,7 @@
     );
     background-size: 16px 16px;
     will-change: background-position;
-    animation: progress-fill-stripes 900ms linear infinite;
+    animation: progress-fill-stripes 2.2s linear infinite;
 }
 
 @keyframes progress-fill-stripes {
@@ -241,7 +244,7 @@
         background-position: 0 0;
     }
     100% {
-        background-position: 100% 100%;
+        background-position: 16px 16px;
     }
 }
 
