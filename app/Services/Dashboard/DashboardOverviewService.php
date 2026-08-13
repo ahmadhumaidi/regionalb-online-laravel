@@ -63,7 +63,7 @@ class DashboardOverviewService
                 'cpl' => DashboardNumbers::divide($spend, $adsLeads),
                 'cost_per_registrasi' => DashboardNumbers::divide($spend, $adsRegistrasi),
             ],
-            'ranking' => self::ranking($rows),
+            'ranking' => self::ranking($rows, $area),
             'daily_reports' => self::dailyReports($area, $filters, $user),
         ];
     }
@@ -101,7 +101,7 @@ class DashboardOverviewService
     }
 
     /** @param \Illuminate\Support\Collection $rows */
-    private static function ranking($rows): array
+    private static function ranking($rows, string $area): array
     {
         $names = DB::table('partner_campuses')->get(['id', 'name', 'display_name'])
             ->mapWithKeys(fn ($c) => [$c->id => $c->display_name ?: $c->name]);
@@ -136,7 +136,12 @@ class DashboardOverviewService
             ];
         })->values();
 
+        // Reports without a specific campus/unit (e.g. "Aktivitas Lain")
+        // fall back to unit_name = the area itself ("Regional B") rather
+        // than a real campus - exclude that row so the area doesn't show
+        // up ranked alongside actual units/kampus.
         return $ranking
+            ->reject(fn (array $row) => mb_strtolower(trim($row['unit_label'])) === mb_strtolower(trim($area)))
             ->sortBy([
                 ['registrasi', 'desc'],
                 ['leads', 'desc'],
