@@ -1,5 +1,5 @@
 <x-layouts.app title="Profil Saya" active="profile">
-    <div class="rounded-3xl bg-[#101227] p-4 text-white shadow-2xl sm:p-6">
+    <div class="profile-glass-shell rounded-3xl bg-[#101227] p-4 text-white shadow-2xl sm:p-6">
         <div class="grid gap-5 lg:grid-cols-[270px_1fr]">
             <aside class="rounded-2xl border border-white/10 bg-[#212446] p-5 text-center">
                 <div class="relative mx-auto h-40 w-40">

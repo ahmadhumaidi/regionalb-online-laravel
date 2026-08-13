@@ -194,6 +194,97 @@
         @apply font-bold text-white;
         border-bottom-color: rgba(255, 255, 255, 0.18);
     }
+
+    .profile-glass-shell {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at 12% 8%, rgba(125, 211, 252, 0.18), transparent 28%),
+            radial-gradient(circle at 92% 12%, rgba(167, 139, 250, 0.16), transparent 24%),
+            linear-gradient(145deg, rgba(18, 23, 54, 0.86), rgba(11, 13, 30, 0.94));
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.16),
+            0 26px 70px -30px rgba(8, 11, 28, 0.88);
+        perspective: 1200px;
+    }
+
+    .profile-glass-shell::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background:
+            linear-gradient(115deg, rgba(255, 255, 255, 0.11), transparent 26%, rgba(255, 255, 255, 0.06) 52%, transparent 78%),
+            repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 18px);
+        opacity: 0.75;
+        pointer-events: none;
+    }
+
+    .profile-glass-shell aside,
+    .profile-glass-shell section,
+    .profile-glass-shell article,
+    .profile-glass-shell #daily-mission > div > div,
+    .profile-glass-shell #aktivitas a,
+    .profile-glass-shell #pengaturan textarea {
+        background: linear-gradient(145deg, rgba(82, 87, 141, 0.36), rgba(20, 25, 59, 0.52)) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        -webkit-backdrop-filter: blur(18px) saturate(145%);
+        backdrop-filter: blur(18px) saturate(145%);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.28),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+            0 16px 28px -18px rgba(0, 0, 0, 0.76),
+            0 34px 70px -34px rgba(48, 82, 190, 0.42);
+        transform-style: preserve-3d;
+    }
+
+    .profile-glass-shell aside,
+    .profile-glass-shell section,
+    .profile-glass-shell article,
+    .profile-glass-shell #daily-mission .space-y-2 > div,
+    .profile-glass-shell #aktivitas a {
+        transition:
+            transform 220ms ease,
+            box-shadow 220ms ease,
+            border-color 220ms ease,
+            background 220ms ease;
+    }
+
+    .profile-glass-shell aside:hover,
+    .profile-glass-shell section:hover,
+    .profile-glass-shell article:hover,
+    .profile-glass-shell #daily-mission .space-y-2 > div:hover,
+    .profile-glass-shell #aktivitas a:hover {
+        transform: translateY(-4px) rotateX(1.2deg);
+        border-color: rgba(255, 255, 255, 0.34) !important;
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.36),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+            0 22px 34px -18px rgba(0, 0, 0, 0.82),
+            0 42px 86px -36px rgba(77, 112, 255, 0.52);
+    }
+
+    .profile-glass-shell #daily-mission {
+        background:
+            radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.24), transparent 32%),
+            radial-gradient(circle at 86% 16%, rgba(251, 191, 36, 0.13), transparent 24%),
+            linear-gradient(145deg, rgba(35, 52, 101, 0.66), rgba(13, 18, 43, 0.72)) !important;
+    }
+
+    .profile-glass-shell nav a,
+    .profile-glass-shell button,
+    .profile-glass-shell input[type='file'] {
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+    }
+
+    .profile-glass-shell .rounded-full,
+    .profile-glass-shell .rounded-lg,
+    .profile-glass-shell .rounded-xl,
+    .profile-glass-shell .rounded-2xl {
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
 }
 
 /*
