@@ -313,6 +313,69 @@ class ScoringTableTest extends TestCase
         $senior->delete();
     }
 
+    /**
+     * "Higher is better" indicators earn proportional bonus points for
+     * exceeding their target instead of being capped at the target's full
+     * weight - a staff member who beats their Reg target by 25% should
+     * score higher than one who just barely meets it, not identically.
+     */
+    public function test_higher_is_better_indicators_earn_bonus_above_target(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900059, 'name' => 'Test Senior Bonus', 'username' => 'test_senior_bonus_900059',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900060, 'name' => 'Overachiever Staff', 'username' => 'test_overachiever_900060',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
+            'entity_key' => 'overachiever-1', 'staff_name' => 'Overachiever Staff', 'regional' => 'Regional 6', 'value' => 10,
+        ]);
+
+        RsmMonthlyTarget::create([
+            'area' => 'Regional B',
+            'target_month' => now()->format('Y-m'),
+            'scope_type' => 'staff',
+            'scope_key' => 'staff:overachiever staff',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Overachiever Staff',
+            'indicator_targets' => [
+                'reg' => ['target' => 8, 'weight' => 10],
+            ],
+        ]);
+
+        $table = \App\Services\Dashboard\ScoringTableService::build(
+            'Regional B',
+            [
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+                'wilayah' => '',
+                'unit_name' => '',
+                'staff_name' => '',
+            ],
+            $senior->fresh()
+        );
+
+        $row = collect($table['rows'])->firstWhere('name', 'Overachiever Staff');
+
+        $this->assertNotNull($row);
+        // 10/8 * 10 = 12.5, not capped at the 10-point weight.
+        $this->assertSame(12.5, $row['score_details']['reg']['score']);
+        $this->assertSame(12.5, $row['total_score']);
+        $this->assertGreaterThan($row['total_weight'], $row['total_score']);
+
+        $staff->delete();
+        $senior->delete();
+    }
+
     public function test_cpm_cpl_uses_lower_is_better_scoring_by_ad_goal(): void
     {
         $this->migrate();

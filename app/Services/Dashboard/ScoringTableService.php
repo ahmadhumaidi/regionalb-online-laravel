@@ -157,7 +157,14 @@ class ScoringTableService
             $score = match (true) {
                 in_array($key, ['cpm_cpl', 'closing_iklan'], true) && $hasTargetRow && $targetValue <= 0 && $weight > 0 => $weight,
                 $direction === 'lower' && $targetValue > 0 && $actual > 0 && $weight > 0 => min($targetValue / $actual, 1.0) * $weight,
-                $targetValue > 0 && $weight > 0 => min($actual / $targetValue, 1.0) * $weight,
+                // "Higher is better" indicators are NOT capped at 100% of
+                // target - exceeding it earns proportional bonus points
+                // instead of being scored identically to someone who just
+                // barely hit the target (e.g. Reg 10 vs target 8 scores
+                // 12.5, not capped at 10). "Lower is better" (cpm_cpl)
+                // keeps its existing cap above - efficiency has no
+                // meaningful "bonus" for going arbitrarily far under target.
+                $targetValue > 0 && $weight > 0 => ($actual / $targetValue) * $weight,
                 default => 0.0,
             };
 
