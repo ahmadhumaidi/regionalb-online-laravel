@@ -46,6 +46,17 @@ class ProfileGamificationTest extends TestCase
             'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
             'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
         ]);
+
+        // Mirrors production: XpService::syncCollabActivity()'s watermark
+        // only tracks growth above the highest target ever observed, so its
+        // very first call for a staff always just records a baseline (no
+        // XP) - this staff's real deploy would already have gone through
+        // that once (a scheduled Collab sync or an earlier profile visit)
+        // before any of the ad_leads activity below existed. Establishing
+        // the baseline now, while the target is still 0, lets the fallback
+        // XP register as real growth on the profile visit further down.
+        XpService::syncPersonalActivity($staff);
+
         $report = RsmReport::create([
             'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
             'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff Gamif', 'created_by_role' => 'staff',
@@ -68,18 +79,21 @@ class ProfileGamificationTest extends TestCase
         // what they'd have triggered: report_created(5) +
         // report_approved(10, status=Diverifikasi) + lead_created(10)*2=20
         // + lead_follow_up(10)*4=40 + lead_notes_complete(4)*5=20 +
-        // closing_iklan(4)*10=40 -> 135 XP. The old formula's
-        // registrasi(4)*20 + herreg(1)*35 = 115 doesn't apply here anymore
-        // because that component now only comes from Collab data
-        // (XpService::syncPersonalActivity()'s daily sync) - this fixture
-        // has none seeded, matching a staff member with ad-lead activity
-        // but no Collab sync data yet.
+        // closing_iklan(4)*10=40 -> 135 XP.
+        //
+        // registrasi(4)*20 + herreg(1)*35 = 115 is a separate slice
+        // (GamificationService::personalRegistrasiHerregXp(), reconciled by
+        // XpService::syncPersonalActivity() on the profile visit below).
+        // This fixture has no Collab data seeded, so that slice falls back
+        // to this staff's own ad_leads-derived registrasi/herreg count
+        // instead of scoring 0 - a staff member never matched by name in
+        // Collab still earns this XP. 135 + 115 = 250 total.
         XpService::syncReportEventXp($report->fresh());
 
         $response = $this->actingAs($staff)->get(route('profile'));
 
         $response->assertOk();
-        $response->assertSee('135 XP');
+        $response->assertSee('250 XP');
         $response->assertSee('Level 2');
         $response->assertSee('League Starter');
         $response->assertSee('✓ Follow Up Hero', false);

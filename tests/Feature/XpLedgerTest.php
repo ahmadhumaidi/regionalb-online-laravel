@@ -9,6 +9,7 @@ use App\Models\RsmUser;
 use App\Services\Dashboard\GamificationService;
 use App\Services\Dashboard\XpService;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -337,6 +338,113 @@ class XpLedgerTest extends TestCase
         $this->actingAs($staff)->get(route('profile'))->assertOk();
         $this->assertSame($xpAfterFirstVisit, XpService::getLifetimeXp($staff->fresh()));
 
+        RsmAdLead::where('report_id', $report->id)->delete();
+        $report->delete();
+        $staff->delete();
+    }
+
+    /**
+     * Gap fallback Collab: a staff member with zero Collab rows (never
+     * matched by name in rsm_collab_daily_metrics) used to score 0 for the
+     * registrasi/herreg slice regardless of real ad_leads activity - neither
+     * the real-time report/lead events nor the Collab-only sync covered it.
+     * GamificationService::personalRegistrasiHerregXp() now falls back to
+     * this staff's own ad_leads-derived registrasi/herreg count when Collab
+     * has nothing for them, mirroring scoreRow()'s leaderboard formula.
+     */
+    public function test_collab_absent_staff_earns_registrasi_herreg_xp_from_ad_leads_fallback(): void
+    {
+        $this->migrate();
+        $staff = $this->makeStaff(920012, 'Fallback Only Staff');
+
+        // First-ever sync call always just records a zero-XP baseline
+        // (existing syncCollabActivity() design - avoids double-counting
+        // whatever the legacy backfill already captured at cutover time).
+        XpService::syncPersonalActivity($staff);
+        $this->assertSame(0, XpService::getLifetimeXp($staff));
+
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Fallback Only Staff', 'created_by_role' => 'staff',
+            'status' => 'Diverifikasi', 'title' => 'Fallback Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Fallback Campaign',
+            'budget_requested' => 100000, 'realization_amount' => 100000,
+        ]);
+        RsmAdLead::create(['report_id' => $report->id, 'lead_name' => 'Reg 1', 'closing_status' => 'Registrasi']);
+        RsmAdLead::create(['report_id' => $report->id, 'lead_name' => 'Reg 2', 'closing_status' => 'Registrasi']);
+        RsmAdLead::create(['report_id' => $report->id, 'lead_name' => 'Her 1', 'closing_status' => 'Herregistrasi']);
+
+        // No Collab row exists for this staff at all - registrasi_total(3,
+        // 2 explicit "Registrasi" plus the "Herregistrasi" lead which
+        // ClosingStatusClassifier also counts into the registrasi bucket -
+        // existing scoreRow() behavior, unchanged here)*20 + herreg(1)*35 =
+        // 95 must come from ad_leads instead of scoring 0.
+        XpService::syncPersonalActivity($staff);
+        $this->assertSame(95, XpService::getLifetimeXp($staff));
+        $this->assertDatabaseHas('rsm_gamification_transactions', [
+            'user_id' => $staff->id, 'event_type' => 'collab_xp_sync', 'xp' => 95,
+        ]);
+
+        RsmAdLead::where('report_id', $report->id)->delete();
+        $report->delete();
+        $staff->delete();
+    }
+
+    /**
+     * The watermark-based reconciliation (highest target ever observed,
+     * only positive deltas awarded) makes the fallback safe even if Collab
+     * later starts tracking a staff who used to have none: switching the
+     * target's source from ad_leads to Collab can never subtract already-
+     * banked XP, and can never re-award growth that source already covered.
+     */
+    public function test_switching_from_ad_leads_fallback_to_collab_data_never_double_counts(): void
+    {
+        $this->migrate();
+        $staff = $this->makeStaff(920013, 'Source Switch Staff');
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Source Switch Staff', 'created_by_role' => 'staff',
+            'status' => 'Diverifikasi', 'title' => 'Switch Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Switch Campaign',
+            'budget_requested' => 100000, 'realization_amount' => 100000,
+        ]);
+        RsmAdLead::create(['report_id' => $report->id, 'lead_name' => 'Reg 1', 'closing_status' => 'Registrasi']);
+        RsmAdLead::create(['report_id' => $report->id, 'lead_name' => 'Reg 2', 'closing_status' => 'Registrasi']);
+        RsmAdLead::create(['report_id' => $report->id, 'lead_name' => 'Her 1', 'closing_status' => 'Herregistrasi']);
+
+        // Baseline captures the ad_leads-fallback target (registrasi_total 3
+        // incl. the double-counted Herregistrasi lead, *20 + herreg 1*35 =
+        // 95) as the starting watermark - matches how a brand-new staff
+        // with pre-existing activity is treated on their very first sync.
+        XpService::syncPersonalActivity($staff);
+        $this->assertSame(0, XpService::getLifetimeXp($staff));
+
+        // Collab starts tracking this staff, but with a smaller value than
+        // the fallback already reached (1 registrasi = 20 < watermark 95).
+        // Must not subtract anything.
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->subDay()->toDateString(),
+            'entity_key' => 'switch-reg-1', 'staff_name' => 'Source Switch Staff', 'regional' => 'Regional 6', 'value' => 1,
+        ]);
+        XpService::syncPersonalActivity($staff);
+        $this->assertSame(0, XpService::getLifetimeXp($staff));
+        $this->assertSame(
+            0,
+            RsmGamificationTransaction::where('user_id', $staff->id)->where('event_type', 'collab_xp_sync')->count()
+        );
+
+        // Collab grows past the old watermark (5 registrasi = 100 > 95) -
+        // only the excess (5) is awarded, not the full 100 again. Same
+        // entity_key as the first insert so staffTotals()'s SUM(value)
+        // grouped by entity_key combines them (a different entity_key would
+        // instead replace the first row's contribution when re-keyed by
+        // staff name, not add to it).
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'switch-reg-1', 'staff_name' => 'Source Switch Staff', 'regional' => 'Regional 6', 'value' => 4,
+        ]);
+        XpService::syncPersonalActivity($staff);
+        $this->assertSame(5, XpService::getLifetimeXp($staff));
+
+        DB::table('rsm_collab_daily_metrics')->where('staff_name', 'Source Switch Staff')->delete();
         RsmAdLead::where('report_id', $report->id)->delete();
         $report->delete();
         $staff->delete();

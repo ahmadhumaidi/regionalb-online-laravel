@@ -269,20 +269,54 @@ class GamificationService
     public static function profileSyncXp(RsmUser $user): int
     {
         return $user->role === RsmUser::ROLE_STAFF
-            ? self::personalCollabOnlyXp($user)
+            ? self::personalRegistrasiHerregXp($user)
             : self::averageTeamProfileXp($user);
     }
 
-    /** Registrasi/herreg-only slice of the point formula - see profileSyncXp() for why this excludes everything report/lead-driven. */
-    public static function personalCollabOnlyXp(RsmUser $user): int
+    /**
+     * Registrasi/herreg-only slice of the point formula - see profileSyncXp()
+     * for why this excludes everything report/lead-driven. Prefers Collab
+     * data exactly like scoreRow()'s leaderboard formula: a staff member
+     * with ANY Collab row (even a zero one) is scored from Collab alone. A
+     * staff member with NO Collab row at all - never synced, or not yet
+     * matched by name - falls back to their own ad_leads-derived registrasi/
+     * herreg count instead of silently earning 0 for this slice, mirroring
+     * scoreRow()'s `$collab['registrasi'] ?? $row['registrasi_total']`
+     * fallback.
+     */
+    public static function personalRegistrasiHerregXp(RsmUser $user): int
     {
         $area = $user->area ?: 'Regional B';
         $collabPerformance = CollabMetricsService::personalPerformance($area, DashboardFilters::allTime(), $user);
-        $row = collect($collabPerformance['rows'])
+        $collabRow = collect($collabPerformance['rows'])
             ->first(fn (array $r) => mb_strtolower(trim((string) $r['name'])) === mb_strtolower(trim((string) $user->name)));
 
-        $registrasi = (float) ($row['registrasi'] ?? 0);
-        $herreg = (float) ($row['herregistrasi'] ?? 0);
+        if ($collabRow !== null) {
+            $registrasi = (float) ($collabRow['registrasi'] ?? 0);
+            $herreg = (float) ($collabRow['herregistrasi'] ?? 0);
+
+            return (int) round($registrasi * 20 + $herreg * 35);
+        }
+
+        $reports = RsmReport::query()
+            ->where('area', $area)
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)->orWhere('staff_name', $user->name);
+            })
+            ->with('adLeads')
+            ->get();
+
+        if ($reports->isEmpty()) {
+            return 0;
+        }
+
+        $rawStatuses = $reports->flatMap(fn (RsmReport $report) => $report->adLeads->pluck('closing_status'))
+            ->filter(fn ($value) => trim((string) $value) !== '');
+        $buckets = ClosingStatusClassifier::buckets($rawStatuses);
+        $rows = self::aggregateByStaff($reports, $buckets);
+
+        $registrasi = (float) $rows->sum('registrasi_total');
+        $herreg = (float) $rows->sum('herregistrasi_total');
 
         return (int) round($registrasi * 20 + $herreg * 35);
     }

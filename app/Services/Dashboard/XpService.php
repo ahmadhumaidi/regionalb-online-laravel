@@ -112,13 +112,21 @@ class XpService
     }
 
     /**
-     * Reconcile Collab registration/herregistration XP from aggregate data.
+     * Reconcile registrasi/herreg XP from aggregate data. The target is
+     * Collab-sourced whenever the staff has any Collab row at all, falling
+     * back to their own ad_leads-derived registrasi/herreg count only when
+     * Collab has nothing for them (see
+     * GamificationService::personalRegistrasiHerregXp()) - closes the gap
+     * where a staff member never matched by name in Collab used to earn 0
+     * for this slice regardless of real ad_leads activity.
      *
-     * The first run only records a zero-XP baseline because historical Collab
-     * activity is already included in legacy_xp_import. Later runs award only
-     * growth above the highest Collab target ever observed. This makes the
-     * process safe when a source temporarily drops/re-syncs and prevents the
-     * same historical growth being awarded twice.
+     * The first run only records a zero-XP baseline because historical
+     * activity is already included in legacy_xp_import. Later runs award
+     * only growth above the highest target ever observed - safe if the
+     * underlying source (Collab, or the ad_leads fallback) temporarily
+     * drops/re-syncs, or if a staff later gains Collab data and the target
+     * source switches: the watermark never goes down, so switching sources
+     * can't double-award the same historical growth twice.
      */
     public static function syncCollabActivity(RsmUser $user): ?RsmGamificationTransaction
     {
@@ -126,7 +134,7 @@ class XpService
             return null;
         }
 
-        $currentTarget = max(0, GamificationService::personalCollabOnlyXp($user));
+        $currentTarget = max(0, GamificationService::personalRegistrasiHerregXp($user));
         $history = RsmGamificationTransaction::query()
             ->where('user_id', $user->id)
             ->whereIn('event_type', ['collab_xp_baseline', 'collab_xp_sync'])
