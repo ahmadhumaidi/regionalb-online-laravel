@@ -458,15 +458,26 @@
     }
 
     .forum-glass-shell {
+        position: relative;
+        isolation: isolate;
         min-height: calc(100vh - 4rem);
         margin: -1.5rem -1rem;
         padding: 1.5rem 1rem;
         max-width: none !important;
+        background: transparent !important;
+    }
+
+    .forum-glass-shell::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -1;
         background:
             linear-gradient(145deg, rgba(5, 7, 17, 0.5), rgba(7, 9, 22, 0.78)),
             url('/images/profile/bokeh-night.png') center / cover no-repeat;
         background-attachment: fixed, fixed;
         animation: profile-bokeh-drift 38s ease-in-out infinite alternate;
+        pointer-events: none;
     }
 
     @media (min-width: 1024px) {
