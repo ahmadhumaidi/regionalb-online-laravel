@@ -4,7 +4,7 @@
     League-tier photo frame: the ornate frame PNG (public/images/league/{tier}.png)
     overlaid on a circular photo, centered in the frame's transparent hole.
     Position (50%/48%) was measured directly off the artwork - every tier's
-    hole sits at roughly the same spot. Size (58%) intentionally runs larger
+    hole sits at roughly the same spot. Size (52%) intentionally runs larger
     than the tightest hole (diamond) so the photo reads clearly - the
     photo div comes FIRST in source order (painted first/underneath) and the
     frame img comes SECOND (painted on top), so the sliver that would
@@ -15,7 +15,7 @@
 --}}
 <div
     class="absolute overflow-hidden rounded-full border border-white/20 bg-gradient-to-br from-emerald-400 to-sky-400 {{ $textSize }} font-black shadow-inner"
-    style="left:50%;top:48%;width:58%;height:58%;transform:translate(-50%,-50%)"
+    style="left:50%;top:48%;width:52%;height:52%;transform:translate(-50%,-50%)"
 >
     <div class="flex h-full w-full items-center justify-center">
         @if ($user->photo_path)
