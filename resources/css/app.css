@@ -206,10 +206,13 @@
             linear-gradient(145deg, rgba(5, 7, 17, 0.48), rgba(6, 8, 18, 0.74)),
             url('/images/profile/bokeh-night.png') center / cover no-repeat;
         background-attachment: fixed, fixed;
+        background-position: center, 50% 50%;
+        background-size: auto, 108% auto;
         box-shadow:
             inset 0 1px 0 rgba(255, 255, 255, 0.16),
             0 26px 70px -30px rgba(8, 11, 28, 0.88);
         perspective: 1200px;
+        animation: profile-bokeh-drift 34s ease-in-out infinite alternate;
     }
 
     @media (min-width: 1024px) {
@@ -340,6 +343,21 @@
     .profile-glass-shell .rounded-xl,
     .profile-glass-shell .rounded-2xl {
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    @keyframes profile-bokeh-drift {
+        0% {
+            background-position: center, 48% 48%;
+            background-size: auto, 108% auto;
+        }
+        45% {
+            background-position: center, 54% 51%;
+            background-size: auto, 114% auto;
+        }
+        100% {
+            background-position: center, 50% 56%;
+            background-size: auto, 110% auto;
+        }
     }
 }
 
