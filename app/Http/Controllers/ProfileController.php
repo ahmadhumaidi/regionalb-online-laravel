@@ -230,19 +230,14 @@ class ProfileController extends Controller
             ->whereDate('report_date', $today)
             ->when($user->role === 'staff', fn ($q) => $q->where(fn ($inner) => $inner->where('user_id', $user->id)->orWhere('staff_name', $user->name)))
             ->when($user->role === 'koordinator' && $user->regional, fn ($q) => $q->where('wilayah', $user->regional))
-            ->with('adLeads')
             ->get();
 
-        $followUps = $dailyReports->sum(function (RsmReport $report): int {
-            if ($report->adLeads->isEmpty()) {
-                return 0;
-            }
-
-            return $report->adLeads
-                ->filter(fn ($lead) => filled($lead->follow_up_result) || filled($lead->progress_status))
-                ->count();
-        });
         $otherActivities = $dailyReports->where('report_type', RsmReport::TYPE_OTHER)->count();
+        // Sourced from the /sumber-collab "Follow Up BDC" sync, same as
+        // share_fb/reg below - not the local ad_leads follow-up log, which
+        // tracks a different activity (in-app follow-up notes) and never
+        // reaches the tier targets (30/45/60) this mission is scaled for.
+        $followUps = CollabMetricsService::personalTotal($filters, $area, $user, 'Follow Up BDC');
         $shareFb = CollabMetricsService::personalTotal($filters, $area, $user, 'Share FB Group');
         $registrasi = CollabMetricsService::personalTotal($filters, $area, $user, 'Closing Personal Per Regional');
 
@@ -326,22 +321,6 @@ class ProfileController extends Controller
         $unitCount = $regional !== '' ? DB::table('partner_campuses')->where('wilayah', $regional)->count() : 0;
         $activeUnits = max(0, $unitCount - $this->coordinatorLiburToday($user));
 
-        $wilayahReports = RsmReport::query()
-            ->where('area', $area)
-            ->whereDate('report_date', $today)
-            ->when($regional !== '', fn ($q) => $q->where('wilayah', $regional))
-            ->with('adLeads')
-            ->get();
-        $followUps = $wilayahReports->sum(function (RsmReport $report): int {
-            if ($report->adLeads->isEmpty()) {
-                return 0;
-            }
-
-            return $report->adLeads
-                ->filter(fn ($lead) => filled($lead->follow_up_result) || filled($lead->progress_status))
-                ->count();
-        });
-
         $otherActivities = RsmReport::query()
             ->where('area', $area)
             ->whereDate('report_date', $today)
@@ -350,6 +329,9 @@ class ProfileController extends Controller
             ->count();
 
         $filters = ['date_from' => $today, 'date_to' => $today, 'wilayah' => '', 'unit_name' => '', 'staff_name' => ''];
+        // Regional-wide total (all staff under this koordinator), same
+        // Collab source ("Follow Up BDC") the staff-level 'fu' mission uses.
+        $followUps = CollabMetricsService::personalTotal($filters, $area, $user, 'Follow Up BDC');
         $shareFb = CollabMetricsService::personalTotal($filters, $area, $user, 'Share FB Group');
 
         $visitReportDone = RsmCoordinatorSchedule::query()

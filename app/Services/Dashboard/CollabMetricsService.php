@@ -72,21 +72,25 @@ class CollabMetricsService
             $staffFilter = (string) $user->name;
         }
 
-        $query = RsmCollabDailyMetric::query()
+        $rows = RsmCollabDailyMetric::query()
             ->where('report_name', $reportName)
             ->whereBetween('metric_date', [$filters['date_from'], $filters['date_to']])
-            ->whereIn('regional', $regionals);
-
-        if ($staffFilter !== '') {
-            $query->where('staff_name', $staffFilter);
-        }
-
-        return $query
+            ->whereIn('regional', $regionals)
             ->select('entity_key')
             ->selectRaw('MAX(staff_nik) as staff_nik, MAX(staff_name) as staff_name, MAX(regional) as regional, SUM(value) as total_value')
             ->groupBy('entity_key')
-            ->get()
-            ->keyBy(fn ($row) => self::staffKey($row));
+            ->get();
+
+        // Matched against the cleaned name (cleanStaffName() strips the
+        // "Tim Terpilih" cohort suffix cb.web.id appends to some staff_name
+        // values) - an exact raw-string match here silently zeroed out every
+        // report for any staff whose Collab label carried that suffix.
+        if ($staffFilter !== '') {
+            $needle = mb_strtolower(trim($staffFilter));
+            $rows = $rows->filter(fn ($row) => mb_strtolower(self::cleanStaffName((string) $row->staff_name)) === $needle)->values();
+        }
+
+        return $rows->keyBy(fn ($row) => self::staffKey($row));
     }
 
     /** Sums a single staff-level report (e.g. "Closing Personal Per Regional") across the allowed regionals/filters. */
@@ -95,11 +99,11 @@ class CollabMetricsService
         return (float) self::staffTotals($reportName, $filters, $area, $user)->sum('total_value');
     }
 
-    /** Same as personalTotal() but per staff, keyed by lowercased staff name - used by ScoringTableService for one-column-per-indicator lookups. */
+    /** Same as personalTotal() but per staff, keyed by lowercased cleaned staff name - used by ScoringTableService for one-column-per-indicator lookups. */
     public static function personalTotalsByName(array $filters, string $area, RsmUser $user, string $reportName): Collection
     {
         return self::staffTotals($reportName, $filters, $area, $user)
-            ->keyBy(fn ($row) => mb_strtolower(trim((string) $row->staff_name)))
+            ->keyBy(fn ($row) => mb_strtolower(trim(self::cleanStaffName((string) $row->staff_name))))
             ->map(fn ($row) => (float) $row->total_value);
     }
 
