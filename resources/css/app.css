@@ -345,7 +345,6 @@
         box-shadow:
             inset 0 1px 0 rgba(255, 255, 255, 0.16),
             0 26px 70px -30px rgba(8, 11, 28, 0.88);
-        perspective: 1200px;
     }
 
     @media (min-width: 1024px) {
