@@ -118,16 +118,29 @@
                                         <td class="py-2 pr-5">
                                             @if ($canManage)
                                                 <div class="flex flex-col items-start gap-1">
-                                                    <details class="text-xs">
-                                                        <summary class="cursor-pointer list-none rounded-md border border-border px-2 py-1 font-medium text-ink hover:bg-surface-muted">Edit</summary>
-                                                        <form method="POST" action="{{ route('jadwal-koordinator.update', $row) }}" class="mt-2 grid gap-1">
-                                                            @csrf @method('PATCH')
-                                                            <input name="unit_name" value="{{ $row->unit_name }}" required class="w-44 rounded border-border px-1 text-xs">
-                                                            <select name="visit_type" class="rounded border-border text-xs"><option @selected($row->visit_type === 'Visit')>Visit</option><option @selected($row->visit_type === 'Zoom')>Zoom</option><option @selected($row->visit_type === 'Telepon')>Telepon</option></select>
-                                                            <input name="agenda" value="{{ $row->agenda }}" required class="w-56 rounded border-border px-1 text-xs">
-                                                            <button class="mt-1 rounded-md bg-brand-600 px-2 py-1 text-left text-xs font-semibold text-white">Simpan</button>
-                                                        </form>
-                                                    </details>
+                                                    <button type="button" onclick="document.getElementById('edit-dialog-{{ $row->id }}').showModal()" class="rounded-md border border-border px-2 py-1 text-xs font-medium text-ink hover:bg-surface-muted">Edit</button>
+                                                    <dialog id="edit-dialog-{{ $row->id }}" class="schedule-dialog" onclick="if (event.target === this) this.close()">
+                                                        <div class="max-h-[90vh] w-full overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-2xl">
+                                                            <div class="mb-4 flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <h2 class="text-base font-semibold text-ink">Edit Jadwal</h2>
+                                                                    <p class="mt-0.5 text-xs text-ink-muted">{{ $row->koordinator_name }} - {{ $row->schedule_date->format('d M Y') }}</p>
+                                                                </div>
+                                                                <button type="button" onclick="this.closest('dialog').close()" class="rounded-md border border-border px-2 py-1 text-xs text-ink-muted hover:text-ink">Tutup</button>
+                                                            </div>
+                                                            <form method="POST" action="{{ route('jadwal-koordinator.update', $row) }}" class="grid gap-3 sm:grid-cols-2">
+                                                                @csrf @method('PATCH')
+                                                                @php $rowCampusKnown = collect($references['campuses'])->contains(fn ($campus) => $campus['label'] === $row->unit_name); @endphp
+                                                                <label class="grid gap-1 text-sm sm:col-span-2">Unit/Kampus<select name="unit_name" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih unit/kampus</option>@unless ($rowCampusKnown)<option value="{{ $row->unit_name }}" selected>{{ $row->unit_name }}</option>@endunless @foreach ($references['campuses'] as $campus)<option value="{{ $campus['label'] }}" @selected($row->unit_name === $campus['label'])>{{ $campus['label'] }}</option>@endforeach</select></label>
+                                                                <label class="grid gap-1 text-sm">Tipe Kunjungan<select name="visit_type" class="rounded-lg border-border bg-surface-muted"><option @selected($row->visit_type === 'Visit')>Visit</option><option @selected($row->visit_type === 'Zoom')>Zoom</option><option @selected($row->visit_type === 'Telepon')>Telepon</option></select></label>
+                                                                <label class="grid gap-1 text-sm sm:col-span-2">Agenda<input name="agenda" value="{{ $row->agenda }}" required class="rounded-lg border-border bg-surface-muted"></label>
+                                                                <div class="flex justify-end gap-2 pt-1 sm:col-span-2">
+                                                                    <button type="button" onclick="this.closest('dialog').close()" class="rounded-lg border border-border px-3 py-2 text-sm">Batal</button>
+                                                                    <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Simpan</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </dialog>
                                                     @php
                                                         $savedChecklist = json_decode((string) $row->checklist_json, true);
                                                         $savedChecklist = is_array($savedChecklist) ? $savedChecklist : [];
@@ -139,16 +152,15 @@
                                                                 : ['checked' => ! empty($entry), 'note' => ''];
                                                         }
                                                     @endphp
-                                                    <div x-data="{ open: false }" class="inline-block">
-                                                        <button type="button" @click="open = true" class="rounded-md border border-brand-600 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50">Laporan</button>
-                                                        <div x-show="open" x-cloak @keydown.escape.window="open = false" class="fixed inset-0 z-40 flex items-center justify-center p-4" style="background: rgba(15,23,42,0.45)">
-                                                            <div @click.outside="open = false" class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-2xl">
+                                                    <button type="button" onclick="document.getElementById('report-dialog-{{ $row->id }}').showModal()" class="rounded-md border border-brand-600 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50">Laporan</button>
+                                                    <dialog id="report-dialog-{{ $row->id }}" class="schedule-dialog" onclick="if (event.target === this) this.close()">
+                                                        <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-2xl">
                                                                 <div class="mb-4 flex items-start justify-between gap-3">
                                                                     <div>
                                                                         <h2 class="text-base font-semibold text-ink">Laporan Hasil Kunjungan</h2>
                                                                         <p class="mt-0.5 text-xs text-ink-muted">{{ $row->unit_name }} — {{ $row->schedule_date->format('d M Y') }}</p>
                                                                     </div>
-                                                                    <button type="button" @click="open = false" class="rounded-md border border-border px-2 py-1 text-xs text-ink-muted hover:text-ink">Tutup</button>
+                                                                    <button type="button" onclick="this.closest('dialog').close()" class="rounded-md border border-border px-2 py-1 text-xs text-ink-muted hover:text-ink">Tutup</button>
                                                                 </div>
                                                                 <form method="POST" enctype="multipart/form-data" action="{{ route('jadwal-koordinator.report', $row) }}" class="grid gap-4">
                                                                     @csrf @method('PATCH')
@@ -188,13 +200,12 @@
                                                                     @endif
 
                                                                     <div class="flex justify-end gap-2 pt-1">
-                                                                        <button type="button" @click="open = false" class="rounded-lg border border-border px-3 py-2 text-sm">Batal</button>
+                                                                        <button type="button" onclick="this.closest('dialog').close()" class="rounded-lg border border-border px-3 py-2 text-sm">Batal</button>
                                                                         <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Simpan Laporan</button>
                                                                     </div>
                                                                 </form>
-                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    </dialog>
                                                     @if (auth()->user()->role !== 'koordinator')
                                                         <form method="POST" action="{{ route('jadwal-koordinator.destroy', $row) }}" onsubmit="return confirm('Hapus jadwal ini?')">
                                                             @csrf @method('DELETE')
