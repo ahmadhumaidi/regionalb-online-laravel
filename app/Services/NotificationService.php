@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RsmNotification;
+use App\Models\RsmForumPost;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Support\RsmRole;
@@ -51,6 +52,28 @@ class NotificationService
         if ($rows !== []) {
             RsmNotification::insert($rows);
         }
+    }
+
+    public static function notifyForumComment(RsmForumPost $post, RsmUser $actor): void
+    {
+        self::notifyForumPostOwner(
+            $post,
+            $actor,
+            'forum_comment',
+            'Komentar baru di postingan Anda',
+            sprintf('%s mengomentari postingan Anda di Forum Diskusi.', $actor->name)
+        );
+    }
+
+    public static function notifyForumLike(RsmForumPost $post, RsmUser $actor): void
+    {
+        self::notifyForumPostOwner(
+            $post,
+            $actor,
+            'forum_like',
+            'Postingan Anda disukai',
+            sprintf('%s menyukai postingan Anda di Forum Diskusi.', $actor->name)
+        );
     }
 
     /** Staff melaporkan Kendala baru: beri tahu koordinator wilayah + semua Senior Manager di area itu. */
@@ -118,5 +141,22 @@ class NotificationService
             ->whereIn('role', self::SENIOR_TIER_ROLES)
             ->pluck('id')
             ->all();
+    }
+
+    private static function notifyForumPostOwner(RsmForumPost $post, RsmUser $actor, string $type, string $title, string $message): void
+    {
+        if (! $post->user_id || $post->user_id === $actor->id) {
+            return;
+        }
+
+        RsmNotification::create([
+            'area' => $post->user?->area ?: $actor->area ?: 'Regional B',
+            'recipient_user_id' => $post->user_id,
+            'forum_post_id' => $post->id,
+            'type' => $type,
+            'title' => $title,
+            'message' => $message,
+            'is_read' => false,
+        ]);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RsmForumComment;
 use App\Models\RsmForumLike;
 use App\Models\RsmForumPost;
+use App\Services\NotificationService;
 use App\Support\RsmRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,22 +21,25 @@ use Illuminate\View\View;
  */
 class ForumController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = Auth::user();
+        $highlightPostId = (int) $request->query('post', 0);
 
         $posts = RsmForumPost::query()
             ->with(['user', 'comments.user'])
             ->withCount('likes')
+            ->when($highlightPostId > 0, fn ($query) => $query->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$highlightPostId]))
             ->latest()
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
         $likedPostIds = RsmForumLike::where('user_id', $user->id)
             ->whereIn('post_id', $posts->pluck('id'))
             ->pluck('post_id')
             ->all();
 
-        return view('forum.index', compact('posts', 'likedPostIds'));
+        return view('forum.index', compact('posts', 'likedPostIds', 'highlightPostId'));
     }
 
     public function storePost(Request $request): RedirectResponse
@@ -67,6 +71,7 @@ class ForumController extends Controller
             $like->delete();
         } else {
             RsmForumLike::create(['post_id' => $post->id, 'user_id' => Auth::id()]);
+            NotificationService::notifyForumLike($post, Auth::user());
         }
 
         return back();
@@ -81,6 +86,7 @@ class ForumController extends Controller
             'user_id' => Auth::id(),
             'body' => $data['body'],
         ]);
+        NotificationService::notifyForumComment($post, Auth::user());
 
         return back()->with('notice', 'Komentar ditambahkan.');
     }

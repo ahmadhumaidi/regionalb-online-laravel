@@ -20,6 +20,10 @@ class NotificationController extends Controller
             return redirect()->route('reports.show', $notification->report_id);
         }
 
+        if ($notification->forum_post_id) {
+            return redirect()->to(route('forum', ['post' => $notification->forum_post_id]).'#forum-post-'.$notification->forum_post_id);
+        }
+
         return redirect()->route('dashboard');
     }
 

@@ -14,6 +14,7 @@ class RsmNotification extends Model
         'area',
         'recipient_user_id',
         'report_id',
+        'forum_post_id',
         'type',
         'title',
         'message',
@@ -29,6 +30,11 @@ class RsmNotification extends Model
     public function report(): BelongsTo
     {
         return $this->belongsTo(RsmReport::class, 'report_id');
+    }
+
+    public function forumPost(): BelongsTo
+    {
+        return $this->belongsTo(RsmForumPost::class, 'forum_post_id');
     }
 
     public function recipient(): BelongsTo

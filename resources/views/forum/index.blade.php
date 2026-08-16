@@ -19,7 +19,7 @@
         </section>
 
         @forelse($posts as $post)
-            <section class="rounded-2xl glass-card p-5" x-data="{ editingPost: false }">
+            <section id="forum-post-{{ $post->id }}" class="scroll-mt-24 rounded-2xl glass-card p-5 {{ ($highlightPostId ?? 0) === $post->id ? 'ring-2 ring-brand-400/70' : '' }}" x-data="{ editingPost: false }">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-600 text-sm font-semibold text-white">
