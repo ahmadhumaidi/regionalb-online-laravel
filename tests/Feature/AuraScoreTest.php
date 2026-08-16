@@ -10,10 +10,11 @@ use Tests\TestCase;
 /**
  * "Skor Performa" (Profile page's Aura card) - now Energy-based (Daily
  * Mission's own currency, separate from the XP ledger) instead of report/
- * lead/closing volume. See ProfileController::show(): Aura = min(100,
- * round(monthEnergy / 60)) - Daily Mission's monthly chest tops out at
- * 6000 energy (ProfileController::MONTHLY_CHEST_TIERS), so /60 maps a
- * maxed-out month to exactly 100.
+ * lead/closing volume. See ProfileController::show(): Aura scales from
+ * monthly Energy at 60 energy = 1 Aura, rounded up for positive energy so
+ * a login claim visibly moves Aura from 0 to 1. Daily Mission's monthly
+ * chest tops out at 6000 energy (ProfileController::MONTHLY_CHEST_TIERS),
+ * so /60 maps a maxed-out month to exactly 100.
  */
 class AuraScoreTest extends TestCase
 {
@@ -69,6 +70,21 @@ class AuraScoreTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('5/100');
+
+        $staff->delete();
+    }
+
+    /** Login's 10 energy should be visible immediately: ceil(10/60) = 1. */
+    public function test_aura_shows_at_least_one_when_login_energy_is_claimed(): void
+    {
+        $this->migrate();
+        $staff = $this->makeStaff(950005, 'Login Energy Staff');
+        RsmDailyMissionClaim::create(['user_id' => $staff->id, 'mission_key' => 'login', 'claim_date' => now()->toDateString(), 'energy' => 10, 'stars' => 15]);
+
+        $response = $this->actingAs($staff)->get(route('profile'));
+
+        $response->assertOk();
+        $response->assertSee('1/100');
 
         $staff->delete();
     }

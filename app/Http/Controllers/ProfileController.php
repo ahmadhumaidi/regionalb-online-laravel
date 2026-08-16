@@ -187,11 +187,13 @@ class ProfileController extends Controller
         // Aura ("Skor Performa"): now Energy-based, not report/lead/closing
         // volume - Daily Mission's monthly chest tops out at 6000 energy
         // (self::MONTHLY_CHEST_TIERS), so /60 maps a maxed-out month to
-        // exactly 100. Energy stays its own currency (separate from the
+        // exactly 100. Use ceil() for positive energy so a small claim like
+        // Login (10 energy) immediately moves Aura from 0 to 1 instead of
+        // looking like it had no effect. Energy stays its own currency (separate from the
         // XP ledger even though claiming also banks XP 1:1 - see
         // claimMission()) - this just reads the same monthEnergy total the
         // chest progress bar below already uses, not a new source.
-        $score = min(100, (int) round($monthEnergy / 60));
+        $score = $monthEnergy > 0 ? min(100, (int) ceil($monthEnergy / 60)) : 0;
         $dailyChestTiers = self::DAILY_CHEST_TIERS;
         $weeklyChestTiers = self::WEEKLY_CHEST_TIERS;
         $monthlyChestTiers = self::MONTHLY_CHEST_TIERS;
