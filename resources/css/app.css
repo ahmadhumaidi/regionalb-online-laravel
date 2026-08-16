@@ -132,6 +132,11 @@
         background: rgba(15, 23, 42, 0.45);
     }
 
+    dialog.arena-leaderboard-dialog {
+        max-width: min(54rem, calc(100vw - 2rem));
+        width: calc(100vw - 2rem);
+    }
+
     @media (hover: hover) and (pointer: fine) {
         .glass-card:hover {
             transform: translateY(-3px);

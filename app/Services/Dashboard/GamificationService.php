@@ -5,6 +5,7 @@ namespace App\Services\Dashboard;
 use App\Models\RsmBadgeSetting;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -83,10 +84,31 @@ class GamificationService
 
     public static function build(string $area, array $filters, RsmUser $user): array
     {
+        $previousRanks = self::previousRankLookup($area, $filters, $user);
+        $leaderboard = self::withRankMovement(
+            self::leaderboardRows($area, $filters, $user),
+            $previousRanks
+        );
+
+        $myRank = $leaderboard->first(fn (array $row) => ($row['user_id'] ?? null) === $user->id)
+            ?? $leaderboard->first(fn (array $row) => mb_strtolower(trim($row['name'])) === mb_strtolower(trim((string) $user->name)));
+
+        return [
+            'leaderboard' => $leaderboard->take(5)->values()->all(),
+            'all_leaderboard' => $leaderboard->values()->all(),
+            'my_rank' => $myRank,
+            'challenge' => ['items' => self::challengeItems()],
+            'point_rules' => self::pointRules(),
+        ];
+    }
+
+    /** @return Collection<int, array> */
+    private static function leaderboardRows(string $area, array $filters, RsmUser $user): Collection
+    {
         [, $scoredRows] = self::scoredRows($area, $filters, $user);
         $badgesByName = $scoredRows->keyBy(fn (array $row) => mb_strtolower(trim((string) $row['name'])));
 
-        $leaderboard = collect(ScoringTableService::build($area, $filters, $user)['rows'])
+        return collect(ScoringTableService::build($area, $filters, $user)['rows'])
             ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-')
             ->filter(fn (array $row) => (float) ($row['total_weight'] ?? 0) > 0)
             ->map(function (array $row) use ($badgesByName) {
@@ -99,16 +121,71 @@ class GamificationService
             })
             ->sortBy([['total_score', 'desc'], ['name', 'asc']])
             ->values();
+    }
 
-        $myRank = $leaderboard->first(fn (array $row) => ($row['user_id'] ?? null) === $user->id)
-            ?? $leaderboard->first(fn (array $row) => mb_strtolower(trim($row['name'])) === mb_strtolower(trim((string) $user->name)));
+    /** @param Collection<int, array> $leaderboard @param Collection<string, int> $previousRanks @return Collection<int, array> */
+    private static function withRankMovement(Collection $leaderboard, Collection $previousRanks): Collection
+    {
+        return $leaderboard
+            ->values()
+            ->map(function (array $row, int $index) use ($previousRanks) {
+                $rank = $index + 1;
+                $previousRank = $previousRanks->get(self::leaderboardKey($row));
 
-        return [
-            'leaderboard' => $leaderboard->take(5)->values()->all(),
-            'my_rank' => $myRank,
-            'challenge' => ['items' => self::challengeItems()],
-            'point_rules' => self::pointRules(),
-        ];
+                return array_merge($row, [
+                    'rank' => $rank,
+                    'previous_rank' => $previousRank,
+                    // Positive = naik, negative = turun. Null berarti staff
+                    // belum masuk leaderboard pada periode pembanding.
+                    'rank_delta' => $previousRank === null ? null : $previousRank - $rank,
+                ]);
+            });
+    }
+
+    /** @return Collection<string, int> */
+    private static function previousRankLookup(string $area, array $filters, RsmUser $user): Collection
+    {
+        $previousFilters = self::previousPeriodFilters($filters);
+        if ($previousFilters === null) {
+            return collect();
+        }
+
+        return self::leaderboardRows($area, $previousFilters, $user)
+            ->values()
+            ->mapWithKeys(fn (array $row, int $index) => [self::leaderboardKey($row) => $index + 1]);
+    }
+
+    private static function previousPeriodFilters(array $filters): ?array
+    {
+        try {
+            $from = Carbon::parse((string) ($filters['date_from'] ?? ''))->startOfDay();
+            $to = Carbon::parse((string) ($filters['date_to'] ?? ''))->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($from->gt($to)) {
+            return null;
+        }
+
+        $days = $from->diffInDays($to) + 1;
+        $previousTo = $from->copy()->subDay();
+        $previousFrom = $previousTo->copy()->subDays($days - 1);
+
+        return array_merge($filters, [
+            'date_from' => $previousFrom->toDateString(),
+            'date_to' => $previousTo->toDateString(),
+        ]);
+    }
+
+    private static function leaderboardKey(array $row): string
+    {
+        $userId = $row['user_id'] ?? null;
+        if ($userId !== null && $userId !== '') {
+            return 'user:'.$userId;
+        }
+
+        return 'name:'.mb_strtolower(trim((string) ($row['name'] ?? '')));
     }
 
     /**

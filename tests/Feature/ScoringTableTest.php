@@ -500,10 +500,27 @@ class ScoringTableTest extends TestCase
             'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
             'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
         ]);
+        $rival = RsmUser::create([
+            'id' => 900047, 'name' => 'Arena Rival', 'username' => 'test_arena_rival_900047',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
 
         \App\Models\RsmCollabDailyMetric::create([
             'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
             'entity_key' => 'arena-staff-1', 'staff_name' => 'Arena Staff', 'regional' => 'Regional 6', 'value' => 5,
+        ]);
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
+            'entity_key' => 'arena-rival-1', 'staff_name' => 'Arena Rival', 'regional' => 'Regional 6', 'value' => 1,
+        ]);
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->subMonthNoOverflow(),
+            'entity_key' => 'arena-staff-previous-1', 'staff_name' => 'Arena Staff', 'regional' => 'Regional 6', 'value' => 1,
+        ]);
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->subMonthNoOverflow(),
+            'entity_key' => 'arena-rival-previous-1', 'staff_name' => 'Arena Rival', 'regional' => 'Regional 6', 'value' => 5,
         ]);
 
         RsmMonthlyTarget::create([
@@ -514,6 +531,42 @@ class ScoringTableTest extends TestCase
             'wilayah' => 'Regional 6',
             'unit_name' => 'STIESIA Surabaya',
             'staff_name' => 'Arena Staff',
+            'indicator_targets' => [
+                'reg' => ['target' => 10, 'weight' => 20],
+            ],
+        ]);
+        RsmMonthlyTarget::create([
+            'area' => 'Regional B',
+            'target_month' => now()->format('Y-m'),
+            'scope_type' => 'staff',
+            'scope_key' => 'staff:arena rival',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Arena Rival',
+            'indicator_targets' => [
+                'reg' => ['target' => 10, 'weight' => 20],
+            ],
+        ]);
+        RsmMonthlyTarget::create([
+            'area' => 'Regional B',
+            'target_month' => now()->subMonthNoOverflow()->format('Y-m'),
+            'scope_type' => 'staff',
+            'scope_key' => 'staff:arena staff',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Arena Staff',
+            'indicator_targets' => [
+                'reg' => ['target' => 10, 'weight' => 20],
+            ],
+        ]);
+        RsmMonthlyTarget::create([
+            'area' => 'Regional B',
+            'target_month' => now()->subMonthNoOverflow()->format('Y-m'),
+            'scope_type' => 'staff',
+            'scope_key' => 'staff:arena rival',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Arena Rival',
             'indicator_targets' => [
                 'reg' => ['target' => 10, 'weight' => 20],
             ],
@@ -534,7 +587,14 @@ class ScoringTableTest extends TestCase
         $this->assertSame('Arena Staff', $arena['leaderboard'][0]['name']);
         $this->assertSame(10.0, $arena['leaderboard'][0]['points']);
         $this->assertSame(10.0, $arena['leaderboard'][0]['total_score']);
+        $this->assertCount(2, $arena['all_leaderboard']);
+        $this->assertSame(1, $arena['leaderboard'][0]['rank']);
+        $this->assertSame(2, $arena['leaderboard'][0]['previous_rank']);
+        $this->assertSame(1, $arena['leaderboard'][0]['rank_delta']);
+        $this->assertSame('Arena Rival', $arena['all_leaderboard'][1]['name']);
+        $this->assertSame(-1, $arena['all_leaderboard'][1]['rank_delta']);
 
+        $rival->delete();
         $staff->delete();
         $senior->delete();
     }
