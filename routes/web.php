@@ -41,6 +41,9 @@ Route::middleware('guest')->group(function () {
 Route::get('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');
 Route::post('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive'])->name('webhooks.whatsapp.receive');
 
+// Public — Meta App Review requires a reachable privacy policy URL (App Settings > Basic).
+Route::view('/kebijakan-privasi', 'legal.privacy-policy')->name('privacy-policy');
+
 Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
