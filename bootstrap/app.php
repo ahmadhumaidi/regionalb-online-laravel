@@ -33,6 +33,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'effective_role' => \App\Http\Middleware\SetEffectiveRole::class,
         ]);
+
+        // Meta's WhatsApp Cloud API webhook posts plain JSON with no Laravel session/CSRF token.
+        $middleware->validateCsrfTokens(except: ['webhooks/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

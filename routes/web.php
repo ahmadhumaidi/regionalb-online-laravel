@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AktivitasController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\ContentController;
+use App\Http\Controllers\CrmLeadController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\ImpersonationController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\ReportStatusController;
 use App\Http\Controllers\TargetController;
 use App\Http\Controllers\PersonnelScheduleController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\CoordinatorScheduleController;
 use App\Http\Controllers\CollabSourceController;
 use App\Http\Controllers\BdcUsersController;
@@ -34,6 +36,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store'])->name('login.store');
 });
+
+// Public — called unauthenticated by Meta, secured by signature/verify-token instead of a session (see bootstrap/app.php's CSRF exception for webhooks/*).
+Route::get('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');
+Route::post('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive'])->name('webhooks.whatsapp.receive');
 
 Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
@@ -76,6 +82,11 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/pencapaian', [AchievementController::class, 'index'])->name('pencapaian');
     Route::get('/kegiatan', [KegiatanController::class, 'index'])->name('kegiatan');
     Route::get('/aktivitas', [AktivitasController::class, 'index'])->name('aktivitas');
+    Route::get('/crm', [CrmLeadController::class, 'index'])->name('crm');
+    Route::post('/crm', [CrmLeadController::class, 'store'])->name('crm.store');
+    Route::patch('/crm/{lead}', [CrmLeadController::class, 'update'])->name('crm.update');
+    Route::patch('/crm/{lead}/status', [CrmLeadController::class, 'updateStatus'])->name('crm.status');
+    Route::delete('/crm/{lead}', [CrmLeadController::class, 'destroy'])->name('crm.destroy');
     Route::get('/rekap', [ReportRecapController::class, 'index'])->name('rekap');
     Route::get('/rekap/export', [ReportRecapController::class, 'export'])->name('rekap.export');
     Route::post('/rekap/whatsapp', [ReportRecapController::class, 'generateWhatsapp'])->name('rekap.whatsapp');

@@ -35,6 +35,14 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        // Meta WhatsApp Cloud API webhook (see WhatsAppWebhookController) —
+        // verify_token confirms the GET handshake, app_secret validates the
+        // X-Hub-Signature-256 header on inbound POST payloads.
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
+    ],
+
     'collab' => [
         'username' => env('COLLAB_USERNAME'),
         'password' => env('COLLAB_PASSWORD'),

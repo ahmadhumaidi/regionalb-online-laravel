@@ -50,6 +50,12 @@ class Menu
                 ],
             ],
             [
+                'title' => 'CRM',
+                'items' => [
+                    ['key' => 'crm', 'label' => 'CRM Leads', 'icon' => 'users'],
+                ],
+            ],
+            [
                 'title' => 'Anggaran & Laporan',
                 'items' => [
                     ['key' => 'anggaran', 'label' => 'Anggaran & Laporan Iklan', 'icon' => 'currency'],
@@ -101,6 +107,7 @@ class Menu
             'kegiatan' => 'Kegiatan Marketing',
             'anggaran' => 'Anggaran & Laporan Iklan',
             'aktivitas' => 'Aktivitas Lain',
+            'crm' => 'CRM Leads',
             'rekap' => 'Laporan & Rekap',
             'role' => 'Peran & Log Aktivitas',
             'password' => 'Ganti Password',
@@ -143,6 +150,7 @@ class Menu
             'pencapaian' => route('pencapaian'),
             'kegiatan' => route('kegiatan'),
             'aktivitas' => route('aktivitas'),
+            'crm' => route('crm'),
             'rekap' => route('rekap'),
             'targets' => route('targets'),
             'jadwal-personalia' => route('jadwal-personalia'),
