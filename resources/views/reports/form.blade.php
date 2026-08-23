@@ -6,7 +6,7 @@
             @csrf @if ($editing) @method('PATCH') @endif
             @if ($errors->any())<div class="md:col-span-2 rounded-lg border border-tone-red/30 bg-tone-red/10 p-3 text-sm text-red-800"><ul class="list-disc pl-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
             @if ($config['label'] === 'anggaran' && $editing)
-                @php $adsFields = \App\Services\Reports\ReportFormService::adsEditFieldsForRole($user->role); @endphp
+                @php $adsFields = \App\Services\Reports\ReportFormService::adsEditFieldsForRole($user->role, $report); @endphp
                 @if (in_array('report_date', $adsFields))
                     <label class="grid gap-1 text-sm">Tanggal laporan<input type="date" name="report_date" required value="{{ old('report_date', optional($report->report_date)->format('Y-m-d') ?: now()->toDateString()) }}" class="rounded-lg border-border bg-surface-muted"></label>
                 @endif

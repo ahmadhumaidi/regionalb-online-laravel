@@ -94,6 +94,108 @@ class AdBudgetPendingPanelTest extends TestCase
         $superUser->delete();
     }
 
+    public function test_koordinator_can_allocate_and_report_own_regional_ad(): void
+    {
+        $this->migrate();
+
+        $owner = RsmUser::create([
+            'id' => 900054, 'name' => 'Kundi Harto', 'username' => 'test_kundi_harto_900054',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 5', 'is_active' => true,
+        ]);
+        $otherCoordinator = RsmUser::create([
+            'id' => 900055, 'name' => 'Korwil Lain R5', 'username' => 'test_korwil_lain_900055',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 5', 'is_active' => true,
+        ]);
+        RsmAdBudgetLimit::create([
+            'area' => 'Regional B', 'ad_period' => 'Agustus 2026', 'wilayah' => 'Regional 5',
+            'unit_name' => '', 'budget_limit' => 2000000,
+            'created_by_user_id' => $owner->id, 'created_by_name' => 'Super User',
+        ]);
+
+        $this->actingAs($owner)->get('/anggaran?ad_period=Agustus%202026')
+            ->assertOk()
+            ->assertSee('Iklan Regional 5');
+
+        $this->actingAs($owner)->post(route('anggaran.limit.store'), [
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 4',
+            'unit_name' => 'Iklan Regional 5',
+            'budget_limit' => 1000000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAs($owner)->post(route('anggaran.store'), [
+            'report_date' => '2026-08-15',
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 4',
+            'unit_name' => 'Iklan Regional 5',
+            'platform' => 'Meta Ads',
+            'campaign_name' => 'Campaign Regional Lima',
+            'ad_goal' => 'Leads',
+            'budget_requested' => 500000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $report = RsmReport::where('campaign_name', 'Campaign Regional Lima')->firstOrFail();
+        $this->assertSame('Regional 5', $report->wilayah);
+        $this->assertSame('Kundi Harto', $report->created_by_name);
+        $report->update(['status' => 'Disetujui', 'budget_approved' => 500000]);
+
+        $this->actingAs($owner)->patch(route('reports.update', $report), [
+            'report_date' => '2026-08-15',
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 5',
+            'unit_name' => 'Iklan Regional 5',
+            'platform' => 'Meta Ads',
+            'campaign_name' => 'Campaign Regional Lima',
+            'ad_goal' => 'Leads',
+            'budget_requested' => 500000,
+            'realization_amount' => 450000,
+            'impressions_count' => 9000,
+            'campaign_link' => 'https://example.test/campaign-regional-5',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $report->refresh();
+        $this->assertSame('Dilaporkan Unit', $report->status);
+        $this->assertSame(450000.0, (float) $report->realization_amount);
+        $this->assertSame(9000, (int) $report->impressions_count);
+        $this->assertSame('Kundi Harto', $report->staff_name);
+
+        $this->actingAs($otherCoordinator)->get(route('reports.show', $report))->assertNotFound();
+        $this->actingAs($otherCoordinator)->post(route('anggaran.verifikasi', $report))->assertForbidden();
+        $this->actingAs($owner)->post(route('anggaran.verifikasi', $report))->assertForbidden();
+
+        $report->delete();
+        RsmAdBudgetLimit::where('wilayah', 'Regional 5')->delete();
+        $owner->delete();
+        $otherCoordinator->delete();
+    }
+
+    public function test_koordinator_cannot_use_another_regional_ad_unit(): void
+    {
+        $this->migrate();
+
+        $koordinator = RsmUser::create([
+            'id' => 900056, 'name' => 'Korwil Regional Six', 'username' => 'test_korwil_r6_900056',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
+        ]);
+
+        $this->actingAs($koordinator)->post(route('anggaran.store'), [
+            'report_date' => '2026-08-15',
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 5',
+            'unit_name' => 'Iklan Regional 5',
+            'platform' => 'Meta Ads',
+            'campaign_name' => 'Campaign Regional Salah',
+            'ad_goal' => 'Leads',
+            'budget_requested' => 500000,
+        ])->assertSessionHasErrors('unit_name');
+
+        $this->assertDatabaseMissing('rsm_reports', ['campaign_name' => 'Campaign Regional Salah']);
+        $koordinator->delete();
+    }
+
     public function test_koordinator_cannot_allocate_more_than_regional_pool(): void
     {
         $this->migrate();

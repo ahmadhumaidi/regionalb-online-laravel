@@ -20,11 +20,22 @@ class ReportScope
         return match ($user->role) {
             'super_user', 'executive_director', 'director', 'senior', 'mentor' => $query,
             'koordinator' => trim((string) $user->regional) !== ''
-                ? $query->where($col('wilayah'), $user->regional)
+                ? self::applyCoordinatorScope($query, $user, $col)
                 : $query->whereRaw('1 = 0'),
             'staff' => self::applyStaffScope($query, $user, $col),
             default => $query->whereRaw('1 = 0'),
         };
+    }
+
+    private static function applyCoordinatorScope(Builder $query, RsmUser $user, \Closure $col): Builder
+    {
+        $regionalAdUnit = 'Iklan '.trim((string) $user->regional);
+
+        return $query->where($col('wilayah'), $user->regional)
+            ->where(function (Builder $q) use ($col, $regionalAdUnit, $user) {
+                $q->where($col('unit_name'), '<>', $regionalAdUnit)
+                    ->orWhere($col('created_by_name'), $user->name);
+            });
     }
 
     private static function applyStaffScope(Builder $query, RsmUser $user, \Closure $col): Builder

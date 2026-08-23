@@ -140,6 +140,13 @@ class ReportFormController extends Controller
     private function formView(string $type, RsmReport $report, bool $editing, RsmUser $user): View
     {
         $config = ReportFormService::config($type);
+        $references = ReferenceOptionsService::build($user->area ?: 'Regional B', $user);
+        if ($type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_KOORDINATOR && filled($user->regional)) {
+            array_unshift($references['campuses'], [
+                'id' => null,
+                'label' => ReportFormService::regionalAdUnitName($user->regional),
+            ]);
+        }
 
         return view('reports.form', [
             'active' => $config['label'],
@@ -148,7 +155,7 @@ class ReportFormController extends Controller
             'editing' => $editing,
             'user' => $user,
             'storeRoute' => $this->pageRoute($type).'.store',
-            'references' => ReferenceOptionsService::build($user->area ?: 'Regional B', $user),
+            'references' => $references,
         ]);
     }
 
@@ -216,6 +223,16 @@ class ReportFormController extends Controller
             'insight_attachment_path' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
             'notes' => ['nullable', 'string'],
         ];
+
+        if ($user->role === RsmUser::ROLE_KOORDINATOR) {
+            $rules += [
+                'campaign_name' => ['nullable', 'string', 'max:220'],
+                'ad_goal' => ['nullable', 'string', 'max:80'],
+                'realization_amount' => ['nullable', 'numeric', 'min:0'],
+                'impressions_count' => ['nullable', 'integer', 'min:0'],
+                'campaign_link' => ['nullable', 'string', 'max:500'],
+            ];
+        }
 
         if (in_array($user->role, ['super_user', 'executive_director', 'director', 'senior'], true)) {
             $rules['budget_approved'] = ['nullable', 'numeric', 'min:0'];

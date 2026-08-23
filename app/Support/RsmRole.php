@@ -104,6 +104,13 @@ class RsmRole
             return true;
         }
 
+        if (
+            $user?->role === 'koordinator'
+            && $report->unit_name === 'Iklan '.$report->wilayah
+        ) {
+            return false;
+        }
+
         return $user?->role === 'koordinator' && $report->wilayah === $user->regional;
     }
 

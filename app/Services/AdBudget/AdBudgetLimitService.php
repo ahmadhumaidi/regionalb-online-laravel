@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class AdBudgetLimitService
 {
-    /** @return list<array{wilayah: string, unit_name: string, budget_limit: float, requested: float, approved: float, realization: float, remaining: float, count: int}> */
+    /** @return list<array{wilayah: string, unit_name: string, owner_name: string, budget_limit: float, requested: float, approved: float, realization: float, remaining: float, count: int}> */
     public static function build(string $area, string $period, RsmUser $user): array
     {
         $regionals = AreaRegionals::forArea($area);
@@ -71,6 +71,7 @@ class AdBudgetLimitService
             return [
                 'wilayah' => (string) $limit->wilayah,
                 'unit_name' => $unitName,
+                'owner_name' => (string) ($limit->created_by_name ?? ''),
                 'budget_limit' => $budgetLimit,
                 'requested' => $requested,
                 'approved' => (float) ($use->approved ?? 0),

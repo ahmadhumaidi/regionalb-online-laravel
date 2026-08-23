@@ -63,6 +63,10 @@ class ReportFormService
             return true;
         }
         if ($report->report_type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_KOORDINATOR) {
+            if (self::isRegionalAdUnit($report->unit_name, $report->wilayah)) {
+                return $report->wilayah === $user->regional && $report->created_by_name === $user->name;
+            }
+
             return $report->wilayah === $user->regional;
         }
         if ($report->report_type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_STAFF) {
@@ -97,15 +101,27 @@ class ReportFormService
      * Keyed by internal column name, not the Indonesian label (labels
      * belong to the view).
      */
-    public static function adsEditFieldsForRole(string $role): array
+    public static function adsEditFieldsForRole(string $role, ?RsmReport $report = null): array
     {
         return match ($role) {
             RsmUser::ROLE_STAFF => ['campaign_name', 'ad_goal', 'realization_amount', 'impressions_count', 'cpl', 'cpm', 'campaign_link', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
-            RsmUser::ROLE_KOORDINATOR => ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
+            RsmUser::ROLE_KOORDINATOR => $report && self::isRegionalAdUnit($report->unit_name, $report->wilayah)
+                ? ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'campaign_name', 'ad_goal', 'budget_requested', 'realization_amount', 'impressions_count', 'cpl', 'cpm', 'campaign_link', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes']
+                : ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes'],
             default => in_array($role, self::SENIOR_ROLES, true)
                 ? ['report_date', 'ad_period', 'wilayah', 'unit_name', 'platform', 'budget_requested', 'budget_approved', 'attachment_path', 'ad_leads_file', 'insight_attachment_path', 'notes']
                 : [],
         };
+    }
+
+    public static function regionalAdUnitName(string $wilayah): string
+    {
+        return 'Iklan '.trim($wilayah);
+    }
+
+    public static function isRegionalAdUnit(?string $unitName, ?string $wilayah): bool
+    {
+        return trim((string) $unitName) === self::regionalAdUnitName((string) $wilayah);
     }
 
     public static function create(string $type, array $data, ?UploadedFile $attachment, RsmUser $user): RsmReport
@@ -178,6 +194,18 @@ class ReportFormService
         $campusWilayah = Schema::hasColumn('partner_campuses', 'wilayah') ? ($campus->wilayah ?? null) : null;
         if ($user->role === RsmUser::ROLE_KOORDINATOR && $campus && $campusWilayah && $campusWilayah !== $user->regional) {
             throw ValidationException::withMessages(['unit_name' => 'Kampus tersebut bukan bagian dari wilayah Anda.']);
+        }
+        if ($type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_KOORDINATOR) {
+            $wilayah = trim((string) $user->regional);
+            $expectedRegionalUnit = self::regionalAdUnitName($wilayah);
+            if (str_starts_with($unit, 'Iklan Regional ') && $unit !== $expectedRegionalUnit) {
+                throw ValidationException::withMessages(['unit_name' => 'Iklan regional harus sesuai dengan wilayah akun Anda.']);
+            }
+            if ($unit === $expectedRegionalUnit) {
+                $staff = $user->name;
+                $staffRow = null;
+                $campus = null;
+            }
         }
 
         $status = $type === RsmReport::TYPE_ADS ? 'Pengajuan' : ((string) ($data['status'] ?? 'Draft'));
@@ -323,6 +351,19 @@ class ReportFormService
                 'budget_requested' => (float) $existing->budget_requested,
                 'budget_approved' => (float) $existing->budget_approved,
                 'status' => 'Dilaporkan Unit',
+            ]),
+            $user->role === RsmUser::ROLE_KOORDINATOR && self::isRegionalAdUnit($existing->unit_name, $existing->wilayah) => array_merge($base, [
+                'wilayah' => $existing->wilayah,
+                'unit_name' => $existing->unit_name,
+                'partner_campus_id' => null,
+                'staff_name' => $user->name,
+                'realization_amount' => $newRealizationAmount,
+                'impressions_count' => $newImpressionsCount,
+                'cpl' => $computedCpl,
+                'cpm' => $computedCpm,
+                'status' => in_array($existing->status, ['Disetujui', 'Transfer / Invoice', 'Berjalan'], true)
+                    ? 'Dilaporkan Unit'
+                    : $existing->status,
             ]),
             $user->role === RsmUser::ROLE_KOORDINATOR => array_merge($base, [
                 'budget_approved' => (float) $existing->budget_approved,

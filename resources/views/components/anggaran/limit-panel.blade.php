@@ -13,7 +13,7 @@
             @if (auth()->user()->role === 'koordinator')
                 <input type="hidden" name="wilayah" value="{{ auth()->user()->regional }}">
                 <label class="grid gap-1 text-xs text-ink-muted">Regional<input value="{{ auth()->user()->regional }}" disabled class="rounded-lg border-border bg-surface-muted text-sm text-ink"></label>
-                <label class="grid gap-1 text-xs text-ink-muted">Kampus/Unit<select name="unit_name" required class="rounded-lg border-border bg-surface-muted text-sm text-ink"><option value="">Pilih kampus</option>@foreach ($referenceOptions['campuses'] as $campusOption)<option value="{{ $campusOption['label'] }}" @selected(old('unit_name') === $campusOption['label'])>{{ $campusOption['label'] }}</option>@endforeach</select></label>
+                <label class="grid gap-1 text-xs text-ink-muted">Kampus/Unit<select name="unit_name" required class="rounded-lg border-border bg-surface-muted text-sm text-ink"><option value="">Pilih kampus/unit</option>@foreach ($referenceOptions['campuses'] as $campusOption)<option value="{{ $campusOption['label'] }}" @selected(old('unit_name') === $campusOption['label'])>{{ $campusOption['label'] }}</option>@endforeach</select></label>
             @else
                 <label class="grid gap-1 text-xs text-ink-muted sm:col-span-2">Regional<select name="wilayah" required class="rounded-lg border-border bg-surface-muted text-sm text-ink"><option value="">Pilih regional</option>@foreach ($referenceOptions['regionals'] as $regionalOption)<option value="{{ $regionalOption }}" @selected(old('wilayah') === $regionalOption)>{{ $regionalOption }}</option>@endforeach</select></label>
             @endif
@@ -34,7 +34,10 @@
                 @endphp
                 <article class="rounded-xl border border-border p-4">
                     <strong class="block text-sm font-semibold text-ink">{{ $row['unit_name'] ?: $row['wilayah'] }}</strong>
-                    <span class="text-xs text-ink-muted">{{ $row['unit_name'] ? $row['wilayah'].' · Alokasi kampus' : 'Plafon regional' }}</span>
+                    <span class="text-xs text-ink-muted">{{ $row['unit_name'] ? $row['wilayah'].' · '.(str_starts_with($row['unit_name'], 'Iklan Regional ') ? 'Dikelola Korwil' : 'Alokasi kampus') : 'Plafon regional' }}</span>
+                    @if (str_starts_with($row['unit_name'], 'Iklan Regional ') && $row['owner_name'])
+                        <span class="mt-1 block text-xs text-ink-muted">Penanggung jawab: {{ $row['owner_name'] }}</span>
+                    @endif
 
                     @if ($row['budget_limit'] > 0)
                         <p class="mt-1 text-xs text-ink-muted">Plafon: Rp {{ number_format($row['budget_limit'], 0, ',', '.') }}</p>

@@ -8,6 +8,7 @@ use App\Services\AdBudget\AdBudgetPeriods;
 use App\Services\AdBudget\AdBudgetReportsService;
 use App\Services\AdBudget\PendingAdReportsService;
 use App\Services\Dashboard\ReferenceOptionsService;
+use App\Services\Reports\ReportFormService;
 use App\Support\RsmRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,14 @@ class AdBudgetController extends Controller
             ['label' => 'Closing Iklan', 'value' => number_format($totals['closing'], 0, ',', '.'), 'tone' => 'purple', 'note' => 'Total closing dari laporan iklan'],
         ];
 
+        $referenceOptions = ReferenceOptionsService::build($area, $user);
+        if ($user->role === RsmUser::ROLE_KOORDINATOR && filled($user->regional)) {
+            array_unshift($referenceOptions['campuses'], [
+                'id' => null,
+                'label' => ReportFormService::regionalAdUnitName($user->regional),
+            ]);
+        }
+
         return view('anggaran.index', [
             'active' => 'anggaran',
             'period' => $period,
@@ -60,7 +69,7 @@ class AdBudgetController extends Controller
             'totalCount' => $reports['total_count'],
             'shownCount' => $reports['shown_count'],
             'canManageBudget' => RsmRole::canManageAdBudgetLimit($user),
-            'referenceOptions' => ReferenceOptionsService::build($area, $user),
+            'referenceOptions' => $referenceOptions,
         ]);
     }
 
@@ -83,6 +92,7 @@ class AdBudgetController extends Controller
         }
         if ($user->role === RsmUser::ROLE_KOORDINATOR) {
             $allowedCampuses = collect(ReferenceOptionsService::build($user->area ?: 'Regional B', $user)['campuses'])->pluck('label')->all();
+            $allowedCampuses[] = ReportFormService::regionalAdUnitName((string) $user->regional);
             if (! in_array($data['unit_name'], $allowedCampuses, true)) {
                 return back()->withErrors(['unit_name' => 'Kampus tidak tersedia untuk wilayah Anda.'])->withInput();
             }
