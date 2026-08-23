@@ -47,9 +47,23 @@ class AdBudgetLimitService
             ->get()
             ->keyBy(fn ($row) => self::scopeKey((string) $row->wilayah, (string) $row->unit_name));
 
-        $rows = $limitRows->map(function (RsmAdBudgetLimit $limit) use ($usage, $hasUnitName) {
+        $regionalUsage = DB::table('rsm_reports')
+            ->select('wilayah')
+            ->selectRaw('SUM(budget_requested) as requested, SUM(budget_approved) as approved, SUM(realization_amount) as realization, COUNT(*) as report_count')
+            ->where('area', $area)
+            ->where('report_type', 'ads')
+            ->where('ad_period', $period)
+            ->whereIn('wilayah', $regionals)
+            ->whereRaw('LOWER(status) <> ?', ['ditolak'])
+            ->groupBy('wilayah')
+            ->get()
+            ->keyBy(fn ($row) => mb_strtolower(trim((string) $row->wilayah)));
+
+        $rows = $limitRows->map(function (RsmAdBudgetLimit $limit) use ($usage, $regionalUsage, $hasUnitName) {
             $unitName = $hasUnitName ? (string) $limit->unit_name : '';
-            $use = $usage->get(self::scopeKey((string) $limit->wilayah, $unitName));
+            $use = $unitName === ''
+                ? $regionalUsage->get(mb_strtolower(trim((string) $limit->wilayah)))
+                : $usage->get(self::scopeKey((string) $limit->wilayah, $unitName));
 
             $budgetLimit = (float) ($limit->budget_limit ?? 0);
             $requested = (float) ($use->requested ?? 0);
@@ -72,14 +86,48 @@ class AdBudgetLimitService
     /** Port of rsm_save_ad_budget_limit() (rsm_db.php:2000-2032). */
     public static function save(string $area, string $period, string $wilayah, string $unitName, float $budgetLimit, ?string $notes, RsmUser $actor): void
     {
-        if ($period === '' || $wilayah === '' || $unitName === '') {
-            throw new \InvalidArgumentException('Periode, regional, dan kampus wajib diisi.');
+        if ($period === '' || $wilayah === '') {
+            throw new \InvalidArgumentException('Periode dan regional wajib diisi.');
         }
         if ($budgetLimit <= 0) {
-            throw new \InvalidArgumentException('Besaran anggaran kampus harus lebih dari 0.');
+            throw new \InvalidArgumentException('Besaran anggaran harus lebih dari 0.');
         }
 
         $hasUnitName = Schema::hasColumn('rsm_ad_budget_limits', 'unit_name');
+        $unitName = $hasUnitName ? trim($unitName) : '';
+
+        if ($actor->role === RsmUser::ROLE_KOORDINATOR) {
+            if ($unitName === '') {
+                throw new \InvalidArgumentException('Kampus/unit wajib dipilih.');
+            }
+
+            $regionalLimit = RsmAdBudgetLimit::query()
+                ->where(['area' => $area, 'ad_period' => $period, 'wilayah' => $wilayah])
+                ->where('unit_name', '')
+                ->value('budget_limit');
+            if ($regionalLimit === null) {
+                throw new \InvalidArgumentException('Plafon regional belum ditetapkan oleh Super User.');
+            }
+
+            $allocated = (float) RsmAdBudgetLimit::query()
+                ->where(['area' => $area, 'ad_period' => $period, 'wilayah' => $wilayah])
+                ->where('unit_name', '<>', '')
+                ->where('unit_name', '<>', $unitName)
+                ->sum('budget_limit');
+            if ($allocated + $budgetLimit > (float) $regionalLimit) {
+                throw new \InvalidArgumentException('Total plafon kampus melebihi plafon regional.');
+            }
+        } else {
+            // Super User/senior menetapkan pool regional; kampus dibagi oleh Korwil.
+            $unitName = '';
+            $allocated = (float) RsmAdBudgetLimit::query()
+                ->where(['area' => $area, 'ad_period' => $period, 'wilayah' => $wilayah])
+                ->where('unit_name', '<>', '')
+                ->sum('budget_limit');
+            if ($budgetLimit < $allocated) {
+                throw new \InvalidArgumentException('Plafon regional tidak boleh lebih kecil dari total alokasi kampus yang sudah ditetapkan.');
+            }
+        }
         $attributes = ['area' => $area, 'ad_period' => $period, 'wilayah' => $wilayah];
         if ($hasUnitName) {
             $attributes['unit_name'] = $unitName;

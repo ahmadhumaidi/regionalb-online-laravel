@@ -42,6 +42,11 @@ class AdBudgetPendingPanelTest extends TestCase
             'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
             'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
         ]);
+        RsmAdBudgetLimit::create([
+            'area' => 'Regional B', 'ad_period' => 'Agustus 2026', 'wilayah' => 'Regional 6',
+            'unit_name' => '', 'budget_limit' => 1000000,
+            'created_by_user_id' => $koordinator->id, 'created_by_name' => 'Super User',
+        ]);
 
         $response = $this->actingAs($koordinator)->post(route('anggaran.limit.store'), [
             'ad_period' => \App\Services\AdBudget\AdBudgetPeriods::default('2026-08-01'),
@@ -61,6 +66,62 @@ class AdBudgetPendingPanelTest extends TestCase
 
         RsmAdBudgetLimit::where('unit_name', 'STIESIA Surabaya')->delete();
         DB::table('partner_campuses')->where('kode_kampus', 'STIESIA-T')->delete();
+        $koordinator->delete();
+    }
+
+    public function test_super_user_sets_regional_pool_without_selecting_campus(): void
+    {
+        $this->migrate();
+
+        $superUser = RsmUser::create([
+            'id' => 900052, 'name' => 'Super Regional Budget', 'username' => 'test_super_budget_900052',
+            'password_hash' => 'x', 'role' => 'super_user', 'jabatan' => 'Super User',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+
+        $this->actingAs($superUser)->post(route('anggaran.limit.store'), [
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'budget_limit' => 2500000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('rsm_ad_budget_limits', [
+            'area' => 'Regional B', 'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6', 'unit_name' => '', 'budget_limit' => 2500000,
+        ]);
+
+        RsmAdBudgetLimit::where('created_by_user_id', $superUser->id)->delete();
+        $superUser->delete();
+    }
+
+    public function test_koordinator_cannot_allocate_more_than_regional_pool(): void
+    {
+        $this->migrate();
+
+        DB::table('partner_campuses')->insert([
+            'name' => 'Campus Allocation Test', 'display_name' => 'Campus Allocation Test',
+            'kode_kampus' => 'ALLOC-T', 'address' => '-',
+        ]);
+        $koordinator = RsmUser::create([
+            'id' => 900053, 'name' => 'Korwil Allocation', 'username' => 'test_korwil_alloc_900053',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
+        ]);
+        RsmAdBudgetLimit::create([
+            'area' => 'Regional B', 'ad_period' => 'Agustus 2026', 'wilayah' => 'Regional 6',
+            'unit_name' => '', 'budget_limit' => 500000,
+            'created_by_user_id' => $koordinator->id, 'created_by_name' => 'Super User',
+        ]);
+
+        $this->actingAs($koordinator)->post(route('anggaran.limit.store'), [
+            'ad_period' => 'Agustus 2026', 'wilayah' => 'Regional 6',
+            'unit_name' => 'Campus Allocation Test', 'budget_limit' => 600000,
+        ])->assertSessionHasErrors('budget_limit');
+
+        $this->assertDatabaseMissing('rsm_ad_budget_limits', ['unit_name' => 'Campus Allocation Test']);
+
+        RsmAdBudgetLimit::where('wilayah', 'Regional 6')->delete();
+        DB::table('partner_campuses')->where('kode_kampus', 'ALLOC-T')->delete();
         $koordinator->delete();
     }
 
