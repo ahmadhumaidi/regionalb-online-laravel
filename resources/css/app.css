@@ -140,7 +140,18 @@
     dialog.top-staff-profile-dialog {
         position: fixed;
         inset: 0;
-        margin: auto;
+        width: 100vw;
+        height: 100dvh;
+        max-width: none;
+        max-height: none;
+        margin: 0;
+        padding: 1rem;
+        align-items: center;
+        justify-content: center;
+    }
+
+    dialog.top-staff-profile-dialog[open] {
+        display: flex;
     }
 
     @media (hover: hover) and (pointer: fine) {
