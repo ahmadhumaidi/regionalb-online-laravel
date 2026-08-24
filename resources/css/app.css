@@ -137,6 +137,12 @@
         width: calc(100vw - 2rem);
     }
 
+    dialog.top-staff-profile-dialog {
+        position: fixed;
+        inset: 0;
+        margin: auto;
+    }
+
     @media (hover: hover) and (pointer: fine) {
         .glass-card:hover {
             transform: translateY(-3px);

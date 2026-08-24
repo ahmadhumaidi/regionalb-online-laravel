@@ -100,7 +100,7 @@
                             <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted"><div class="h-full rounded-full bg-brand-600 progress-fill" style="width: {{ $rate }}%"></div></div>
                         </div>
                     </button>
-                    <dialog id="{{ $profileDialogId }}" class="schedule-dialog" onclick="if (event.target === this) this.close()">
+                    <dialog id="{{ $profileDialogId }}" class="schedule-dialog top-staff-profile-dialog" onclick="if (event.target === this) this.close()">
                         <form method="dialog" class="w-full max-w-md rounded-2xl border border-border bg-surface p-5 text-left shadow-2xl">
                             <div class="flex items-start justify-between gap-4 border-b border-border pb-4">
                                 <div class="flex items-center gap-3">
@@ -159,7 +159,7 @@
                         </form>
                     </dialog>
                     @if (! empty($row['photo_path']))
-                        <dialog id="{{ $photoDialogId }}" class="schedule-dialog" onclick="if (event.target === this) this.close()">
+                        <dialog id="{{ $photoDialogId }}" class="schedule-dialog top-staff-profile-dialog" onclick="if (event.target === this) this.close()">
                             <form method="dialog" class="w-full max-w-lg rounded-2xl border border-border bg-surface p-4 shadow-2xl">
                                 <div class="mb-3 flex items-center justify-between gap-3">
                                     <div>
