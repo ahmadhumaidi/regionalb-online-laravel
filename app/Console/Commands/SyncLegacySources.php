@@ -43,7 +43,7 @@ class SyncLegacySources extends Command
                     ->where('role', RsmUser::ROLE_STAFF)
                     ->where('is_active', true)
                     ->orderBy('id')
-                    ->chunkById(50, function ($users) use (&$reconciled, &$awarded): void {
+                    ->chunkById(50, function ($users) use (&$reconciled, &$awarded, &$scoringAwarded): void {
                         foreach ($users as $user) {
                             $reconciled++;
                             if (XpService::syncCollabActivity($user) !== null) {
