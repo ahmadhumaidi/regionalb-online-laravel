@@ -125,9 +125,12 @@
                 <tr class="border-b border-border text-xs text-ink-muted">
                     <th class="py-2 pr-3">Staff</th>
                     @foreach ($indicators as $indicator)
-                        <th class="py-2 pr-3">{{ $indicator['label'] }}</th>
+                        <th class="py-2 pr-3">
+                            <span class="block">{{ $indicator['label'] }}</span>
+                            <span class="block text-[10px] font-normal text-ink-muted/80">Target / Bobot</span>
+                        </th>
                     @endforeach
-                    <th class="py-2 pr-3">Bobot</th>
+                    <th class="py-2 pr-3">Total Bobot</th>
                     <th class="py-2">Indikator Terisi</th>
                 </tr>
             </thead>
@@ -138,13 +141,23 @@
                         $weightTotal = collect($indicatorRows)->sum(fn ($row) => (float) ($row['weight'] ?? 0));
                         $filledCount = collect($indicatorRows)->filter(fn ($row) => (float) ($row['target'] ?? 0) > 0 || (float) ($row['weight'] ?? 0) > 0)->count();
                         $targetFor = fn (string $key) => (float) ($indicatorRows[$key]['target'] ?? 0);
+                        $weightFor = fn (string $key) => (float) ($indicatorRows[$key]['weight'] ?? 0);
+                        $targetStepFor = fn (string $key) => (string) ($indicators[$key]['step'] ?? '1');
+                        $formatTarget = fn (float $value, string $key) => $targetStepFor($key) === '0.01'
+                            ? number_format($value, 2, ',', '.')
+                            : number_format($value, 0, ',', '.');
                     @endphp
                     <tr class="border-b border-border/60">
                         <td class="py-2 pr-3">{{ $target->staff_name ?: '-' }}</td>
                         @foreach ($indicators as $key => $indicator)
-                            <td class="py-2 pr-3">{{ number_format($targetFor($key), 0, ',', '.') }}</td>
+                            <td class="py-2 pr-3 align-top">
+                                <span class="block font-semibold text-ink">{{ $formatTarget($targetFor($key), $key) }}</span>
+                                <span class="mt-0.5 inline-flex rounded-full bg-white/60 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">
+                                    {{ number_format($weightFor($key), 0, ',', '.') }}%
+                                </span>
+                            </td>
                         @endforeach
-                        <td class="py-2 pr-3">{{ number_format($weightTotal, 2, ',', '.') }}%</td>
+                        <td class="py-2 pr-3">{{ number_format($weightTotal, 0, ',', '.') }}%</td>
                         <td class="py-2">{{ $filledCount }} indikator</td>
                     </tr>
                 @empty

@@ -3,6 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Models\RsmBadgeSetting;
+use App\Models\RsmGamificationTransaction;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use Carbon\Carbon;
@@ -107,20 +108,40 @@ class GamificationService
     {
         [, $scoredRows] = self::scoredRows($area, $filters, $user);
         $badgesByName = $scoredRows->keyBy(fn (array $row) => mb_strtolower(trim((string) $row['name'])));
-
-        return collect(ScoringTableService::build($area, $filters, $user)['rows'])
+        $scoringRows = collect(ScoringTableService::build($area, $filters, $user)['rows'])
             ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-')
-            ->filter(fn (array $row) => (float) ($row['total_weight'] ?? 0) > 0)
-            ->map(function (array $row) use ($badgesByName) {
+            ->filter(fn (array $row) => (float) ($row['total_weight'] ?? 0) > 0);
+        $xpByUserId = self::lifetimeXpByUserId($scoringRows->pluck('user_id')->filter()->unique()->values());
+
+        return $scoringRows
+            ->map(function (array $row) use ($badgesByName, $xpByUserId) {
                 $legacy = $badgesByName->get(mb_strtolower(trim((string) $row['name'])));
+                $lifetimeXp = (int) ($xpByUserId->get($row['user_id'] ?? null) ?? 0);
 
                 return array_merge($row, [
                     'points' => (float) ($row['total_score'] ?? 0),
                     'badges' => self::badgesFromScoringRow($row, $legacy['badges'] ?? []),
+                    'lifetime_xp' => $lifetimeXp,
+                    'league' => self::leagueFor($lifetimeXp),
                 ]);
             })
             ->sortBy([['total_score', 'desc'], ['name', 'asc']])
             ->values();
+    }
+
+    /** @param Collection<int, int|string> $userIds @return Collection<int|string, int> */
+    private static function lifetimeXpByUserId(Collection $userIds): Collection
+    {
+        if ($userIds->isEmpty() || ! Schema::hasTable('rsm_gamification_transactions')) {
+            return collect();
+        }
+
+        return RsmGamificationTransaction::query()
+            ->whereIn('user_id', $userIds->all())
+            ->selectRaw('user_id, COALESCE(SUM(xp), 0) as lifetime_xp')
+            ->groupBy('user_id')
+            ->pluck('lifetime_xp', 'user_id')
+            ->map(fn ($value) => (int) $value);
     }
 
     /** @param Collection<int, array> $leaderboard @param Collection<string, int> $previousRanks @return Collection<int, array> */
@@ -168,9 +189,13 @@ class GamificationService
             return null;
         }
 
-        $days = $from->diffInDays($to) + 1;
-        $previousTo = $from->copy()->subDay();
-        $previousFrom = $previousTo->copy()->subDays($days - 1);
+        $currentTo = $to->min(Carbon::today('Asia/Jakarta'));
+        $previousTo = $currentTo->copy()->subDay();
+        $previousFrom = $from->copy();
+
+        if ($previousTo->lt($previousFrom)) {
+            $previousFrom = $previousTo->copy();
+        }
 
         return array_merge($filters, [
             'date_from' => $previousFrom->toDateString(),

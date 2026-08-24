@@ -15,6 +15,13 @@ class BadgeController extends Controller
             'active' => 'badges',
             'badges' => GamificationService::badgeDefinitions(),
             'indicators' => GamificationService::scoringIndicators(),
+            'leagues' => [
+                ['name' => 'Starter', 'threshold' => 0, 'note' => 'League awal untuk semua staff.'],
+                ['name' => 'Silver', 'threshold' => 500, 'note' => 'Terbuka saat lifetime XP mencapai 500.'],
+                ['name' => 'Gold', 'threshold' => 1000, 'note' => 'Terbuka saat lifetime XP mencapai 1.000.'],
+                ['name' => 'Platinum', 'threshold' => 2500, 'note' => 'Terbuka saat lifetime XP mencapai 2.500.'],
+                ['name' => 'Diamond', 'threshold' => 5000, 'note' => 'League tertinggi, terbuka saat lifetime XP mencapai 5.000.'],
+            ],
             'canManageBadges' => $request->user()?->role === 'super_user',
             'fallback' => [
                 'name' => 'On Progress',

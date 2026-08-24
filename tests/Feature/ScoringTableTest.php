@@ -490,6 +490,10 @@ class ScoringTableTest extends TestCase
     {
         $this->migrate();
 
+        \App\Models\RsmCollabDailyMetric::whereIn('staff_name', ['Arena Staff', 'Arena Rival'])->delete();
+        RsmMonthlyTarget::whereIn('staff_name', ['Arena Staff', 'Arena Rival'])->delete();
+        RsmUser::whereIn('id', [900045, 900046, 900047])->delete();
+
         $senior = RsmUser::create([
             'id' => 900045, 'name' => 'Test Senior Arena', 'username' => 'test_senior_arena_900045',
             'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
@@ -507,20 +511,20 @@ class ScoringTableTest extends TestCase
         ]);
 
         \App\Models\RsmCollabDailyMetric::create([
-            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
-            'entity_key' => 'arena-staff-1', 'staff_name' => 'Arena Staff', 'regional' => 'Regional 6', 'value' => 5,
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'arena-staff', 'staff_name' => 'Arena Staff', 'regional' => 'Regional 6', 'value' => 5,
         ]);
         \App\Models\RsmCollabDailyMetric::create([
-            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
-            'entity_key' => 'arena-rival-1', 'staff_name' => 'Arena Rival', 'regional' => 'Regional 6', 'value' => 1,
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'arena-rival', 'staff_name' => 'Arena Rival', 'regional' => 'Regional 6', 'value' => 1,
         ]);
         \App\Models\RsmCollabDailyMetric::create([
-            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->subMonthNoOverflow(),
-            'entity_key' => 'arena-staff-previous-1', 'staff_name' => 'Arena Staff', 'regional' => 'Regional 6', 'value' => 1,
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->subDay()->toDateString(),
+            'entity_key' => 'arena-staff', 'staff_name' => 'Arena Staff', 'regional' => 'Regional 6', 'value' => 1,
         ]);
         \App\Models\RsmCollabDailyMetric::create([
-            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->subMonthNoOverflow(),
-            'entity_key' => 'arena-rival-previous-1', 'staff_name' => 'Arena Rival', 'regional' => 'Regional 6', 'value' => 5,
+            'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->subDay()->toDateString(),
+            'entity_key' => 'arena-rival', 'staff_name' => 'Arena Rival', 'regional' => 'Regional 6', 'value' => 4,
         ]);
 
         RsmMonthlyTarget::create([
@@ -585,8 +589,8 @@ class ScoringTableTest extends TestCase
         );
 
         $this->assertSame('Arena Staff', $arena['leaderboard'][0]['name']);
-        $this->assertSame(10.0, $arena['leaderboard'][0]['points']);
-        $this->assertSame(10.0, $arena['leaderboard'][0]['total_score']);
+        $this->assertSame(12.0, $arena['leaderboard'][0]['points']);
+        $this->assertSame(12.0, $arena['leaderboard'][0]['total_score']);
         $this->assertCount(2, $arena['all_leaderboard']);
         $this->assertSame(1, $arena['leaderboard'][0]['rank']);
         $this->assertSame(2, $arena['leaderboard'][0]['previous_rank']);

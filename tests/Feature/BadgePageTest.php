@@ -32,13 +32,15 @@ class BadgePageTest extends TestCase
         $response = $this->actingAs($user)->get('/badges');
 
         $response->assertOk();
-        $response->assertSee('Badge &amp; Achievement', false);
+        $response->assertSee('Badge &amp; League', false);
         $response->assertSee('Follow Up Hero');
         $response->assertSee('Minimal 10 FU');
         $response->assertSee('Indikator');
         $response->assertSee('Kampus Growth');
         $response->assertSee('Share FB Booster');
         $response->assertSee('Affiliator Non Mahasiswa');
+        $response->assertSee('League');
+        $response->assertSee('Diamond');
         $response->assertSee('On Progress');
 
         $user->delete();

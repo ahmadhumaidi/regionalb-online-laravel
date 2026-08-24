@@ -8,6 +8,7 @@
         :campus-closing="$campusClosing"
         :top-staff-achievement="$topStaffAchievement"
         :top-staff-max-value="$topStaffMaxValue"
+        :gamification="$gamification"
     />
     <x-dashboard.gamification-panel :gamification="$gamification" />
     <x-dashboard.daily-report-table :reports="$dailyReports" />

@@ -1,4 +1,4 @@
-<x-layouts.app title="Badge & Achievement" active="badges">
+<x-layouts.app title="Badge & League" active="badges">
     @if (session('status'))
         <div class="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{{ session('status') }}</div>
     @endif
@@ -9,8 +9,29 @@
     <section class="rounded-2xl glass-card p-5">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h2 class="text-base font-semibold text-ink">Badge & Achievement</h2>
-                <p class="mt-1 text-sm text-ink-muted">Ketentuan badge yang muncul di Arena Performa Staff dan Profil.</p>
+                <h2 class="text-base font-semibold text-ink">League</h2>
+                <p class="mt-1 text-sm text-ink-muted">Frame league ditentukan dari lifetime XP staff.</p>
+            </div>
+            <span class="rounded-lg glass-card-muted px-3 py-1.5 text-xs font-semibold text-ink-muted">{{ count($leagues) }} tier</span>
+        </div>
+
+        <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            @foreach ($leagues as $league)
+                <article class="rounded-xl border border-border bg-surface-muted/60 p-4 text-center shadow-sm">
+                    <img src="{{ asset('images/league/'.strtolower($league['name']).'.png') }}" alt="League {{ $league['name'] }}" class="mx-auto h-20 w-20 object-contain" loading="lazy">
+                    <h3 class="mt-3 text-sm font-bold text-ink">{{ $league['name'] }}</h3>
+                    <p class="mt-1 text-lg font-black text-brand-700">{{ number_format($league['threshold'], 0, ',', '.') }} XP</p>
+                    <p class="mt-1 text-xs text-ink-muted">{{ $league['note'] }}</p>
+                </article>
+            @endforeach
+        </div>
+    </section>
+
+    <section class="mt-5 rounded-2xl glass-card p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 class="text-base font-semibold text-ink">Badge & League</h2>
+                <p class="mt-1 text-sm text-ink-muted">Ketentuan badge dan level league yang muncul di Arena Performa Staff dan Profil.</p>
             </div>
             <span class="rounded-lg glass-card-muted px-3 py-1.5 text-xs font-semibold text-ink-muted">{{ count($badges) }} badge aktif</span>
         </div>
@@ -19,19 +40,19 @@
             @csrf
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 @foreach ($badges as $badge)
-                    <article class="rounded-xl border border-l-4 border-border p-4
-                        @class([
-                            'border-l-tone-blue' => $badge['tone'] === 'blue',
-                            'border-l-tone-green' => $badge['tone'] === 'green',
-                            'border-l-tone-purple' => $badge['tone'] === 'purple',
-                            'border-l-tone-orange' => $badge['tone'] === 'orange',
-                            'border-l-tone-red' => $badge['tone'] === 'red',
-                        ])">
+                    <article @class([
+                        'rounded-xl border border-l-4 border-border p-4',
+                        'border-l-tone-blue' => $badge['tone'] === 'blue',
+                        'border-l-tone-green' => $badge['tone'] === 'green',
+                        'border-l-tone-purple' => $badge['tone'] === 'purple',
+                        'border-l-tone-orange' => $badge['tone'] === 'orange',
+                        'border-l-tone-red' => $badge['tone'] === 'red',
+                    ])>
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-black text-brand-700">{{ $loop->iteration }}</span>
                             <div>
                                 <h3 class="text-sm font-bold text-ink">{{ $badge['name'] }}</h3>
-                                <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Achievement</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Badge</p>
                             </div>
                         </div>
                         <dl class="mt-4 grid gap-3 text-sm">

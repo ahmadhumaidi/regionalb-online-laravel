@@ -20,6 +20,8 @@
         'lock' => '<rect x="5.5" y="10.5" width="13" height="9.5" rx="2" /><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3" />',
         'menu' => '<path d="M4 6.5h16" /><path d="M4 12h16" /><path d="M4 17.5h16" />',
         'close' => '<path d="m6 6 12 12" /><path d="m18 6-12 12" />',
+        'chevron-left' => '<path d="m15 18-6-6 6-6" />',
+        'chevron-right' => '<path d="m9 18 6-6-6-6" />',
         'chevron-down' => '<path d="m6 9 6 6 6-6" />',
         'bell' => '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2.5h-15L6 16Z" /><path d="M10 20a2 2 0 0 0 4 0" />',
         'logout' => '<path d="M9 4.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 19.5h3" /><path d="M14 15.5 19 12l-5-3.5" /><path d="M19 12H9" />',

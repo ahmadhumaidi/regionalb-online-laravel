@@ -1,6 +1,40 @@
 @props(['recaps'])
 
-<section class="mb-6 rounded-2xl glass-card p-5" x-data="{ active: 0 }">
+<section
+    class="relative mb-6 rounded-2xl glass-card p-5"
+    x-data="{
+        active: 0,
+        total: {{ count($recaps) }},
+        move(step) {
+            this.goTo((this.active + step + this.total) % this.total)
+        },
+        goTo(index) {
+            this.active = index
+            this.$refs.track.scrollTo({ left: index * this.$refs.track.clientWidth, behavior: 'smooth' })
+        },
+    }"
+>
+    @if (count($recaps) > 1)
+        <button
+            type="button"
+            @click="move(-1)"
+            class="absolute top-1/2 left-2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/35 text-brand-700 shadow-lg backdrop-blur-md transition hover:-translate-x-0.5 hover:bg-white/55 hover:text-brand-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            aria-label="Regional sebelumnya"
+            title="Regional sebelumnya"
+        >
+            <x-icon name="chevron-left" class="h-5 w-5" />
+        </button>
+        <button
+            type="button"
+            @click="move(1)"
+            class="absolute top-1/2 right-2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/35 text-brand-700 shadow-lg backdrop-blur-md transition hover:translate-x-0.5 hover:bg-white/55 hover:text-brand-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            aria-label="Regional berikutnya"
+            title="Regional berikutnya"
+        >
+            <x-icon name="chevron-right" class="h-5 w-5" />
+        </button>
+    @endif
+
     <div
         x-ref="track"
         class="flex snap-x snap-mandatory overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -78,7 +112,7 @@
             @foreach ($recaps as $i => $recap)
                 <button
                     type="button"
-                    @click="active = {{ $i }}; $refs.track.scrollTo({ left: {{ $i }} * $refs.track.clientWidth, behavior: 'smooth' })"
+                    @click="goTo({{ $i }})"
                     class="h-2 rounded-full transition-all"
                     :class="active === {{ $i }} ? 'w-6 bg-brand-600' : 'w-2 bg-border'"
                     aria-label="{{ $recap['label'] }}"

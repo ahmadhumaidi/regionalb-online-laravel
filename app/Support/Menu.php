@@ -34,7 +34,7 @@ class Menu
                     RsmRole::canViewScoringTable($user)
                         ? ['key' => 'scoring', 'label' => 'Scoring', 'icon' => 'chart-bar']
                         : null,
-                    ['key' => 'badges', 'label' => 'Badge & Achievement', 'icon' => 'trophy'],
+                    ['key' => 'badges', 'label' => 'Badge & League', 'icon' => 'trophy'],
                     RsmRole::canViewJadwalKoordinator($user)
                         ? ['key' => 'jadwal-koordinator', 'label' => 'Jadwal Koordinator', 'icon' => 'calendar']
                         : null,
@@ -117,7 +117,7 @@ class Menu
             'jadwal-personalia' => 'Jadwal Personalia',
             'closing-kampus' => 'Pencapaian Kampus',
             'scoring' => 'Scoring',
-            'badges' => 'Badge & Achievement',
+            'badges' => 'Badge & League',
         ];
     }
 
