@@ -450,6 +450,54 @@ class XpLedgerTest extends TestCase
         $staff->delete();
     }
 
+    public function test_scoring_performance_sync_promotes_high_scoring_staff_league_without_double_counting(): void
+    {
+        $this->migrate();
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
+            'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
+        ]]);
+
+        $staff = $this->makeStaff(920014, 'Scoring League Staff');
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Closing Personal Per Regional',
+            'metric_date' => now()->toDateString(),
+            'entity_key' => 'scoring-league-staff-reg',
+            'staff_name' => 'Scoring League Staff',
+            'regional' => 'Regional 6',
+            'value' => 15,
+        ]);
+        DB::table('rsm_monthly_targets')->insert([
+            'area' => 'Regional B',
+            'target_month' => now()->format('Y-m'),
+            'scope_type' => 'staff',
+            'scope_key' => 'staff:scoring league staff',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Scoring League Staff',
+            'indicator_targets' => json_encode(['reg' => ['target' => 10, 'weight' => 100]]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        XpService::syncPersonalActivity($staff);
+        $xpAfterFirstSync = XpService::getLifetimeXp($staff->fresh());
+
+        $this->assertSame(1500, $xpAfterFirstSync);
+        $this->assertSame('Gold', GamificationService::leagueFor($xpAfterFirstSync));
+
+        XpService::syncPersonalActivity($staff);
+        $this->assertSame($xpAfterFirstSync, XpService::getLifetimeXp($staff->fresh()));
+        $this->assertSame(
+            1,
+            RsmGamificationTransaction::where('user_id', $staff->id)->where('event_type', 'scoring_performance_sync')->count()
+        );
+
+        DB::table('rsm_monthly_targets')->where('staff_name', 'Scoring League Staff')->delete();
+        DB::table('rsm_collab_daily_metrics')->where('staff_name', 'Scoring League Staff')->delete();
+        $staff->delete();
+    }
+
     /** 12. GamificationService::build() (Dashboard "Arena Performa Staff") tetap compatible - unrelated to the XP ledger. */
     public function test_gamification_build_still_works_unrelated_to_xp_ledger(): void
     {

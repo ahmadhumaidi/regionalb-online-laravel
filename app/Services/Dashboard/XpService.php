@@ -6,6 +6,7 @@ use App\Models\RsmGamificationTransaction;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Lifetime XP ledger + progressive level calculation.
@@ -91,7 +92,9 @@ class XpService
     public static function syncPersonalActivity(RsmUser $user): ?RsmGamificationTransaction
     {
         if ($user->role === RsmUser::ROLE_STAFF) {
-            return self::syncCollabActivity($user);
+            self::syncCollabActivity($user);
+
+            return self::syncScoringPerformance($user);
         }
 
         $livePoints = GamificationService::profileSyncXp($user);
@@ -174,6 +177,78 @@ class XpService
                 'previous_target_xp' => $highestTarget,
             ],
         );
+    }
+
+    /**
+     * Keep the XP ledger aligned with the weighted Arena/Scoring result.
+     *
+     * Collab/report events already bank part of the same work, so the first
+     * reconciliation only tops the ledger up to the score-derived target
+     * instead of adding the whole score again.
+     */
+    public static function syncScoringPerformance(RsmUser $user): ?RsmGamificationTransaction
+    {
+        if ($user->role !== RsmUser::ROLE_STAFF) {
+            return null;
+        }
+
+        $targetXp = self::scoringPerformanceTargetXp($user);
+        if ($targetXp <= 0) {
+            return null;
+        }
+
+        $history = RsmGamificationTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('event_type', 'scoring_performance_sync')
+            ->get(['metadata_json']);
+
+        if ($history->isEmpty()) {
+            $delta = $targetXp - self::getLifetimeXp($user);
+        } else {
+            $highestTarget = $history->reduce(function (int $max, RsmGamificationTransaction $transaction): int {
+                $metadata = is_array($transaction->metadata_json) ? $transaction->metadata_json : [];
+
+                return max($max, (int) ($metadata['scoring_target_xp'] ?? 0));
+            }, 0);
+
+            $delta = $targetXp - $highestTarget;
+        }
+
+        if ($delta <= 0) {
+            return null;
+        }
+
+        return self::awardXp(
+            user: $user,
+            eventType: 'scoring_performance_sync',
+            xp: $delta,
+            reason: 'Weighted scoring performance XP reconciliation',
+            idempotencyKey: 'scoring_performance_sync:'.$user->id.':'.$targetXp,
+            metadata: ['scoring_target_xp' => $targetXp],
+        );
+    }
+
+    private static function scoringPerformanceTargetXp(RsmUser $user): int
+    {
+        if (! Schema::hasTable('rsm_monthly_targets')) {
+            return 0;
+        }
+
+        $filters = [
+            'date_from' => now('Asia/Jakarta')->startOfMonth()->toDateString(),
+            'date_to' => now('Asia/Jakarta')->toDateString(),
+            'wilayah' => '',
+            'unit_name' => '',
+            'staff_name' => '',
+        ];
+        $table = ScoringTableService::build($user->area ?: 'Regional B', $filters, $user);
+        $nameKey = mb_strtolower(trim((string) $user->name));
+        $row = collect($table['rows'])->first(
+            fn (array $candidate) => (int) ($candidate['user_id'] ?? 0) === (int) $user->id
+                || mb_strtolower(trim((string) ($candidate['name'] ?? ''))) === $nameKey
+        );
+
+        return (int) round(((float) ($row['total_score'] ?? 0)) * 10);
     }
 
     public static function syncReportEventXp(RsmReport $report): void

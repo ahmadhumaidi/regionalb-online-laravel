@@ -37,6 +37,7 @@ class SyncLegacySources extends Command
             if (! empty($data['reports'])) {
                 $reconciled = 0;
                 $awarded = 0;
+                $scoringAwarded = 0;
 
                 RsmUser::query()
                     ->where('role', RsmUser::ROLE_STAFF)
@@ -48,10 +49,14 @@ class SyncLegacySources extends Command
                             if (XpService::syncCollabActivity($user) !== null) {
                                 $awarded++;
                             }
+                            if (XpService::syncScoringPerformance($user) !== null) {
+                                $scoringAwarded++;
+                            }
                         }
                     });
 
                 $this->line("Collab XP: {$reconciled} staff direkonsiliasi, {$awarded} transaksi/baseline dibuat");
+                $this->line("Scoring XP: {$reconciled} staff direkonsiliasi, {$scoringAwarded} transaksi dibuat");
             }
         }
         if ($run('bdc')) {
