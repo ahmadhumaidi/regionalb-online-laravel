@@ -12,10 +12,10 @@
             return '<span class="'.$base.' bg-sky-50 text-sky-700">Baru</span>';
         }
         if ($delta > 0) {
-            return '<span class="'.$base.' bg-emerald-50 text-emerald-700">Naik '.$delta.'</span>';
+            return '<span class="'.$base.' bg-emerald-50 text-emerald-700">&#9650; '.$delta.'</span>';
         }
         if ($delta < 0) {
-            return '<span class="'.$base.' bg-rose-50 text-rose-700">Turun '.abs($delta).'</span>';
+            return '<span class="'.$base.' bg-rose-50 text-rose-700">&#9660; '.abs($delta).'</span>';
         }
 
         return '<span class="'.$base.' bg-surface-muted text-ink-muted">Tetap</span>';
