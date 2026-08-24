@@ -483,9 +483,21 @@ class CoordinatorScheduleController extends Controller
         abort_unless(RsmRole::canManageCoordinatorSchedule($user), 403);
         $this->scope($schedule, $user);
         $data = $request->validate([
-            'unit_name' => 'required|string|max:200',
+            'unit_name' => [
+                'required',
+                'string',
+                'max:180',
+                Rule::unique('rsm_coordinator_schedules', 'unit_name')
+                    ->ignore($schedule->id)
+                    ->where(fn ($query) => $query
+                        ->where('area', $schedule->area)
+                        ->where('schedule_date', $schedule->schedule_date->toDateString())
+                        ->where('koordinator_name', $schedule->koordinator_name)),
+            ],
             'visit_type' => ['required', Rule::in(['Visit', 'Zoom', 'Telepon'])],
             'agenda' => 'required|string|max:500',
+        ], [
+            'unit_name.unique' => 'Jadwal untuk unit ini sudah ada pada tanggal yang sama.',
         ]);
         $schedule->update($data);
 
