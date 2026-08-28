@@ -1,23 +1,23 @@
 <x-layouts.app title="Profil Saya" active="profile">
-    <div class="profile-glass-shell rounded-3xl bg-[#101227] p-4 text-white shadow-2xl sm:p-6">
+    <div class="profile-glass-shell -mx-2 rounded-2xl bg-[#101227] p-3 text-white shadow-2xl sm:mx-0 sm:rounded-3xl sm:p-6">
         <div class="grid gap-5 lg:grid-cols-[270px_1fr]">
-            <aside class="rounded-2xl border border-white/10 bg-[#212446] p-5 text-center">
-                <div class="relative mx-auto h-40 w-40">
+            <aside class="rounded-2xl border border-white/10 bg-[#212446] p-4 text-center sm:p-5">
+                <div class="relative mx-auto h-28 w-28 sm:h-40 sm:w-40">
                     <x-league-photo :league="$league" :user="$user" text-size="text-lg" />
                 </div>
                 <h2 class="mt-4 text-lg font-bold">{{ $user->name }}</h2>
                 <p class="text-xs text-indigo-200">{{ $user->username }}</p>
                 <div class="mt-3 flex flex-wrap justify-center gap-x-2 text-xs font-semibold text-indigo-100"><span>{{ $user->jabatan ?: \App\Support\RsmRole::label($user->role) }}</span><span>•</span><span>{{ $user->regional ?: 'Wilayah belum diatur' }}</span></div>
                 <div class="mt-5 rounded-2xl bg-[#090b1e]/60 p-4 text-left"><div class="flex justify-between text-xs text-indigo-200"><span>Level {{ $level }}</span><strong class="text-white">{{ number_format($xp,0,',','.') }} XP</strong></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 progress-fill" style="width:{{ $levelProgress }}%"></div></div>@php $nextLeague = \App\Services\Dashboard\GamificationService::nextLeagueThreshold($xp); @endphp<p class="mt-2 text-xs text-indigo-200">League {{ $league }}</p><p class="mt-1 text-[11px] text-indigo-300">@if ($nextLeague){{ number_format($xp,0,',','.') }} / {{ number_format($nextLeague['threshold'],0,',','.') }} XP menuju League {{ $nextLeague['name'] }}@else League tertinggi tercapai @endif</p></div>
-                <nav class="mt-5 grid gap-1 text-left text-sm font-semibold text-indigo-100"><a href="#ringkasan" class="rounded-xl bg-black/25 px-3 py-2">Ringkasan</a><a href="#daily-mission" class="rounded-xl px-3 py-2 hover:bg-black/25">Daily Mission</a><a href="#pencapaian" class="rounded-xl px-3 py-2 hover:bg-black/25">Pencapaian</a><a href="#aktivitas" class="rounded-xl px-3 py-2 hover:bg-black/25">Aktivitas</a></nav>
+                <nav class="mt-5 flex gap-1 overflow-x-auto pb-1 text-left text-xs font-semibold text-indigo-100 lg:grid lg:pb-0 lg:text-sm"><a href="#ringkasan" class="shrink-0 rounded-xl bg-black/25 px-3 py-2">Ringkasan</a><a href="#daily-mission" class="shrink-0 rounded-xl px-3 py-2 hover:bg-black/25">Daily Mission</a><a href="#pencapaian" class="shrink-0 rounded-xl px-3 py-2 hover:bg-black/25">Pencapaian</a><a href="#aktivitas" class="shrink-0 rounded-xl px-3 py-2 hover:bg-black/25">Aktivitas</a></nav>
             </aside>
             <div class="space-y-5">
                 @php
                     $leagueTiers = ['Starter', 'Silver', 'Gold', 'Platinum', 'Diamond'];
                     $leagueGridCols = implode(' ', array_map(fn ($t) => strtolower($t) === strtolower($league) ? '1.4fr' : '1fr', $leagueTiers));
                 @endphp
-                <section id="ringkasan" class="grid gap-3 sm:grid-cols-3"><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">League</span><strong class="mt-2 block text-xl">{{ $league }}</strong><div class="mt-2 grid items-end gap-1" style="grid-template-columns: {{ $leagueGridCols }}">@foreach ($leagueTiers as $tier)<img src="{{ asset('images/league/'.strtolower($tier).'.png') }}" alt="League {{ $tier }}" title="{{ $tier }}" class="{{ strtolower($league) === strtolower($tier) ? 'drop-shadow-[0_0_4px_rgba(250,204,21,0.7)]' : 'opacity-30 grayscale' }} aspect-square w-full transition-all">@endforeach</div><small class="mt-2 block text-indigo-200">XP dan konsistensi</small></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">Badge</span><strong class="mt-2 block text-xl">{{ collect($badges)->where('ok', true)->count() }}/{{ count($badges) }}</strong><div class="mt-3 grid grid-cols-7 gap-1.5">@foreach ($badges as $badge)<span class="group relative flex aspect-square w-full items-center justify-center rounded-full" style="background: {{ $badge['ok'] ? 'color-mix(in srgb, var(--color-tone-'.$badge['tone'].') 25%, transparent)' : 'rgba(255,255,255,.06)' }}; color: {{ $badge['ok'] ? 'var(--color-tone-'.$badge['tone'].')' : 'rgba(199,210,254,.45)' }}"><x-icon name="{{ $badge['icon'] }}" class="h-1/2 w-1/2 {{ $badge['ok'] ? '' : 'opacity-70 grayscale' }}" />@unless($badge['ok'])<span class="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#35385f] bg-[#101227] text-indigo-300"><x-icon name="lock" class="h-2 w-2" /></span>@endunless<span class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 rounded-md bg-black/90 px-2 py-1 text-[10px] font-semibold whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ $badge['name'] }}</span></span>@endforeach</div></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">Aura</span><strong class="mt-2 block text-xl">{{ $score }}/100</strong><small class="text-indigo-200">Skor performa</small></article></section>
-                <section id="daily-mission" class="rounded-2xl border border-white/10 bg-gradient-to-b from-[#1c2b52] to-[#111a33] p-5">
+                <section id="ringkasan" class="grid grid-cols-2 gap-3 sm:grid-cols-3"><article class="rounded-2xl border border-white/10 bg-[#35385f] p-3 sm:p-4"><span class="text-xs text-indigo-200">League</span><strong class="mt-2 block text-xl">{{ $league }}</strong><div class="mt-2 grid items-end gap-1" style="grid-template-columns: {{ $leagueGridCols }}">@foreach ($leagueTiers as $tier)<img src="{{ asset('images/league/'.strtolower($tier).'.png') }}" alt="League {{ $tier }}" title="{{ $tier }}" class="{{ strtolower($league) === strtolower($tier) ? 'drop-shadow-[0_0_4px_rgba(250,204,21,0.7)]' : 'opacity-30 grayscale' }} aspect-square w-full transition-all">@endforeach</div><small class="mt-2 block text-indigo-200">XP dan konsistensi</small></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-3 sm:p-4"><span class="text-xs text-indigo-200">Badge</span><strong class="mt-2 block text-xl">{{ collect($badges)->where('ok', true)->count() }}/{{ count($badges) }}</strong><div class="mt-3 grid grid-cols-4 gap-1.5 sm:grid-cols-7">@foreach ($badges as $badge)<span class="group relative flex aspect-square w-full items-center justify-center rounded-full" style="background: {{ $badge['ok'] ? 'color-mix(in srgb, var(--color-tone-'.$badge['tone'].') 25%, transparent)' : 'rgba(255,255,255,.06)' }}; color: {{ $badge['ok'] ? 'var(--color-tone-'.$badge['tone'].')' : 'rgba(199,210,254,.45)' }}"><x-icon name="{{ $badge['icon'] }}" class="h-1/2 w-1/2 {{ $badge['ok'] ? '' : 'opacity-70 grayscale' }}" />@unless($badge['ok'])<span class="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#35385f] bg-[#101227] text-indigo-300"><x-icon name="lock" class="h-2 w-2" /></span>@endunless<span class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 rounded-md bg-black/90 px-2 py-1 text-[10px] font-semibold whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ $badge['name'] }}</span></span>@endforeach</div></article><article class="col-span-2 rounded-2xl border border-white/10 bg-[#35385f] p-3 sm:col-span-1 sm:p-4"><span class="text-xs text-indigo-200">Aura</span><strong class="mt-2 block text-xl">{{ $score }}/100</strong><small class="text-indigo-200">Skor performa</small></article></section>
+                <section id="daily-mission" class="rounded-2xl border border-white/10 bg-gradient-to-b from-[#1c2b52] to-[#111a33] p-3 sm:p-5">
                     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h2 class="text-base font-black tracking-wide uppercase">Daily Mission</h2>
@@ -48,7 +48,7 @@
 
                     <div class="space-y-2">
                         @foreach($dailyMissions as $mission)
-                            <div class="flex items-center gap-3 rounded-xl border {{ $mission['claimed'] ? 'border-emerald-300/30 bg-emerald-400/5' : 'border-white/10 bg-[#212446]' }} p-3">
+                            <div class="flex flex-wrap items-center gap-3 rounded-xl border {{ $mission['claimed'] ? 'border-emerald-300/30 bg-emerald-400/5' : 'border-white/10 bg-[#212446]' }} p-3 sm:flex-nowrap">
                                 <div class="min-w-0 flex-1">
                                     <p class="truncate text-sm font-bold tracking-wide uppercase">{{ $mission['label'] }}@if($mission['tier'])<span class="ml-1.5 text-[10px] font-semibold text-indigo-300">({{ $mission['tier'] }})</span>@endif</p>
                                     @unless($mission['done'])
@@ -59,7 +59,7 @@
                                     <span class="flex items-center gap-1"><x-icon name="bolt" class="h-3 w-3 text-amber-300" />{{ $mission['energy'] }}</span>
                                     <span class="flex items-center gap-1"><x-icon name="star" class="h-3 w-3 text-sky-300" />{{ $mission['stars'] }}</span>
                                 </div>
-                                <div class="w-20 shrink-0 text-center">
+                                <div class="w-full shrink-0 text-center sm:w-20">
                                     @if($mission['claimed'])
                                         <span class="flex items-center justify-center gap-1 rounded-lg bg-emerald-400/15 px-2 py-1.5 text-xs font-bold text-emerald-200"><x-icon name="check" class="h-3.5 w-3.5" />Diklaim</span>
                                     @elseif($mission['done'])
@@ -117,13 +117,13 @@
                         </div>
                     </div>
                 </section>
-                <section class="profile-stat-strip grid gap-3 sm:grid-cols-5">@foreach([['Kegiatan',$stats['reports']],['Leads',$stats['leads']],['Closing',$stats['closing']],['Hari aktif',$stats['active_days']],['Skor',$score]] as [$label,$value])<article class="rounded-2xl border border-white/10 bg-[#35385f] p-4"><span class="text-xs text-indigo-200">{{ $label }}</span><strong class="mt-2 block text-2xl">{{ number_format($value,0,',','.') }}</strong></article>@endforeach</section>
+                <section class="profile-stat-strip grid grid-cols-2 gap-3 sm:grid-cols-5">@foreach([['Kegiatan',$stats['reports']],['Leads',$stats['leads']],['Closing',$stats['closing']],['Hari aktif',$stats['active_days']],['Skor',$score]] as [$label,$value])<article class="rounded-2xl border border-white/10 bg-[#35385f] p-3 last:col-span-2 sm:p-4 sm:last:col-span-1"><span class="text-xs text-indigo-200">{{ $label }}</span><strong class="mt-2 block text-xl sm:text-2xl">{{ number_format($value,0,',','.') }}</strong></article>@endforeach</section>
                 <section id="pencapaian" class="rounded-2xl border border-white/10 bg-[#35385f] p-5">
                     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                         <h2 class="text-base font-bold">Badge & League</h2>
                         <span class="rounded-lg bg-white/10 px-3 py-1 text-xs font-semibold text-indigo-200">{{ collect($badges)->where('ok', true)->count() }}/{{ count($badges) }} terbuka</span>
                     </div>
-                    <div class="grid grid-cols-7 gap-2 sm:gap-3">
+                    <div class="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 sm:grid-cols-4 xl:grid-cols-7 sm:gap-3">
                         @foreach ($badges as $badge)
                             <div x-data="{ open: false }">
                                 <button type="button" @click="open = true" class="flex w-full flex-col items-center gap-2 rounded-2xl border {{ $badge['ok'] ? 'border-white/15' : 'border-white/5' }} bg-[#212446] p-3 text-center transition hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/30">
@@ -162,7 +162,7 @@
                         @endforeach
                     </div>
                 </section>
-                <section id="aktivitas" class="rounded-2xl border border-white/10 bg-[#35385f] p-5"><h2 class="mb-3 text-base font-bold">Aktivitas Terbaru</h2><div class="space-y-2">@forelse($reports as $report)<a href="{{ route('reports.show',$report) }}" class="block rounded-xl border border-white/10 p-3 hover:bg-white/10"><div class="flex justify-between gap-3"><strong class="text-sm">{{ $report->title ?: $report->campaign_name }}</strong><span class="text-xs text-indigo-200">{{ optional($report->report_date)->format('d/m/Y') }}</span></div><p class="text-xs text-indigo-200">{{ $report->report_type }} · {{ $report->status }} · {{ $report->leads_count }} leads · {{ $report->closing_count }} closing</p></a>@empty<p class="text-sm text-indigo-200">Belum ada aktivitas.</p>@endforelse</div></section>
+                <section id="aktivitas" class="rounded-2xl border border-white/10 bg-[#35385f] p-3 sm:p-5"><h2 class="mb-3 text-base font-bold">Aktivitas Terbaru</h2><div class="space-y-2">@forelse($reports as $report)<a href="{{ route('reports.show',$report) }}" class="block rounded-xl border border-white/10 p-3 hover:bg-white/10"><div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-3"><strong class="break-words text-sm">{{ $report->title ?: $report->campaign_name }}</strong><span class="shrink-0 text-xs text-indigo-200">{{ optional($report->report_date)->format('d/m/Y') }}</span></div><p class="mt-1 break-words text-xs text-indigo-200">{{ $report->report_type }} · {{ $report->status }} · {{ $report->leads_count }} leads · {{ $report->closing_count }} closing</p></a>@empty<p class="text-sm text-indigo-200">Belum ada aktivitas.</p>@endforelse</div></section>
             </div>
         </div>
     </div>

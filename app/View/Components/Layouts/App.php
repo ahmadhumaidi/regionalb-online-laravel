@@ -39,7 +39,21 @@ class App extends Component
         $this->menuSections = Menu::sections($user);
         $this->impersonationUsers = RsmRole::canImpersonate($user)
             ? RsmUser::where('is_active', true)
-                ->where(fn ($q) => $q->where('area', $user->area)->orWhereNull('area')->orWhere('area', ''))
+                ->when(
+                    $user->role === RsmUser::ROLE_KOORDINATOR,
+                    fn ($q) => $q
+                        ->where('role', RsmUser::ROLE_STAFF)
+                        ->where('area', $user->area)
+                        ->when(
+                            filled($user->regional),
+                            fn ($regionalQuery) => $regionalQuery->where('regional', $user->regional),
+                            fn ($regionalQuery) => $regionalQuery->whereRaw('1 = 0'),
+                        ),
+                    fn ($q) => $q->where(fn ($areaQuery) => $areaQuery
+                        ->where('area', $user->area)
+                        ->orWhereNull('area')
+                        ->orWhere('area', '')),
+                )
                 ->get()
                 ->sortBy([
                     fn (RsmUser $a, RsmUser $b) => RsmRole::roleRank($a->role) <=> RsmRole::roleRank($b->role),

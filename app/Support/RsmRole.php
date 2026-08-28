@@ -134,7 +134,7 @@ class RsmRole
 
     public static function canImpersonate(?RsmUser $user): bool
     {
-        return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior'], true);
+        return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior', 'koordinator'], true);
     }
 
     /** Forum Diskusi moderation (edit/delete any post or comment) - super_user only, not the wider senior tier. */

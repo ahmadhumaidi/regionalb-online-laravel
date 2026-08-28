@@ -25,13 +25,24 @@ class ImpersonationController extends Controller
 
         $actor = $this->actingAdmin($request);
 
-        abort_unless(RsmRole::canImpersonate($actor), 403, 'Hanya Senior Manager ke atas yang bisa masuk sebagai user lain.');
+        abort_unless(RsmRole::canImpersonate($actor), 403, 'Anda tidak memiliki akses untuk masuk sebagai user lain.');
 
         $target = RsmUser::where('is_active', true)->find($data['user_id']);
         abort_if(! $target, 422, 'User tujuan tidak ditemukan atau tidak aktif.');
 
         if (! empty($target->area) && $target->area !== $actor->area) {
             abort(422, 'User tujuan berada di luar area ini.');
+        }
+
+        if ($actor->role === RsmUser::ROLE_KOORDINATOR) {
+            abort_unless(
+                $target->role === RsmUser::ROLE_STAFF
+                && $target->area === $actor->area
+                && filled($actor->regional)
+                && $target->regional === $actor->regional,
+                403,
+                'Koorwil hanya bisa memilih Staff Unit di wilayahnya sendiri.',
+            );
         }
 
         if ($target->id === $actor->id) {
