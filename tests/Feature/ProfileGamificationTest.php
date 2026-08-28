@@ -70,6 +70,11 @@ class ProfileGamificationTest extends TestCase
         for ($i = 0; $i < 6; $i++) {
             RsmAdLead::create(['report_id' => $report->id, 'lead_name' => "Lead {$i}", 'follow_up_result' => 'Masih proses']);
         }
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Follow Up BDC', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'test-staff-gamif-follow-up', 'staff_name' => 'Test Staff Gamif',
+            'regional' => 'Regional 6', 'value' => 10,
+        ]);
 
         // Gamification Phase 2: report/lead-driven XP is now awarded in
         // real time at the authoritative mutation point (ReportFormService,
@@ -107,6 +112,7 @@ class ProfileGamificationTest extends TestCase
         $response->assertSee('font-bold text-indigo-300">Consistency Streak</span>', false);
 
         RsmAdLead::where('report_id', $report->id)->delete();
+        DB::table('rsm_collab_daily_metrics')->where('entity_key', 'test-staff-gamif-follow-up')->delete();
         $report->delete();
         $staff->delete();
     }
@@ -266,6 +272,38 @@ class ProfileGamificationTest extends TestCase
         $response->assertSee('10 / 10');
 
         DB::table('rsm_collab_daily_metrics')->where('entity_key', 'share-booster-profile-1')->delete();
+        $report->delete();
+        $staff->delete();
+    }
+
+    public function test_follow_up_hero_on_profile_uses_follow_up_bdc_from_collab(): void
+    {
+        $this->migrate();
+
+        $staff = RsmUser::create([
+            'id' => 900060, 'name' => 'Follow Up Collab Staff', 'username' => 'follow_up_collab_staff',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER, 'report_date' => now(),
+            'user_id' => $staff->id, 'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Follow Up Collab Staff', 'created_by_role' => 'staff', 'status' => 'Dikirim',
+            'title' => 'Aktivitas Follow Up',
+        ]);
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Follow Up BDC', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'follow-up-hero-profile-1', 'staff_name' => 'Follow Up Collab Staff',
+            'regional' => 'Regional 6', 'value' => 10,
+        ]);
+
+        $response = $this->actingAs($staff)->get(route('profile'));
+
+        $response->assertOk();
+        $response->assertSee('font-bold text-white">Follow Up Hero</span>', false);
+        $response->assertSee('10 / 10');
+
+        DB::table('rsm_collab_daily_metrics')->where('entity_key', 'follow-up-hero-profile-1')->delete();
         $report->delete();
         $staff->delete();
     }

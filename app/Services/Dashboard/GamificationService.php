@@ -45,7 +45,7 @@ class GamificationService
         'efisiensi_iklan' => ['name' => 'Efisiensi Iklan', 'target' => 4000, 'metric_key' => 'cpm_cpl', 'source' => 'CPM atau CPL sesuai tujuan iklan.', 'tone' => 'orange'],
         'closing_iklan_hunter' => ['name' => 'Closing Iklan Hunter', 'target' => 1, 'metric_key' => 'closing_iklan', 'source' => 'Closing dari data hasil iklan.', 'tone' => 'green'],
         'budget_efficient' => ['name' => 'Budget Efficient', 'target' => 1, 'indicator_key' => 'reg', 'source' => 'Indikator pilihan pada periode/filter.', 'tone' => 'red'],
-        'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'metric_key' => 'follow_up_total', 'source' => 'FU / follow_up_total dari data lead dan laporan.', 'tone' => 'blue'],
+        'follow_up_hero' => ['name' => 'Follow Up Hero', 'target' => 10, 'metric_key' => 'follow_up_total', 'source' => 'Follow Up BDC dari Collab.', 'tone' => 'blue'],
         'activity_helper' => ['name' => 'Activity Helper', 'target' => 2, 'metric_key' => 'aktivitas_lain_total', 'source' => 'Jumlah laporan Aktivitas Lain pada periode/filter.', 'tone' => 'blue'],
         'consistency_streak' => ['name' => 'Consistency Streak', 'target' => 5, 'metric_key' => 'hari_aktif', 'source' => 'Jumlah hari unik dari report_date laporan.', 'tone' => 'orange'],
         'share_fb_booster' => ['name' => 'Share FB Booster', 'target' => 10, 'metric_key' => 'share_fb_group', 'source' => 'Share FB Group dari Collab.', 'tone' => 'blue'],
@@ -535,6 +535,7 @@ class GamificationService
         $collabByName = collect($collabPerformance['rows'])->keyBy(fn ($row) => mb_strtolower(trim((string) $row['name'])));
 
         $collabActivityByMetric = collect([
+            'follow_up_total' => 'Follow Up BDC',
             'share_fb_group' => 'Share FB Group',
             'live_streaming' => 'Live Streaming',
             'affiliator_mahasiswa' => 'Affiliator Mahasiswa',
