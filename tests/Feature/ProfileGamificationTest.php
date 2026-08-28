@@ -237,4 +237,36 @@ class ProfileGamificationTest extends TestCase
         $adReport->delete();
         $staff->delete();
     }
+
+    public function test_share_fb_booster_on_profile_uses_share_fb_group_from_collab(): void
+    {
+        $this->migrate();
+
+        $staff = RsmUser::create([
+            'id' => 900059, 'name' => 'Share Booster Staff', 'username' => 'share_booster_staff',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER, 'report_date' => now(),
+            'user_id' => $staff->id, 'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => 'Share Booster Staff', 'created_by_role' => 'staff', 'status' => 'Dikirim',
+            'title' => 'Aktivitas Share FB',
+        ]);
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Share FB Group', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'share-booster-profile-1', 'staff_name' => 'Share Booster Staff',
+            'regional' => 'Regional 6', 'value' => 10,
+        ]);
+
+        $response = $this->actingAs($staff)->get(route('profile'));
+
+        $response->assertOk();
+        $response->assertSee('font-bold text-white">Share FB Booster</span>', false);
+        $response->assertSee('10 / 10');
+
+        DB::table('rsm_collab_daily_metrics')->where('entity_key', 'share-booster-profile-1')->delete();
+        $report->delete();
+        $staff->delete();
+    }
 }

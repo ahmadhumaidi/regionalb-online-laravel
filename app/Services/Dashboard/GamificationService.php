@@ -255,6 +255,10 @@ class GamificationService
             'laporan_total' => (float) $scoredRows->sum('laporan_total'),
             'aktivitas_lain_total' => (float) $scoredRows->sum('aktivitas_lain_total'),
             'hari_aktif' => $reportDays,
+            'share_fb_group' => (float) $scoredRows->sum('share_fb_group'),
+            'live_streaming' => (float) $scoredRows->sum('live_streaming'),
+            'affiliator_mahasiswa' => (float) $scoredRows->sum('affiliator_mahasiswa'),
+            'affiliator_non_mahasiswa' => (float) $scoredRows->sum('affiliator_non_mahasiswa'),
         ];
 
         return [
@@ -530,7 +534,22 @@ class GamificationService
         $collabPerformance = CollabMetricsService::personalPerformance($area, $filters, $user);
         $collabByName = collect($collabPerformance['rows'])->keyBy(fn ($row) => mb_strtolower(trim((string) $row['name'])));
 
-        return [$reports, $liveRows->map(fn (array $row) => self::scoreRow($row, $collabByName))];
+        $collabActivityByMetric = collect([
+            'share_fb_group' => 'Share FB Group',
+            'live_streaming' => 'Live Streaming',
+            'affiliator_mahasiswa' => 'Affiliator Mahasiswa',
+            'affiliator_non_mahasiswa' => 'Affiliator Non Mahasiswa',
+        ])->map(fn (string $reportName) => CollabMetricsService::personalTotalsByName($filters, $area, $user, $reportName));
+
+        return [$reports, $liveRows->map(function (array $row) use ($collabByName, $collabActivityByMetric) {
+            $nameKey = mb_strtolower(trim((string) $row['name']));
+
+            foreach ($collabActivityByMetric as $metricKey => $totalsByName) {
+                $row[$metricKey] = (float) ($totalsByName->get($nameKey) ?? 0);
+            }
+
+            return self::scoreRow($row, $collabByName);
+        })];
     }
 
     /** @return Collection<int, array> */
