@@ -44,10 +44,10 @@ class ReportScope
         $regional = trim((string) $user->regional);
         $campus = trim((string) $user->campus_name);
 
-        $query->where(function (Builder $q) use ($col, $name) {
-            $q->where($col('staff_name'), $name)
-                ->orWhere($col('created_by_name'), $name)
-                ->orWhere($col('report_type'), 'ads');
+        $query->where(function (Builder $q) use ($col, $name, $user) {
+            $q->where($col('user_id'), $user->id)
+                ->orWhere($col('staff_name'), $name)
+                ->orWhere($col('created_by_name'), $name);
         });
 
         if ($regional !== '') {

@@ -121,7 +121,7 @@
                 <label class="grid gap-1 text-sm md:col-span-2">Lampiran<input type="file" name="attachment_path" accept="image/jpeg,image/png,image/webp,application/pdf" class="w-full max-w-full rounded-lg border-border bg-surface-muted"><span class="text-xs text-ink-muted">JPG, PNG, WEBP, atau PDF; maksimal 5 MB.</span></label>
                 @if ($editing && $report->attachment_path)<p class="md:col-span-2"><a href="{{ route('reports.attachment', $report) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-muted"><x-icon name="eye" class="h-3.5 w-3.5" />Lihat lampiran saat ini</a></p>@endif
                 @if ($config['label'] !== 'anggaran')<label class="grid gap-1 text-sm">Status<select name="status" class="rounded-lg border-border bg-surface-muted">@foreach ($config['statuses'] as $status)<option @selected(old('status', $report->status ?: 'Draft') === $status)>{{ $status }}</option>@endforeach</select></label>@endif
-                <div class="md:col-span-2"><button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">{{ $isSeniorExpenseForm ? 'Simpan Pengeluaran' : ($config['label'] === 'anggaran' ? 'Ajukan Iklan' : ($editing ? 'Simpan Perubahan' : 'Simpan Laporan')) }}</button></div>
+                <div class="md:col-span-2"><button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">{{ $isSeniorExpenseForm ? 'Simpan Pengeluaran' : ($config['label'] === 'anggaran' ? ($user->role === 'koordinator' ? 'Laporkan Iklan' : 'Ajukan Iklan') : ($editing ? 'Simpan Perubahan' : 'Simpan Laporan')) }}</button></div>
             @endif
         </form>
     </section>

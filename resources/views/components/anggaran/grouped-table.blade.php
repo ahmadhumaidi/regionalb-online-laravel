@@ -102,7 +102,11 @@
                                                 <a href="{{ route('reports.show', $row['id']) }}#data-hasil-iklan" title="Lihat data hasil iklan" aria-label="Lihat data hasil iklan" class="rounded-md border border-l-2 border-border border-l-tone-green p-1 text-tone-green hover:bg-surface-muted"><x-icon name="chart-bar" class="h-3.5 w-3.5" /></a>
                                             @endif
                                             @if ($row['can_edit'])
-                                                <a href="{{ route('reports.edit', $row['id']) }}" title="Edit" aria-label="Edit" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="edit" class="h-3.5 w-3.5" /></a>
+                                                @if (auth()->user()->role === 'staff')
+                                                    <a href="{{ route('reports.edit', $row['id']) }}" title="{{ $row['status'] === 'Disetujui' ? 'Laporkan iklan' : 'Lengkapi laporan iklan' }}" class="inline-flex items-center gap-1 rounded-md bg-brand-600 px-2 py-1 text-xs font-semibold text-white hover:bg-brand-700"><x-icon name="edit" class="h-3.5 w-3.5" />{{ $row['status'] === 'Disetujui' ? 'Laporkan' : 'Lengkapi' }}</a>
+                                                @else
+                                                    <a href="{{ route('reports.edit', $row['id']) }}" title="Edit" aria-label="Edit" class="rounded-md border border-border p-1 text-ink-muted hover:text-ink"><x-icon name="edit" class="h-3.5 w-3.5" /></a>
+                                                @endif
                                             @endif
                                             @if ($row['can_delete'])
                                                 <form method="POST" action="{{ route('reports.destroy', $row['id']) }}" data-preserve-scroll onsubmit="return confirm('Hapus laporan ini?')">

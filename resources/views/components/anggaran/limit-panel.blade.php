@@ -25,33 +25,107 @@
 
     @if (empty($limits))
         <p class="py-6 text-center text-sm text-ink-muted">Belum ada plafon untuk periode ini.</p>
-    @else
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    @elseif (auth()->user()->role === 'staff')
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($limits as $row)
+                @php $unitRate = $row['budget_limit'] > 0 ? min(100, max(0, round($row['requested'] / $row['budget_limit'] * 100))) : 0; @endphp
+                <article class="rounded-xl border border-border bg-surface/60 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-brand-600">Anggaran iklan unit</p>
+                    <div class="mt-1 flex items-start justify-between gap-3">
+                        <strong class="text-sm text-ink">{{ $row['unit_name'] }}</strong>
+                        <strong class="shrink-0 text-sm text-ink">Rp {{ number_format($row['budget_limit'], 0, ',', '.') }}</strong>
+                    </div>
+                    <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-muted">
+                        <div class="h-full rounded-full bg-brand-600 progress-fill" style="width: {{ $unitRate }}%"></div>
+                    </div>
+                    <div class="mt-2 flex justify-between gap-2 text-xs text-ink-muted">
+                        <span>Dicairkan Rp {{ number_format($row['approved'], 0, ',', '.') }}</span>
+                        <span>Realisasi Rp {{ number_format($row['realization'], 0, ',', '.') }}</span>
+                    </div>
+                </article>
+            @endforeach
+        </div>
+    @else
+        @php $limitGroups = collect($limits)->groupBy('wilayah'); @endphp
+        <div class="grid items-start gap-4 lg:grid-cols-2">
+            @foreach ($limitGroups as $wilayah => $regionalRows)
                 @php
-                    $rate = $row['budget_limit'] > 0 ? min(100, max(0, round($row['requested'] / $row['budget_limit'] * 100))) : 0;
-                    $over = $row['remaining'] < 0;
+                    $regionalLimit = $regionalRows->firstWhere('unit_name', '');
+                    $unitRows = $regionalRows->filter(fn ($row) => $row['unit_name'] !== '')->values();
+                    $pool = (float) ($regionalLimit['budget_limit'] ?? 0);
+                    $allocated = (float) $unitRows->sum('budget_limit');
+                    $unallocated = $pool - $allocated;
+                    $requested = (float) ($regionalLimit['requested'] ?? $unitRows->sum('requested'));
+                    $realization = (float) ($regionalLimit['realization'] ?? $unitRows->sum('realization'));
+                    $rate = $pool > 0 ? min(100, max(0, round($requested / $pool * 100))) : 0;
                 @endphp
-                <article class="rounded-xl border border-border p-4">
-                    <strong class="block text-sm font-semibold text-ink">{{ $row['unit_name'] ?: $row['wilayah'] }}</strong>
-                    <span class="text-xs text-ink-muted">{{ $row['unit_name'] ? $row['wilayah'].' · '.(str_starts_with($row['unit_name'], 'Iklan Regional ') ? 'Dikelola Korwil' : 'Alokasi kampus') : 'Plafon regional' }}</span>
-                    @if (str_starts_with($row['unit_name'], 'Iklan Regional ') && $row['owner_name'])
-                        <span class="mt-1 block text-xs text-ink-muted">Penanggung jawab: {{ $row['owner_name'] }}</span>
-                    @endif
-
-                    @if ($row['budget_limit'] > 0)
-                        <p class="mt-1 text-xs text-ink-muted">Plafon: Rp {{ number_format($row['budget_limit'], 0, ',', '.') }}</p>
-                        <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-muted">
-                            <div class="h-full rounded-full progress-fill {{ $over ? 'bg-tone-red' : 'bg-brand-600' }}" style="width: {{ $rate }}%"></div>
+                <article class="overflow-hidden rounded-2xl border border-border bg-surface/60">
+                    <header class="border-b border-border bg-brand-600/10 p-4">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-brand-600">Plafon regional</p>
+                                <h3 class="mt-0.5 text-lg font-semibold text-ink">{{ $wilayah }}</h3>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-ink-muted">Total plafon</p>
+                                <p class="text-lg font-bold text-ink">Rp {{ number_format($pool, 0, ',', '.') }}</p>
+                            </div>
                         </div>
-                        <p class="mt-2 text-xs font-medium {{ $over ? 'text-tone-red' : 'text-ink-muted' }}">
-                            Sisa: Rp {{ number_format($row['remaining'], 0, ',', '.') }}
-                        </p>
-                    @else
-                        <p class="mt-1 text-xs text-ink-muted">Plafon belum ditetapkan</p>
-                    @endif
 
-                    <p class="mt-2 text-xs text-ink-muted">{{ $row['count'] }} laporan &middot; Realisasi Rp {{ number_format($row['realization'], 0, ',', '.') }}</p>
+                        <div class="mt-4 grid grid-cols-3 gap-2 text-xs">
+                            <div class="rounded-lg bg-surface/80 p-2">
+                                <span class="block text-ink-muted">Dialokasikan</span>
+                                <strong class="mt-0.5 block text-ink">Rp {{ number_format($allocated, 0, ',', '.') }}</strong>
+                            </div>
+                            <div class="rounded-lg bg-surface/80 p-2">
+                                <span class="block text-ink-muted">Belum dialokasikan</span>
+                                <strong class="mt-0.5 block {{ $unallocated < 0 ? 'text-tone-red' : 'text-tone-green' }}">Rp {{ number_format($unallocated, 0, ',', '.') }}</strong>
+                            </div>
+                            <div class="rounded-lg bg-surface/80 p-2">
+                                <span class="block text-ink-muted">Realisasi</span>
+                                <strong class="mt-0.5 block text-ink">Rp {{ number_format($realization, 0, ',', '.') }}</strong>
+                            </div>
+                        </div>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-muted">
+                            <div class="h-full rounded-full bg-brand-600 progress-fill" style="width: {{ $rate }}%"></div>
+                        </div>
+                        <p class="mt-1.5 text-right text-xs text-ink-muted">Pengajuan Rp {{ number_format($requested, 0, ',', '.') }} ({{ $rate }}% dari plafon)</p>
+                    </header>
+
+                    <div class="p-4">
+                        <div class="mb-3 flex items-center justify-between gap-3">
+                            <h4 class="text-sm font-semibold text-ink">Alokasi kampus/unit</h4>
+                            <span class="rounded-full bg-surface-muted px-2 py-1 text-xs text-ink-muted">{{ $unitRows->count() }} unit</span>
+                        </div>
+                        @if ($unitRows->isEmpty())
+                            <p class="rounded-lg border border-dashed border-border px-3 py-5 text-center text-xs text-ink-muted">Belum dibagi ke kampus atau unit.</p>
+                        @else
+                            <div class="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                                @foreach ($unitRows as $row)
+                                    @php
+                                        $unitRate = $row['budget_limit'] > 0 ? min(100, max(0, round($row['requested'] / $row['budget_limit'] * 100))) : 0;
+                                        $isRegionalAd = str_starts_with($row['unit_name'], 'Iklan Regional ');
+                                    @endphp
+                                    <div class="p-3">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <strong class="block truncate text-sm text-ink">{{ $row['unit_name'] }}</strong>
+                                                <span class="text-xs text-ink-muted">{{ $isRegionalAd ? 'Iklan wilayah · dikelola Korwil' : 'Alokasi kampus' }} · {{ $row['count'] }} laporan</span>
+                                            </div>
+                                            <strong class="shrink-0 text-sm text-ink">Rp {{ number_format($row['budget_limit'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                                            <div class="h-full rounded-full {{ $row['remaining'] < 0 ? 'bg-tone-red' : 'bg-brand-600' }} progress-fill" style="width: {{ $unitRate }}%"></div>
+                                        </div>
+                                        <div class="mt-1.5 flex justify-between gap-2 text-xs text-ink-muted">
+                                            <span>Pengajuan Rp {{ number_format($row['requested'], 0, ',', '.') }}</span>
+                                            <span class="{{ $row['remaining'] < 0 ? 'font-semibold text-tone-red' : '' }}">Sisa Rp {{ number_format($row['remaining'], 0, ',', '.') }}</span>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
                 </article>
             @endforeach
         </div>

@@ -69,6 +69,65 @@ class AdBudgetPendingPanelTest extends TestCase
         $koordinator->delete();
     }
 
+    public function test_campus_allocation_immediately_creates_approved_staff_report(): void
+    {
+        $this->migrate();
+
+        $campusId = DB::table('partner_campuses')->insertGetId([
+            'name' => 'Universitas Allocation',
+            'display_name' => 'Campus Allocation',
+            'kode_kampus' => 'AUTO-ALLOC-T',
+            'address' => '-',
+        ]);
+        $koordinator = RsmUser::create([
+            'id' => 900057, 'name' => 'Korwil Auto Allocation', 'username' => 'test_korwil_auto_900057',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900058, 'name' => 'Staff Auto Allocation', 'username' => 'test_staff_auto_900058',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'Campus Allocation', 'is_active' => true,
+        ]);
+        RsmAdBudgetLimit::create([
+            'area' => 'Regional B', 'ad_period' => 'Agustus 2026', 'wilayah' => 'Regional 6',
+            'unit_name' => '', 'budget_limit' => 1000000,
+            'created_by_user_id' => 1, 'created_by_name' => 'Super User',
+        ]);
+
+        $this->actingAs($koordinator)->post(route('anggaran.limit.store'), [
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'Campus Allocation',
+            'budget_limit' => 750000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('rsm_reports', [
+            'report_type' => RsmReport::TYPE_ADS,
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'Campus Allocation',
+            'partner_campus_id' => $campusId,
+            'user_id' => $staff->id,
+            'staff_name' => $staff->name,
+            'status' => 'Disetujui',
+            'budget_requested' => 750000,
+            'budget_approved' => 750000,
+        ]);
+
+        $report = RsmReport::where('user_id', $staff->id)->where('ad_period', 'Agustus 2026')->firstOrFail();
+        $this->actingAs($staff)->get('/anggaran?ad_period=Agustus%202026')
+            ->assertOk()
+            ->assertSee('Laporkan')
+            ->assertSee(route('reports.edit', $report));
+
+        $report->delete();
+        RsmAdBudgetLimit::where('wilayah', 'Regional 6')->delete();
+        $staff->delete();
+        $koordinator->delete();
+        DB::table('partner_campuses')->where('id', $campusId)->delete();
+    }
+
     public function test_super_user_sets_regional_pool_without_selecting_campus(): void
     {
         $this->migrate();
@@ -297,6 +356,11 @@ class AdBudgetPendingPanelTest extends TestCase
             'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
             'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
         ]);
+        $otherStaff = RsmUser::create([
+            'id' => 900059, 'name' => 'Other Campus Staff', 'username' => 'test_other_campus_staff_900059',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
+        ]);
 
         $approved = RsmReport::create([
             'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
@@ -317,6 +381,23 @@ class AdBudgetPendingPanelTest extends TestCase
             'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'staff_name' => 'Test Staff', 'created_by_role' => 'staff', 'status' => 'Draft',
             'title' => 'Draft Campaign', 'platform' => 'Meta Ads', 'campaign_name' => 'Draft Campaign', 'budget_requested' => 50000,
         ]);
+        $otherStaffReport = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'user_id' => $otherStaff->id, 'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => $otherStaff->name, 'created_by_role' => 'koordinator', 'status' => 'Disetujui',
+            'title' => 'Other Staff Private Campaign', 'platform' => 'Meta Ads',
+            'campaign_name' => 'Other Staff Private Campaign', 'budget_requested' => 75000,
+        ]);
+        RsmAdBudgetLimit::create([
+            'area' => 'Regional B', 'ad_period' => \App\Services\AdBudget\AdBudgetPeriods::default(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya', 'budget_limit' => 100000,
+            'created_by_user_id' => 1, 'created_by_name' => 'Test Koordinator',
+        ]);
+        RsmAdBudgetLimit::create([
+            'area' => 'Regional B', 'ad_period' => \App\Services\AdBudget\AdBudgetPeriods::default(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'Other Campus', 'budget_limit' => 75000,
+            'created_by_user_id' => 1, 'created_by_name' => 'Test Koordinator',
+        ]);
 
         $response = $this->actingAs($staff)->get('/anggaran');
 
@@ -328,10 +409,16 @@ class AdBudgetPendingPanelTest extends TestCase
         $response->assertSee('Menunggu persetujuan');
         $response->assertSee(route('reports.edit', $approved));
         $response->assertSee(route('reports.edit', $verifying));
+        $response->assertDontSee('Other Staff Private Campaign');
+        $response->assertDontSee('Other Campus');
+        $this->actingAs($staff)->get(route('reports.show', $otherStaffReport))->assertNotFound();
 
+        $otherStaffReport->delete();
+        RsmAdBudgetLimit::where('wilayah', 'Regional 6')->delete();
         $approved->delete();
         $verifying->delete();
         $draft->delete();
+        $otherStaff->delete();
         $staff->delete();
     }
 
