@@ -31,15 +31,15 @@ class CoordinatorScheduleController extends Controller
 
     /** Port of rsm_coordinator_visit_jobdesk_items() (rsm_db.php:3172-3184). */
     private const JOBDESK_ITEMS = [
-        1 => 'Cek tools marketing area kampus',
-        2 => 'Cek stok tools marketing kampus',
-        3 => 'Cek kondisi ruangan sekretariat',
-        4 => 'Cek cara followup dan progres marketing lainnya',
-        5 => 'Korwil buat konten medsos dan kolaborasikan dengan medsos kampus',
-        6 => 'Cek report kasbonan',
-        7 => 'Cek BDC unit',
-        8 => 'Koordinasi dengan pejabat kampus',
-        9 => 'Cek pencapaian dan herregistrasi per prodi',
+        1 => ['label' => 'Cek tools marketing area kampus', 'positive' => 'Lengkap', 'negative' => 'Tidak lengkap'],
+        2 => ['label' => 'Cek stok tools marketing kampus', 'positive' => 'Lengkap', 'negative' => 'Tidak lengkap'],
+        3 => ['label' => 'Cek kondisi ruangan sekretariat', 'positive' => 'Rapi', 'negative' => 'Tidak rapi'],
+        4 => ['label' => 'Cek cara followup dan progres marketing lainnya', 'positive' => 'Bagus', 'negative' => 'Kurang bagus', 'note_hint' => 'Catatan: sudah di FU semua'],
+        5 => ['label' => 'Korwil buat konten medsos dan kolaborasikan dengan medsos kampus', 'positive' => 'Sudah', 'negative' => 'Belum'],
+        6 => ['label' => 'Cek report kasbonan', 'positive' => 'Sudah', 'negative' => 'Belum'],
+        7 => ['label' => 'Cek BDC unit', 'positive' => 'Sudah FU', 'negative' => 'Belum FU'],
+        8 => ['label' => 'Koordinasi dengan pejabat kampus', 'positive' => 'Sudah', 'negative' => 'Belum'],
+        9 => ['label' => 'Cek pencapaian dan herregistrasi per prodi', 'positive' => 'Sudah', 'negative' => 'Belum'],
     ];
 
     private array $profiles = [
@@ -340,12 +340,12 @@ class CoordinatorScheduleController extends Controller
             }
         }
         $summary = [];
-        foreach (self::JOBDESK_ITEMS as $itemKey => $label) {
+        foreach (self::JOBDESK_ITEMS as $itemKey => $item) {
             $total = $totals[$itemKey];
             $done = $checked[$itemKey];
             $summary[] = [
                 'key' => $itemKey,
-                'label' => $label,
+                'label' => $item['label'],
                 'checked' => $done,
                 'total' => $total,
                 'percent' => $total > 0 ? (int) round($done / $total * 100) : 0,
@@ -437,11 +437,11 @@ class CoordinatorScheduleController extends Controller
                     } else {
                         $state = $this->checklistState($row);
                         $lines[] = '  Checklist:';
-                        foreach (self::JOBDESK_ITEMS as $itemKey => $itemLabel) {
+                        foreach (self::JOBDESK_ITEMS as $itemKey => $item) {
                             $entry = $state[$itemKey] ?? ['checked' => false, 'note' => ''];
-                            $itemStatus = ! empty($entry['checked']) ? 'Lengkap' : 'Belum Lengkap';
+                            $itemStatus = ! empty($entry['checked']) ? $item['positive'] : $item['negative'];
                             $itemNote = trim((string) ($entry['note'] ?? ''));
-                            $itemLine = '  '.$itemKey.'. '.$itemLabel.' - '.$itemStatus;
+                            $itemLine = '  '.$itemKey.'. '.$item['label'].' - '.$itemStatus;
                             if ($itemNote !== '') {
                                 $itemLine .= ' (catatan: '.$itemNote.')';
                             }

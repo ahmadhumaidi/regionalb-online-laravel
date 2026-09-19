@@ -145,7 +145,7 @@
                                                         $savedChecklist = json_decode((string) $row->checklist_json, true);
                                                         $savedChecklist = is_array($savedChecklist) ? $savedChecklist : [];
                                                         $checklistState = [];
-                                                        foreach ($jobdeskItems as $itemKey => $itemLabel) {
+                                                        foreach ($jobdeskItems as $itemKey => $item) {
                                                             $entry = $savedChecklist[$itemKey] ?? null;
                                                             $checklistState[$itemKey] = is_array($entry)
                                                                 ? ['checked' => ! empty($entry['checked']), 'note' => trim((string) ($entry['note'] ?? ''))]
@@ -169,24 +169,24 @@
                                                                     <div class="rounded-xl border border-border bg-surface-muted/40 p-3">
                                                                         <p class="mb-2 text-sm font-semibold text-ink">Jobdesk Selama Kunjungan dan Supervisi</p>
                                                                         <div class="grid gap-3">
-                                                                            @foreach ($jobdeskItems as $itemKey => $itemLabel)
+                                                                            @foreach ($jobdeskItems as $itemKey => $item)
                                                                                 @php $entry = $checklistState[$itemKey]; @endphp
                                                                                 <div x-data="{ checked: {{ $entry['checked'] ? 'true' : 'false' }} }" class="rounded-lg border border-border/60 bg-surface p-2">
                                                                                     <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-                                                                                        <span class="flex-1 font-medium text-ink">{{ $itemKey }}. {{ $itemLabel }}</span>
+                                                                                        <span class="flex-1 font-medium text-ink">{{ $itemKey }}. {{ $item['label'] }}</span>
                                                                                         <div class="flex items-center gap-3">
                                                                                             <label class="flex items-center gap-1 text-[11px] font-semibold" :style="checked ? 'color: var(--color-tone-green)' : 'color: var(--color-ink-muted)'">
                                                                                                 <input type="checkbox" :checked="checked" @change="checked = true" class="h-3.5 w-3.5">
-                                                                                                Lengkap
+                                                                                                {{ $item['positive'] }}
                                                                                             </label>
                                                                                             <label class="flex items-center gap-1 text-[11px] font-semibold" :style="! checked ? 'color: var(--color-tone-red)' : 'color: var(--color-ink-muted)'">
                                                                                                 <input type="checkbox" :checked="! checked" @change="checked = false" class="h-3.5 w-3.5">
-                                                                                                Belum Lengkap
+                                                                                                {{ $item['negative'] }}
                                                                                             </label>
                                                                                         </div>
                                                                                     </div>
                                                                                     <input type="hidden" name="checklist_{{ $itemKey }}" :value="checked ? '1' : '0'">
-                                                                                    <input type="text" name="checklist_note_{{ $itemKey }}" value="{{ $entry['note'] }}" placeholder="Catatan kecil (opsional)" maxlength="200" class="mt-1.5 w-full rounded-md border-border px-2 py-1 text-xs">
+                                                                                    <input type="text" name="checklist_note_{{ $itemKey }}" value="{{ $entry['note'] }}" placeholder="{{ $item['note_hint'] ?? 'Catatan kecil (opsional)' }}" maxlength="200" class="mt-1.5 w-full rounded-md border-border px-2 py-1 text-xs">
                                                                                 </div>
                                                                             @endforeach
                                                                         </div>
