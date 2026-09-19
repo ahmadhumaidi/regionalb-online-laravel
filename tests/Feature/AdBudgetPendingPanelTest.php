@@ -115,13 +115,30 @@ class AdBudgetPendingPanelTest extends TestCase
             'budget_approved' => 750000,
         ]);
 
+        $this->actingAs($koordinator)->post(route('anggaran.limit.store'), [
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'Campus Allocation',
+            'budget_limit' => 250000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('rsm_ad_budget_limits', [
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'Campus Allocation',
+            'budget_limit' => 1000000,
+        ]);
+        $campusReports = RsmReport::where('user_id', $staff->id)->where('ad_period', 'Agustus 2026')->get();
+        $this->assertCount(2, $campusReports);
+        $this->assertSame(1000000.0, (float) $campusReports->sum('budget_requested'));
+
         $report = RsmReport::where('user_id', $staff->id)->where('ad_period', 'Agustus 2026')->firstOrFail();
         $this->actingAs($staff)->get('/anggaran?ad_period=Agustus%202026')
             ->assertOk()
             ->assertSee('Laporkan')
             ->assertSee(route('reports.edit', $report));
 
-        $report->delete();
+        RsmReport::where('user_id', $staff->id)->where('ad_period', 'Agustus 2026')->delete();
         RsmAdBudgetLimit::where('wilayah', 'Regional 6')->delete();
         $staff->delete();
         $koordinator->delete();
@@ -138,6 +155,10 @@ class AdBudgetPendingPanelTest extends TestCase
             'area' => 'Regional B', 'is_active' => true,
         ]);
 
+        $this->actingAs($superUser)->get('/anggaran?ad_period=Agustus%202026')
+            ->assertOk()
+            ->assertSee('<option value="Regional B"', false);
+
         $this->actingAs($superUser)->post(route('anggaran.limit.store'), [
             'ad_period' => 'Agustus 2026',
             'wilayah' => 'Regional 6',
@@ -150,6 +171,64 @@ class AdBudgetPendingPanelTest extends TestCase
         ]);
 
         RsmAdBudgetLimit::where('created_by_user_id', $superUser->id)->delete();
+        $superUser->delete();
+    }
+
+    public function test_only_super_user_can_delete_unit_allocation_without_deleting_pool_or_reports(): void
+    {
+        $this->migrate();
+
+        $superUser = RsmUser::create([
+            'id' => 900060, 'name' => 'Super Delete Budget', 'username' => 'test_super_delete_budget_900060',
+            'password_hash' => 'x', 'role' => 'super_user', 'jabatan' => 'Super User',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $koordinator = RsmUser::create([
+            'id' => 900061, 'name' => 'Korwil Cannot Delete', 'username' => 'test_korwil_cannot_delete_900061',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Koordinator Wilayah',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'is_active' => true,
+        ]);
+        foreach (['' => 1000000, 'Campus Delete Test' => 750000] as $unitName => $amount) {
+            RsmAdBudgetLimit::create([
+                'area' => 'Regional B', 'ad_period' => 'Agustus 2026', 'wilayah' => 'Regional 6',
+                'unit_name' => $unitName, 'budget_limit' => $amount,
+                'created_by_user_id' => $superUser->id, 'created_by_name' => $superUser->name,
+            ]);
+        }
+        $report = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
+            'wilayah' => 'Regional 6', 'unit_name' => 'Campus Delete Test', 'status' => 'Disetujui',
+            'title' => 'Historical Campaign', 'platform' => 'Meta Ads', 'ad_period' => 'Agustus 2026',
+            'campaign_name' => 'Historical Campaign', 'budget_requested' => 750000, 'budget_approved' => 750000,
+        ]);
+
+        $payload = [
+            'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'Campus Delete Test',
+        ];
+        $this->actingAs($koordinator)->delete(route('anggaran.limit.destroy'), $payload)->assertForbidden();
+        $this->assertSame(2, RsmAdBudgetLimit::query()
+            ->where('created_by_user_id', $superUser->id)
+            ->count());
+
+        $this->actingAs($superUser)->delete(route('anggaran.limit.destroy'), $payload)
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('rsm_ad_budget_limits', [
+            'area' => 'Regional B', 'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6', 'unit_name' => 'Campus Delete Test',
+        ]);
+        $this->assertDatabaseHas('rsm_ad_budget_limits', [
+            'area' => 'Regional B', 'ad_period' => 'Agustus 2026',
+            'wilayah' => 'Regional 6', 'unit_name' => '', 'budget_limit' => 1000000,
+        ]);
+        $this->assertDatabaseHas('rsm_reports', ['id' => $report->id, 'title' => 'Historical Campaign']);
+
+        $report->delete();
+        RsmAdBudgetLimit::where('created_by_user_id', $superUser->id)->delete();
+        $koordinator->delete();
         $superUser->delete();
     }
 
@@ -509,6 +588,29 @@ class AdBudgetPendingPanelTest extends TestCase
         RsmAdLead::where('report_id', $report->id)->delete();
         $report->delete();
         $staff->delete();
+    }
+
+    public function test_ad_goal_metric_uses_only_the_relevant_result(): void
+    {
+        $report = new RsmReport([
+            'realization_amount' => 600000,
+            'impressions_count' => 12000,
+            'leads_count' => 6,
+            'closing_count' => 2,
+            'cpl' => 100000,
+        ]);
+
+        $report->ad_goal = 'Leads';
+        $this->assertSame(['label' => 'CPL', 'value' => 100000.0, 'money' => true], $report->adGoalMetric());
+
+        $report->ad_goal = 'Awareness';
+        $this->assertSame(['label' => 'Impresi', 'value' => 12000.0, 'money' => false], $report->adGoalMetric());
+
+        $report->ad_goal = 'Traffic';
+        $this->assertSame(['label' => 'CPT', 'value' => 100000.0, 'money' => true], $report->adGoalMetric());
+
+        $report->ad_goal = 'Conversion';
+        $this->assertSame(['label' => 'CPR', 'value' => 300000.0, 'money' => true], $report->adGoalMetric());
     }
 
     public function test_grouped_table_renders_with_status_colors_for_senior(): void

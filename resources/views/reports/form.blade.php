@@ -2,7 +2,7 @@
 <x-layouts.app :title="$isSeniorExpenseForm ? 'Tambah Pengeluaran Senior Manager' : ($editing ? 'Edit ' : 'Tambah ') . $config['title']" :active="$active">
     <section class="rounded-2xl glass-card p-5">
         <div class="mb-5 flex items-start justify-between gap-3"><div><h2 class="text-base font-semibold text-ink">{{ $isSeniorExpenseForm ? 'Tambah Pengeluaran Senior Manager' : ($editing ? 'Edit' : 'Tambah') . ' ' . $config['title'] }}</h2><p class="mt-1 text-sm text-ink-muted">Lengkapi data laporan.</p></div><a href="{{ route($active) }}" class="rounded-lg border border-border px-3 py-2 text-sm">Kembali</a></div>
-        <form method="POST" enctype="multipart/form-data" action="{{ $editing ? route('reports.update', $report) : route($storeRoute) }}" class="grid gap-4 md:grid-cols-2">
+        <form method="POST" enctype="multipart/form-data" action="{{ $editing ? route('reports.update', $report) : route($storeRoute) }}" class="grid gap-4 md:grid-cols-2" x-data="{ adGoal: @js(old('ad_goal', $report->ad_goal ?: 'Leads')) }">
             @csrf @if ($editing) @method('PATCH') @endif
             @if ($errors->any())<div class="md:col-span-2 rounded-lg border border-tone-red/30 bg-tone-red/10 p-3 text-sm text-red-800"><ul class="list-disc pl-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
             @if ($config['label'] === 'anggaran' && $editing)
@@ -28,7 +28,7 @@
                     <label class="grid gap-1 text-sm">Nama campaign<input name="campaign_name" required value="{{ old('campaign_name', $report->campaign_name) }}" class="rounded-lg border-border bg-surface-muted"></label>
                 @endif
                 @if (in_array('ad_goal', $adsFields))
-                    <label class="grid gap-1 text-sm">Tujuan iklan<select name="ad_goal" class="rounded-lg border-border bg-surface-muted">@foreach (['Leads','Awareness','Traffic','Conversion'] as $option)<option @selected(old('ad_goal', $report->ad_goal ?: 'Leads') === $option)>{{ $option }}</option>@endforeach</select></label>
+                    <label class="grid gap-1 text-sm">Tujuan iklan<select name="ad_goal" x-model="adGoal" class="rounded-lg border-border bg-surface-muted">@foreach (['Leads','Awareness','Traffic','Conversion'] as $option)<option @selected(old('ad_goal', $report->ad_goal ?: 'Leads') === $option)>{{ $option }}</option>@endforeach</select></label>
                 @endif
                 @if (in_array('budget_requested', $adsFields))
                     <label class="grid gap-1 text-sm">Anggaran diajukan<input type="number" min="0.01" step="0.01" name="budget_requested" required value="{{ old('budget_requested', $report->budget_requested) }}" class="rounded-lg border-border bg-surface-muted"></label>
@@ -40,13 +40,12 @@
                     <label class="grid gap-1 text-sm">Realisasi pemakaian<input type="number" min="0" step="0.01" name="realization_amount" value="{{ old('realization_amount', $report->realization_amount) }}" class="rounded-lg border-border bg-surface-muted"></label>
                 @endif
                 @if (in_array('impressions_count', $adsFields))
-                    <label class="grid gap-1 text-sm">Impresi iklan<input type="number" min="0" step="1" name="impressions_count" value="{{ old('impressions_count', $report->impressions_count ?: 0) }}" class="rounded-lg border-border bg-surface-muted"><span class="text-xs text-ink-muted">Dipakai untuk menghitung CPM.</span></label>
+                    <label x-show="adGoal === 'Awareness'" x-cloak class="grid gap-1 text-sm">Impresi iklan<input type="number" min="1" step="1" name="impressions_count" :required="adGoal === 'Awareness'" value="{{ old('impressions_count', $report->impressions_count ?: '') }}" class="rounded-lg border-border bg-surface-muted"><span class="text-xs text-ink-muted">Diinput manual untuk tujuan Awareness.</span></label>
                 @endif
                 @if (in_array('cpl', $adsFields))
-                    <label class="grid gap-1 text-sm">CPL / Cost per Lead<input type="text" readonly value="{{ number_format((float) $report->cpl, 2, ',', '.') }}" title="Otomatis dihitung: realisasi ÷ jumlah data hasil iklan yang sudah diupload" class="w-full max-w-full rounded-lg glass-card-muted bg-surface-muted text-ink-muted"><span class="text-xs text-ink-muted">Otomatis: realisasi ÷ jumlah data hasil iklan yang diupload.</span></label>
-                @endif
-                @if (in_array('cpm', $adsFields))
-                    <label class="grid gap-1 text-sm">CPM / Cost per 1.000 impresi<input type="text" readonly value="{{ number_format((float) $report->cpm, 2, ',', '.') }}" title="Otomatis dihitung: realisasi dibagi impresi dikali 1.000" class="w-full max-w-full rounded-lg glass-card-muted bg-surface-muted text-ink-muted"><span class="text-xs text-ink-muted">Otomatis: realisasi ÷ impresi × 1.000.</span></label>
+                    <label x-show="adGoal === 'Leads'" x-cloak class="grid gap-1 text-sm">CPL / Cost per Lead<input type="text" readonly value="{{ number_format((float) $report->cpl, 2, ',', '.') }}" class="w-full max-w-full rounded-lg glass-card-muted bg-surface-muted text-ink-muted"><span class="text-xs text-ink-muted">Otomatis: realisasi ÷ jumlah data hasil iklan.</span></label>
+                    <label x-show="adGoal === 'Traffic'" x-cloak class="grid gap-1 text-sm">CPT / Cost per Traffic<input type="text" readonly value="{{ number_format($report->costPerTraffic(), 2, ',', '.') }}" class="w-full max-w-full rounded-lg glass-card-muted bg-surface-muted text-ink-muted"><span class="text-xs text-ink-muted">Otomatis: realisasi ÷ jumlah data traffic yang diperoleh.</span></label>
+                    <label x-show="adGoal === 'Conversion'" x-cloak class="grid gap-1 text-sm">CPR / Cost per Result<input type="text" readonly value="{{ number_format($report->costPerResult(), 2, ',', '.') }}" class="w-full max-w-full rounded-lg glass-card-muted bg-surface-muted text-ink-muted"><span class="text-xs text-ink-muted">Otomatis: realisasi ÷ jumlah closing/result.</span></label>
                 @endif
                 @if (in_array('campaign_link', $adsFields))
                     <label class="grid gap-1 text-sm">Link campaign<input name="campaign_link" value="{{ old('campaign_link', $report->campaign_link) }}" class="rounded-lg border-border bg-surface-muted"></label>
@@ -67,7 +66,7 @@
                     </div>
                 @endif
                 @if (in_array('ad_leads_file', $adsFields))
-                    <div class="md:col-span-2 rounded-xl border border-l-4 border-border border-l-tone-green bg-surface-muted/50 p-4">
+                    <div x-show="adGoal !== 'Awareness'" x-cloak class="md:col-span-2 rounded-xl border border-l-4 border-border border-l-tone-green bg-surface-muted/50 p-4">
                         <label class="grid gap-1 text-sm"><span class="flex items-center gap-1.5 font-semibold text-ink"><x-icon name="chart-bar" class="h-4 w-4 text-tone-green" />Upload data hasil iklan (.xls/.xlsx)</span><div class="flex flex-wrap items-center gap-2"><input type="file" name="ad_leads_file" accept=".xls,.xlsx" class="w-full min-w-0 flex-1 rounded-lg border-border bg-surface-muted"><a href="{{ route('anggaran.leads.template') }}" class="shrink-0 whitespace-nowrap rounded-lg border border-border px-3 py-2 text-sm">Download Template</a></div><span class="text-xs text-ink-muted">Kosongkan jika tidak ingin mengganti data hasil iklan yang sudah ada.</span></label>
                     </div>
                 @endif
@@ -107,7 +106,7 @@
                     @endphp
                     <label class="grid gap-1 text-sm">{{ $isSeniorExpenseForm ? 'Platform/Jenis pengeluaran' : 'Platform' }}<select name="platform" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih platform</option>@foreach ($platformOptions as $option)<option @selected(old('platform', $report->platform) === $option)>{{ $option }}</option>@endforeach</select></label>
                     <label class="grid gap-1 text-sm">{{ $isSeniorExpenseForm ? 'Nama campaign/keterangan' : 'Nama campaign' }}<input name="campaign_name" required value="{{ old('campaign_name', $report->campaign_name) }}" class="rounded-lg border-border bg-surface-muted"></label>
-                    <label class="grid gap-1 text-sm">Tujuan iklan<select name="ad_goal" class="rounded-lg border-border bg-surface-muted">@foreach (['Leads','Awareness','Traffic','Conversion'] as $option)<option @selected(old('ad_goal', $report->ad_goal ?: 'Leads') === $option)>{{ $option }}</option>@endforeach</select></label>
+                    <label class="grid gap-1 text-sm">Tujuan iklan<select name="ad_goal" x-model="adGoal" class="rounded-lg border-border bg-surface-muted">@foreach (['Leads','Awareness','Traffic','Conversion'] as $option)<option @selected(old('ad_goal', $report->ad_goal ?: 'Leads') === $option)>{{ $option }}</option>@endforeach</select></label>
                     <label class="grid gap-1 text-sm">Anggaran<input type="number" min="0.01" step="0.01" name="budget_requested" required value="{{ old('budget_requested', $report->budget_requested) }}" class="rounded-lg border-border bg-surface-muted"></label>
                 @elseif ($config['label'] === 'kegiatan')
                     <label class="grid gap-1 text-sm">Jenis kegiatan<select name="activity_kind" class="rounded-lg border-border bg-surface-muted">@foreach ($config['options'] as $option)<option @selected(old('activity_kind', $report->activity_kind) === $option)>{{ $option }}</option>@endforeach</select></label>

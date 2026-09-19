@@ -23,6 +23,10 @@ class AdBudgetLimitService
         $regionals = AreaRegionals::forArea($area);
         $hasUnitName = Schema::hasColumn('rsm_ad_budget_limits', 'unit_name');
 
+        if ($user->role === RsmUser::ROLE_SUPER_USER) {
+            array_unshift($regionals, $area);
+        }
+
         if (in_array($user->role, ['koordinator', 'staff'], true) && trim((string) $user->regional) !== '') {
             $regionals = [$user->regional];
         }
@@ -136,7 +140,6 @@ class AdBudgetLimitService
             $allocated = (float) RsmAdBudgetLimit::query()
                 ->where(['area' => $area, 'ad_period' => $period, 'wilayah' => $wilayah])
                 ->where('unit_name', '<>', '')
-                ->where('unit_name', '<>', $unitName)
                 ->sum('budget_limit');
             if ($allocated + $budgetLimit > (float) $regionalLimit) {
                 throw new \InvalidArgumentException('Total plafon kampus melebihi plafon regional.');
@@ -167,15 +170,39 @@ class AdBudgetLimitService
         }
 
         DB::transaction(function () use ($attributes, $values, $area, $period, $wilayah, $unitName, $budgetLimit, $actor): void {
+            if ($actor->role === RsmUser::ROLE_KOORDINATOR) {
+                $currentLimit = (float) RsmAdBudgetLimit::query()
+                    ->where($attributes)
+                    ->lockForUpdate()
+                    ->value('budget_limit');
+                $values['budget_limit'] = $currentLimit + $budgetLimit;
+            }
+
             RsmAdBudgetLimit::updateOrCreate($attributes, $values);
 
-            // A campus allocation made by the coordinator is the approved,
-            // disbursed ad budget itself. Create the staff reporting row at
-            // the same time; there is no second request/approval step.
+            // Every coordinator submission is a new approved/disbursed
+            // allocation. The aggregate campus limit grows, while each
+            // allocation gets its own reporting row for separate evidence.
             if ($actor->role === RsmUser::ROLE_KOORDINATOR && ! str_starts_with($unitName, 'Iklan Regional ')) {
                 self::syncApprovedCampusReport($area, $period, $wilayah, $unitName, $budgetLimit, $actor);
             }
         });
+    }
+
+    /** Remove one campus/unit allocation while retaining its reports as history. */
+    public static function deleteUnit(string $area, string $period, string $wilayah, string $unitName): int
+    {
+        $unitName = trim($unitName);
+        if ($unitName === '') {
+            throw new \InvalidArgumentException('Kampus/unit wajib dipilih.');
+        }
+
+        return RsmAdBudgetLimit::query()
+            ->where('area', $area)
+            ->where('ad_period', $period)
+            ->where('wilayah', $wilayah)
+            ->where('unit_name', $unitName)
+            ->delete();
     }
 
     private static function syncApprovedCampusReport(
@@ -204,39 +231,6 @@ class AdBudgetLimitService
             })
             ->orderBy('id')
             ->first();
-
-        $report = RsmReport::query()
-            ->where('area', $area)
-            ->where('report_type', RsmReport::TYPE_ADS)
-            ->where('ad_period', $period)
-            ->where('wilayah', $wilayah)
-            ->where(function ($query) use ($canonicalUnit, $unitName): void {
-                $query->where('unit_name', $canonicalUnit);
-                if ($canonicalUnit !== $unitName) {
-                    $query->orWhere('unit_name', $unitName);
-                }
-            })
-            ->whereRaw('LOWER(status) <> ?', ['ditolak'])
-            ->orderBy('id')
-            ->first();
-
-        if ($report) {
-            // Keep evidence already submitted by staff intact. Before staff
-            // reporting starts, a changed allocation updates the same row.
-            if ((float) $report->realization_amount <= 0 && in_array($report->status, ['Pengajuan', 'Revisi', 'Disetujui'], true)) {
-                $report->update([
-                    'user_id' => $staff?->id,
-                    'partner_campus_id' => $campus?->id,
-                    'unit_name' => $canonicalUnit,
-                    'staff_name' => $staff?->name ?? $report->staff_name,
-                    'status' => 'Disetujui',
-                    'budget_requested' => $budgetLimit,
-                    'budget_approved' => $budgetLimit,
-                ]);
-            }
-
-            return;
-        }
 
         $campaignName = "Anggaran Iklan {$canonicalUnit} - {$period}";
         RsmReport::create([

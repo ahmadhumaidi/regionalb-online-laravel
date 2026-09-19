@@ -117,7 +117,10 @@ class ReportFormController extends Controller
         abort_unless(filled($report->attachment_path), 404);
 
         if (Storage::disk('public')->exists($report->attachment_path)) {
-            return Storage::disk('public')->response($report->attachment_path);
+            return response()->file(
+                Storage::disk('public')->path($report->attachment_path),
+                ['Cache-Control' => 'private, max-age=300']
+            );
         }
 
         $legacyRoot = config('filesystems.legacy_public_root');
@@ -134,7 +137,10 @@ class ReportFormController extends Controller
         abort_unless(filled($report->insight_attachment_path), 404);
         abort_unless(Storage::disk('public')->exists($report->insight_attachment_path), 404);
 
-        return Storage::disk('public')->response($report->insight_attachment_path);
+        return response()->file(
+            Storage::disk('public')->path($report->insight_attachment_path),
+            ['Cache-Control' => 'private, max-age=300']
+        );
     }
 
     private function formView(string $type, RsmReport $report, bool $editing, RsmUser $user): View
@@ -200,9 +206,9 @@ class ReportFormController extends Controller
         if ($user->role === RsmUser::ROLE_STAFF) {
             return [
                 'campaign_name' => ['required', 'string', 'max:220'],
-                'ad_goal' => ['nullable', 'string', 'max:80'],
+                'ad_goal' => ['required', Rule::in(['Leads', 'Awareness', 'Traffic', 'Conversion'])],
                 'realization_amount' => ['nullable', 'numeric', 'min:0'],
-                'impressions_count' => ['nullable', 'integer', 'min:0'],
+                'impressions_count' => [Rule::requiredIf(fn () => request('ad_goal') === 'Awareness'), 'nullable', 'integer', 'min:1'],
                 'campaign_link' => ['nullable', 'string', 'max:255'],
                 'attachment_path' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
                 'ad_leads_file' => ['nullable', 'file', 'max:5120', 'mimes:xls,xlsx'],
@@ -227,9 +233,9 @@ class ReportFormController extends Controller
         if ($user->role === RsmUser::ROLE_KOORDINATOR) {
             $rules += [
                 'campaign_name' => ['nullable', 'string', 'max:220'],
-                'ad_goal' => ['nullable', 'string', 'max:80'],
+                'ad_goal' => ['required', Rule::in(['Leads', 'Awareness', 'Traffic', 'Conversion'])],
                 'realization_amount' => ['nullable', 'numeric', 'min:0'],
-                'impressions_count' => ['nullable', 'integer', 'min:0'],
+                'impressions_count' => [Rule::requiredIf(fn () => request('ad_goal') === 'Awareness'), 'nullable', 'integer', 'min:1'],
                 'campaign_link' => ['nullable', 'string', 'max:500'],
             ];
         }

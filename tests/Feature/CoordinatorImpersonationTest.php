@@ -8,6 +8,19 @@ use Tests\TestCase;
 
 class CoordinatorImpersonationTest extends TestCase
 {
+    public function test_opening_impersonation_url_redirects_to_dashboard(): void
+    {
+        $this->migrate();
+        $koordinator = $this->makeUser(900069, 'Koorwil Redirect', RsmUser::ROLE_KOORDINATOR, 'Regional 6');
+
+        $this->actingAs($koordinator)
+            ->get('/impersonation')
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('notice');
+
+        $koordinator->delete();
+    }
+
     private function migrate(): void
     {
         Artisan::call('migrate', ['--path' => 'database/migrations/2026_08_05_105952_create_rsm_users_table.php']);

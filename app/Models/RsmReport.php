@@ -75,4 +75,30 @@ class RsmReport extends Model
     {
         return $this->hasMany(RsmActivityLog::class, 'report_id');
     }
+
+    public function adGoalMetric(): array
+    {
+        $goal = mb_strtolower(trim((string) $this->ad_goal));
+
+        return match ($goal) {
+            'awareness' => ['label' => 'Impresi', 'value' => (float) $this->impressions_count, 'money' => false],
+            'traffic' => ['label' => 'CPT', 'value' => $this->costPerTraffic(), 'money' => true],
+            'conversion' => ['label' => 'CPR', 'value' => $this->costPerResult(), 'money' => true],
+            default => ['label' => 'CPL', 'value' => (float) $this->cpl, 'money' => true],
+        };
+    }
+
+    public function costPerTraffic(): float
+    {
+        return $this->leads_count > 0
+            ? round((float) $this->realization_amount / $this->leads_count, 2)
+            : 0.0;
+    }
+
+    public function costPerResult(): float
+    {
+        return $this->closing_count > 0
+            ? round((float) $this->realization_amount / $this->closing_count, 2)
+            : 0.0;
+    }
 }

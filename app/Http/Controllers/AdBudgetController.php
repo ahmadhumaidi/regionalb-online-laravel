@@ -51,6 +51,9 @@ class AdBudgetController extends Controller
         ];
 
         $referenceOptions = ReferenceOptionsService::build($area, $user);
+        if ($user->role === RsmUser::ROLE_SUPER_USER && ! in_array($area, $referenceOptions['regionals'], true)) {
+            array_unshift($referenceOptions['regionals'], $area);
+        }
         if ($user->role === RsmUser::ROLE_KOORDINATOR && filled($user->regional)) {
             array_unshift($referenceOptions['campuses'], [
                 'id' => null,
@@ -115,5 +118,31 @@ class AdBudgetController extends Controller
         return back()->with('status', $user->role === RsmUser::ROLE_KOORDINATOR
             ? 'Plafon kampus/unit berhasil disimpan.'
             : 'Plafon regional berhasil disimpan.');
+    }
+
+    public function destroyLimit(Request $request): RedirectResponse
+    {
+        /** @var RsmUser $user */
+        $user = Auth::user();
+        abort_unless($user->role === RsmUser::ROLE_SUPER_USER, 403);
+
+        $data = $request->validate([
+            'ad_period' => ['required', 'string', 'max:40'],
+            'wilayah' => ['required', 'string', 'max:120'],
+            'unit_name' => ['required', 'string', 'max:160'],
+        ]);
+
+        $deleted = AdBudgetLimitService::deleteUnit(
+            $user->area ?: 'Regional B',
+            $data['ad_period'],
+            $data['wilayah'],
+            $data['unit_name']
+        );
+
+        if ($deleted === 0) {
+            return back()->withErrors(['budget_limit' => 'Plafon yang akan dihapus tidak ditemukan.']);
+        }
+
+        return back()->with('status', 'Plafon kampus/unit berhasil dihapus. Laporan iklan tetap tersimpan.');
     }
 }

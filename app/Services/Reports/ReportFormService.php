@@ -304,7 +304,10 @@ class ReportFormService
         // recomputes leads_count, closing_count, CPL, and CPM again with the
         // fresh count, so this is just the best estimate available now.
         $newRealizationAmount = (float) $posted('realization_amount', $existing->realization_amount);
-        $newImpressionsCount = max(0, (int) $posted('impressions_count', $existing->impressions_count ?? 0));
+        $adGoal = (string) $posted('ad_goal', $existing->ad_goal);
+        $newImpressionsCount = mb_strtolower(trim($adGoal)) === 'awareness'
+            ? max(0, (int) $posted('impressions_count', $existing->impressions_count ?? 0))
+            : 0;
         $existingLeadsCount = (int) $existing->leads_count;
         $computedCpl = $existingLeadsCount > 0 ? round($newRealizationAmount / $existingLeadsCount, 2) : 0.0;
         $computedCpm = $newImpressionsCount > 0 ? round(($newRealizationAmount / $newImpressionsCount) * 1000, 2) : 0.0;
@@ -325,7 +328,7 @@ class ReportFormService
             'platform' => $posted('platform', $existing->platform),
             'ad_period' => trim((string) $posted('ad_period', $existing->ad_period)) ?: AdBudgetPeriods::default(),
             'campaign_name' => $posted('campaign_name', $existing->campaign_name),
-            'ad_goal' => $posted('ad_goal', $existing->ad_goal),
+            'ad_goal' => $adGoal,
             'budget_requested' => (float) $posted('budget_requested', $existing->budget_requested),
             'budget_approved' => (float) $posted('budget_approved', $existing->budget_approved),
             'realization_amount' => $newRealizationAmount,

@@ -82,6 +82,7 @@ class AdBudgetReportsService
     private static function rowShape(RsmReport $report, RsmUser $user): array
     {
         $status = (string) $report->status;
+        $goalMetric = $report->adGoalMetric();
         // Verifikasi confirms the reported evidence (Dilaporkan Unit), not
         // the original budget request - see AdBudgetActionController.
         $canVerify = RsmRole::canVerifyAdBudgetRequest($report, $user) && $status === 'Dilaporkan Unit';
@@ -98,11 +99,15 @@ class AdBudgetReportsService
             'ad_period' => $report->ad_period,
             'campaign_name' => $report->campaign_name,
             'platform' => $report->platform,
+            'ad_goal' => $report->ad_goal ?: 'Leads',
             'budget_requested' => (float) $report->budget_requested,
             'realization_amount' => (float) $report->realization_amount,
             'leads_count' => (int) $report->leads_count,
             'closing_count' => (int) $report->closing_count,
             'cpl' => DashboardNumbers::divide((float) $report->realization_amount, (float) $report->leads_count),
+            'goal_metric_label' => $goalMetric['label'],
+            'goal_metric_value' => $goalMetric['value'],
+            'goal_metric_money' => $goalMetric['money'],
             'status' => $report->status,
             'has_attachment' => filled($report->attachment_path),
             'has_insight_attachment' => filled($report->insight_attachment_path),

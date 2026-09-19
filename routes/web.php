@@ -54,6 +54,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/profile/daily-mission/{missionKey}/claim', [ProfileController::class, 'claimMission'])->name('profile.daily-mission.claim');
     Route::get('/users/{user}/photo', [ProfileController::class, 'photo'])->name('users.photo');
 
+    Route::get('/impersonation', fn () => redirect()->route('dashboard')->with('notice', 'Pilih pengguna melalui menu Masuk Sebagai.'));
     Route::post('/impersonation', [ImpersonationController::class, 'store'])->name('impersonation.store');
     Route::delete('/impersonation', [ImpersonationController::class, 'destroy'])->name('impersonation.destroy');
 
@@ -68,6 +69,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::delete('/forum/comments/{comment}', [ForumController::class, 'destroyComment'])->name('forum.comments.destroy');
     Route::get('/anggaran', [AdBudgetController::class, 'index'])->name('anggaran');
     Route::post('/anggaran/limit', [AdBudgetController::class, 'storeLimit'])->name('anggaran.limit.store');
+    Route::delete('/anggaran/limit', [AdBudgetController::class, 'destroyLimit'])->name('anggaran.limit.destroy');
     Route::get('/anggaran/create', fn () => app(ReportFormController::class)->create('ads'))->name('anggaran.create');
     Route::post('/anggaran', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'ads'))->name('anggaran.store');
     Route::post('/anggaran/{report}/verifikasi', [AdBudgetActionController::class, 'verify'])->name('anggaran.verifikasi');

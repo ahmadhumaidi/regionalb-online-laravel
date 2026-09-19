@@ -7,16 +7,14 @@
     }
     $fields = [['Staff',$report->staff_name],['Kategori',$report->category ?: $report->activity_kind],['Hasil',$report->result_text],['Kendala',$report->obstacle_text],['Tindak lanjut staff',$staffFollowUpText],['Anggaran',$report->budget_requested ? number_format($report->budget_requested,0,',','.') : null]];
     if ($report->report_type === 'ads') {
+        $goalMetric = $report->adGoalMetric();
         $fields = array_merge($fields, [
             ['Platform', $report->platform],
             ['Periode Iklan', $report->ad_period],
+            ['Tujuan Iklan', $report->ad_goal ?: 'Leads'],
             ['Anggaran Disetujui', number_format($report->budget_approved, 0, ',', '.')],
             ['Realisasi', number_format($report->realization_amount, 0, ',', '.')],
-            ['Impresi', number_format($report->impressions_count, 0, ',', '.')],
-            ['Leads', number_format($report->leads_count, 0, ',', '.')],
-            ['Closing', number_format($report->closing_count, 0, ',', '.')],
-            ['CPL', number_format($report->cpl, 0, ',', '.')],
-            ['CPM', number_format($report->cpm, 0, ',', '.')],
+            [$goalMetric['label'], ($goalMetric['money'] ? 'Rp ' : '').number_format($goalMetric['value'], $goalMetric['money'] ? 2 : 0, ',', '.')],
         ]);
     }
 @endphp
@@ -66,7 +64,7 @@
         @endif
     </section>
 @endif
-@if ($report->report_type === 'ads')
+@if ($report->report_type === 'ads' && mb_strtolower(trim((string) $report->ad_goal)) !== 'awareness')
     <section id="data-hasil-iklan" class="rounded-2xl glass-card border-t-4 p-5" style="border-top-color: var(--color-tone-green);">
         <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div><h2 class="text-base font-semibold text-tone-green">Data Hasil Iklan</h2><p class="mt-1 text-sm text-ink-muted">Isi dari file XLS yang diupload pada laporan iklan</p></div>

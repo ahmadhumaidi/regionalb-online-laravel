@@ -112,7 +112,19 @@
                                                 <strong class="block truncate text-sm text-ink">{{ $row['unit_name'] }}</strong>
                                                 <span class="text-xs text-ink-muted">{{ $isRegionalAd ? 'Iklan wilayah · dikelola Korwil' : 'Alokasi kampus' }} · {{ $row['count'] }} laporan</span>
                                             </div>
-                                            <strong class="shrink-0 text-sm text-ink">Rp {{ number_format($row['budget_limit'], 0, ',', '.') }}</strong>
+                                            <div class="flex shrink-0 items-center gap-2">
+                                                <strong class="text-sm text-ink">Rp {{ number_format($row['budget_limit'], 0, ',', '.') }}</strong>
+                                                @if (auth()->user()->role === 'super_user')
+                                                    <form method="POST" action="{{ route('anggaran.limit.destroy') }}" onsubmit="return confirm('Hapus plafon {{ $row['unit_name'] }} periode {{ $period }}? Laporan iklan tetap tersimpan.')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <input type="hidden" name="ad_period" value="{{ $period }}">
+                                                        <input type="hidden" name="wilayah" value="{{ $wilayah }}">
+                                                        <input type="hidden" name="unit_name" value="{{ $row['unit_name'] }}">
+                                                        <button type="submit" title="Hapus plafon {{ $row['unit_name'] }}" aria-label="Hapus plafon {{ $row['unit_name'] }}" class="rounded-md border border-tone-red/30 p-1.5 text-tone-red hover:bg-tone-red/10"><x-icon name="trash" class="h-3.5 w-3.5" /></button>
+                                                    </form>
+                                                @endif
+                                            </div>
                                         </div>
                                         <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-muted">
                                             <div class="h-full rounded-full {{ $row['remaining'] < 0 ? 'bg-tone-red' : 'bg-brand-600' }} progress-fill" style="width: {{ $unitRate }}%"></div>

@@ -41,9 +41,8 @@
                         <th class="py-2 pr-3 font-medium">Tanggal</th>
                         <th class="py-2 pr-3 text-right font-medium">Anggaran</th>
                         <th class="py-2 pr-3 text-right font-medium">Realisasi</th>
-                        <th class="py-2 pr-3 text-right font-medium">Leads</th>
-                        <th class="py-2 pr-3 text-right font-medium">Closing</th>
-                        <th class="py-2 pr-3 text-right font-medium">CPL</th>
+                        <th class="py-2 pr-3 font-medium">Tujuan</th>
+                        <th class="py-2 pr-3 text-right font-medium">Metrik Tujuan</th>
                         <th class="py-2 pr-3 font-medium">Status</th>
                         <th class="py-2 font-medium">Aksi</th>
                     </tr>
@@ -57,9 +56,8 @@
                             </td>
                             <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['requested'], 0, ',', '.') }}</td>
                             <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['realization'], 0, ',', '.') }}</td>
-                            <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['leads'], 0, ',', '.') }}</td>
-                            <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['closing'], 0, ',', '.') }}</td>
-                            <td class="py-2.5 pr-3 text-right font-bold text-white">{{ number_format($regional['subtotal']['cpl'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 pr-3"></td>
+                            <td class="py-2.5 pr-3"></td>
                             <td class="py-2.5 pr-3"></td>
                             <td class="py-2.5 pr-3"></td>
                         </tr>
@@ -70,9 +68,8 @@
                                 </td>
                                 <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['requested'], 0, ',', '.') }}</td>
                                 <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['realization'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['leads'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['closing'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 pr-3 text-right font-medium text-ink">{{ number_format($campus['subtotal']['cpl'], 0, ',', '.') }}</td>
+                                <td class="py-1.5 pr-3"></td>
+                                <td class="py-1.5 pr-3"></td>
                                 <td class="py-1.5"></td>
                                 <td class="py-1.5"></td>
                             </tr>
@@ -82,9 +79,8 @@
                                     <td class="py-2 pr-3 text-xs whitespace-nowrap text-ink-muted">{{ $row['report_date'] }}</td>
                                     <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['budget_requested'], 0, ',', '.') }}</td>
                                     <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['realization_amount'], 0, ',', '.') }}</td>
-                                    <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['leads_count'], 0, ',', '.') }}</td>
-                                    <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['closing_count'], 0, ',', '.') }}</td>
-                                    <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['cpl'], 0, ',', '.') }}</td>
+                                    <td class="py-2 pr-3 text-ink">{{ $row['ad_goal'] }}</td>
+                                    <td class="py-2 pr-3 text-right text-ink"><span class="text-xs text-ink-muted">{{ $row['goal_metric_label'] }}</span> {{ $row['goal_metric_money'] ? 'Rp ' : '' }}{{ number_format($row['goal_metric_value'], $row['goal_metric_money'] ? 2 : 0, ',', '.') }}</td>
                                     @php $statusTone = $statusTones[mb_strtolower(trim((string) $row['status']))] ?? 'slate'; @endphp
                                     <td class="py-2 pr-3">
                                         <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" style="background: color-mix(in srgb, var(--color-tone-{{ $statusTone }}) 18%, transparent); color: var(--color-tone-{{ $statusTone }})">{{ $row['status'] ?: '-' }}</span>
