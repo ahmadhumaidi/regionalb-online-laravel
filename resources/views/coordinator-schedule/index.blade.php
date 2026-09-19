@@ -8,16 +8,9 @@
 
     @if (auth()->user()->role === 'super_user')
         <section class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-sm font-semibold text-ink">Laporan WhatsApp</h2>
-                    <p class="text-xs text-ink-muted">Buat rekap teks untuk bulan {{ $month }}.</p>
-                </div>
-                <form method="POST" action="{{ route('jadwal-koordinator.whatsapp') }}">
-                    @csrf
-                    <input type="hidden" name="month" value="{{ $month }}">
-                    <button class="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Generate Laporan WA</button>
-                </form>
+            <div>
+                <h2 class="text-sm font-semibold text-ink">Laporan WhatsApp</h2>
+                <p class="text-xs text-ink-muted">Otomatis diperbarui saat menu Jadwal Koordinator dibuka.</p>
             </div>
             @if ($whatsappArtifact['text'] ?? null)
                 <p class="mt-3 text-xs text-ink-muted">Dibuat {{ $whatsappArtifact['generated_at'] ?? '-' }}</p>
@@ -164,7 +157,6 @@
                                                                 </div>
                                                                 <form method="POST" enctype="multipart/form-data" action="{{ route('jadwal-koordinator.report', $row) }}" class="grid gap-4">
                                                                     @csrf @method('PATCH')
-                                                                    <label class="grid gap-1 text-sm">Status<select name="status" class="rounded-lg border-border bg-surface-muted">@foreach (['Rencana', 'Dijadwalkan', 'Selesai', 'Reschedule'] as $status)<option @selected($row->status === $status)>{{ $status }}</option>@endforeach</select></label>
 
                                                                     <div class="rounded-xl border border-border bg-surface-muted/40 p-3">
                                                                         <p class="mb-2 text-sm font-semibold text-ink">Jobdesk Selama Kunjungan dan Supervisi</p>

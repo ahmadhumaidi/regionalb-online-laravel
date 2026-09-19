@@ -63,6 +63,9 @@ class CoordinatorScheduleController extends Controller
             'status' => $request->query('status'),
         ];
         [$rows, $grouped, $summary] = $this->fetchSchedules($area, $month, $filters, $user);
+        $whatsappArtifact = $user->role === 'super_user'
+            ? $this->saveWhatsappArtifact($this->coordinatorWhatsappText($area), $month)
+            : $this->latestWhatsappArtifact();
 
         $summaryRegionals = ($user->role === 'koordinator' && $user->regional) ? [$user->regional] : $regionals;
 
@@ -78,7 +81,7 @@ class CoordinatorScheduleController extends Controller
             'canManage' => RsmRole::canManageCoordinatorSchedule($user),
             'references' => ReferenceOptionsService::build($area, $user),
             'checklistSummary' => $this->checklistSummary($rows),
-            'whatsappArtifact' => $this->latestWhatsappArtifact(),
+            'whatsappArtifact' => $whatsappArtifact,
             'jobdeskItems' => self::JOBDESK_ITEMS,
         ]);
     }
@@ -511,13 +514,12 @@ class CoordinatorScheduleController extends Controller
         abort_unless(RsmRole::canManageCoordinatorSchedule($user), 403);
         $this->scope($schedule, $user);
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['Rencana', 'Dijadwalkan', 'Selesai', 'Reschedule'])],
             'result_text' => 'nullable|string|max:2000',
             'next_action' => 'nullable|string|max:2000',
             'schedule_attachment' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
         ]);
         $data = [
-            'status' => $validated['status'],
+            'status' => 'Selesai',
             'result_text' => $validated['result_text'] ?? null,
             'next_action' => $validated['next_action'] ?? null,
             'checklist_json' => json_encode($this->checklistFromRequest($request), JSON_UNESCAPED_UNICODE),
