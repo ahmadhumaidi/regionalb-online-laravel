@@ -149,7 +149,9 @@ class ProfileController extends Controller
         $levelInfo = XpService::calculateLevel($xp);
         $level = $levelInfo['level'];
         $levelProgress = $levelInfo['progress_percent'];
-        $league = GamificationService::leagueFor($xp);
+        $seasonXp = XpService::getSeasonXp($user);
+        $league = GamificationService::leagueFor($seasonXp);
+        $leagueSeason = XpService::currentLeagueSeason();
         // Placeholder icons (existing icon library) until dedicated badge
         // artwork is ready - swap self::BADGE_ICONS's values then, nothing
         // else about this mapping needs to change.
@@ -202,7 +204,7 @@ class ProfileController extends Controller
         $monthResetAt = now()->endOfMonth()->toIso8601String();
 
         return view('profile.index', compact(
-            'user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'score', 'badges', 'dailyMissions',
+            'user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'seasonXp', 'leagueSeason', 'score', 'badges', 'dailyMissions',
             'todayEnergy', 'weekEnergy', 'monthEnergy', 'dailyChestTiers', 'weeklyChestTiers', 'monthlyChestTiers',
             'missionResetAt', 'weekResetAt', 'monthResetAt'
         ));

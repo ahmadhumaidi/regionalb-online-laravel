@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RsmBadgeSetting;
 use App\Services\Dashboard\GamificationService;
+use App\Services\Dashboard\XpService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -11,18 +12,31 @@ class BadgeController extends Controller
 {
     public function index(Request $request): View
     {
+        $user = $request->user();
+        $seasonXp = XpService::getSeasonXp($user);
+        $season = XpService::currentLeagueSeason();
+        $league = GamificationService::leagueFor($seasonXp);
+        $nextLeague = GamificationService::nextLeagueThreshold($seasonXp);
+        $earnedBadgeNames = GamificationService::profileSummary($user->area ?: 'Regional B', $user)['badges'];
+
         return view('badges.index', [
             'active' => 'badges',
+            'user' => $user,
+            'seasonXp' => $seasonXp,
+            'season' => $season,
+            'league' => $league,
+            'nextLeague' => $nextLeague,
+            'earnedBadgeNames' => $earnedBadgeNames,
             'badges' => GamificationService::badgeDefinitions(),
             'indicators' => GamificationService::scoringIndicators(),
             'leagues' => [
-                ['name' => 'Starter', 'threshold' => 0, 'note' => 'League awal untuk semua staff.'],
-                ['name' => 'Silver', 'threshold' => 500, 'note' => 'Terbuka saat lifetime XP mencapai 500.'],
-                ['name' => 'Gold', 'threshold' => 1000, 'note' => 'Terbuka saat lifetime XP mencapai 1.000.'],
-                ['name' => 'Platinum', 'threshold' => 2500, 'note' => 'Terbuka saat lifetime XP mencapai 2.500.'],
-                ['name' => 'Diamond', 'threshold' => 5000, 'note' => 'League tertinggi, terbuka saat lifetime XP mencapai 5.000.'],
+                ['name' => 'Starter', 'threshold' => 0, 'note' => 'League awal pada setiap season.'],
+                ['name' => 'Silver', 'threshold' => 500, 'note' => 'Terbuka saat XP season mencapai 500.'],
+                ['name' => 'Gold', 'threshold' => 1000, 'note' => 'Terbuka saat XP season mencapai 1.000.'],
+                ['name' => 'Platinum', 'threshold' => 2500, 'note' => 'Terbuka saat XP season mencapai 2.500.'],
+                ['name' => 'Diamond', 'threshold' => 5000, 'note' => 'League tertinggi saat XP season mencapai 5.000.'],
             ],
-            'canManageBadges' => $request->user()?->role === 'super_user',
+            'canManageBadges' => $user->role === 'super_user',
             'fallback' => [
                 'name' => 'On Progress',
                 'condition' => 'Ditampilkan ketika staff belum memenuhi syarat badge mana pun.',

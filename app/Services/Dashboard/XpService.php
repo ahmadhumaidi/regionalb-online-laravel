@@ -5,6 +5,8 @@ namespace App\Services\Dashboard;
 use App\Models\RsmGamificationTransaction;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -79,6 +81,57 @@ class XpService
     public static function getLifetimeXp(RsmUser $user): int
     {
         return (int) RsmGamificationTransaction::query()->where('user_id', $user->id)->sum('xp');
+    }
+
+    /**
+     * League is a calendar-quarter season. XP itself remains append-only and
+     * lifetime; only the portion earned in the active quarter determines the
+     * current league frame/rank tier.
+     *
+     * @return array{start: Carbon, end: Carbon, key: string, label: string}
+     */
+    public static function currentLeagueSeason(?Carbon $at = null): array
+    {
+        $now = ($at ? $at->copy() : now('Asia/Jakarta'))->setTimezone('Asia/Jakarta');
+        $quarter = (int) ceil($now->month / 3);
+        $start = $now->copy()->month((($quarter - 1) * 3) + 1)->startOfMonth();
+
+        return [
+            'start' => $start,
+            'end' => $start->copy()->addMonths(2)->endOfMonth(),
+            'key' => $now->year.'-Q'.$quarter,
+            'label' => 'Season Q'.$quarter.' '.$now->year,
+        ];
+    }
+
+    public static function getSeasonXp(RsmUser $user, ?Carbon $at = null): int
+    {
+        $season = self::currentLeagueSeason($at);
+
+        return (int) RsmGamificationTransaction::query()
+            ->where('user_id', $user->id)
+            // Ledger timestamps are stored in app/UTC time; season edges are
+            // defined in WIB so midnight on 1 Jan/Apr/Jul/Oct is exact.
+            ->whereBetween('created_at', [$season['start']->copy()->utc(), $season['end']->copy()->utc()])
+            ->sum('xp');
+    }
+
+    /** @param Collection<int, int|string> $userIds @return Collection<int|string, int> */
+    public static function seasonXpByUserId(Collection $userIds, ?Carbon $at = null): Collection
+    {
+        if ($userIds->isEmpty()) {
+            return collect();
+        }
+
+        $season = self::currentLeagueSeason($at);
+
+        return RsmGamificationTransaction::query()
+            ->whereIn('user_id', $userIds->all())
+            ->whereBetween('created_at', [$season['start']->copy()->utc(), $season['end']->copy()->utc()])
+            ->selectRaw('user_id, COALESCE(SUM(xp), 0) as season_xp')
+            ->groupBy('user_id')
+            ->pluck('season_xp', 'user_id')
+            ->map(fn ($value) => (int) $value);
     }
 
     /**

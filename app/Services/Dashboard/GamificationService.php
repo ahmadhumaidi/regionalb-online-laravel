@@ -111,18 +111,22 @@ class GamificationService
         $scoringRows = collect(ScoringTableService::build($area, $filters, $user)['rows'])
             ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-')
             ->filter(fn (array $row) => (float) ($row['total_weight'] ?? 0) > 0);
-        $xpByUserId = self::lifetimeXpByUserId($scoringRows->pluck('user_id')->filter()->unique()->values());
+        $userIds = $scoringRows->pluck('user_id')->filter()->unique()->values();
+        $xpByUserId = self::lifetimeXpByUserId($userIds);
+        $seasonXpByUserId = XpService::seasonXpByUserId($userIds);
 
         return $scoringRows
-            ->map(function (array $row) use ($badgesByName, $xpByUserId) {
+            ->map(function (array $row) use ($badgesByName, $xpByUserId, $seasonXpByUserId) {
                 $legacy = $badgesByName->get(mb_strtolower(trim((string) $row['name'])));
                 $lifetimeXp = (int) ($xpByUserId->get($row['user_id'] ?? null) ?? 0);
+                $seasonXp = (int) ($seasonXpByUserId->get($row['user_id'] ?? null) ?? 0);
 
                 return array_merge($row, [
                     'points' => (float) ($row['total_score'] ?? 0),
                     'badges' => self::badgesFromScoringRow($row, $legacy['badges'] ?? []),
                     'lifetime_xp' => $lifetimeXp,
-                    'league' => self::leagueFor($lifetimeXp),
+                    'season_xp' => $seasonXp,
+                    'league' => self::leagueFor($seasonXp),
                 ]);
             })
             ->sortBy([['total_score', 'desc'], ['name', 'asc']])
@@ -289,7 +293,7 @@ class GamificationService
         ];
     }
 
-    /** League thresholds - unchanged from the original levelFor(); Phase 1 only swaps the XP input source (lifetime ledger instead of live-recalculated points), not the League tiers themselves. */
+    /** League thresholds for XP earned inside the active three-month season. */
     public static function leagueFor(int $points): string
     {
         return match (true) {
@@ -302,10 +306,8 @@ class GamificationService
     }
 
     /**
-     * The next League tier's XP threshold above the given lifetime XP, or
-     * null once already at the top tier (Diamond) - reuses leagueFor()'s
-     * exact thresholds so this stays in sync if they ever change. Purely a
-     * display helper for "X XP menuju League Y" progress text.
+     * The next League tier's XP threshold above the current season's XP, or
+     * null once already at the top tier (Diamond).
      *
      * @return array{name: string, threshold: int}|null
      */

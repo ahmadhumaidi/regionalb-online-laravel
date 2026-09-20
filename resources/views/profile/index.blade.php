@@ -5,10 +5,22 @@
                 <div class="relative mx-auto h-28 w-28 sm:h-40 sm:w-40">
                     <x-league-photo :league="$league" :user="$user" text-size="text-lg" />
                 </div>
+                <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-3 text-left">
+                    @csrf
+                    <label for="profile_photo" class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-indigo-200/40 bg-white/5 px-3 py-2 text-xs font-semibold text-indigo-100 transition hover:border-sky-300 hover:bg-white/10 hover:text-white">
+                        <x-icon name="photo" class="h-4 w-4" />
+                        Ganti foto profil
+                    </label>
+                    <input id="profile_photo" name="profile_photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" onchange="this.form.submit()">
+                    <p class="mt-2 text-center text-[11px] text-indigo-300">JPG, PNG, atau WebP · maksimal 2 MB</p>
+                    @error('profile_photo')
+                        <p class="mt-2 rounded-lg bg-rose-400/15 px-2 py-1.5 text-center text-[11px] text-rose-200">{{ $message }}</p>
+                    @enderror
+                </form>
                 <h2 class="mt-4 text-lg font-bold">{{ $user->name }}</h2>
                 <p class="text-xs text-indigo-200">{{ $user->username }}</p>
                 <div class="mt-3 flex flex-wrap justify-center gap-x-2 text-xs font-semibold text-indigo-100"><span>{{ $user->jabatan ?: \App\Support\RsmRole::label($user->role) }}</span><span>•</span><span>{{ $user->regional ?: 'Wilayah belum diatur' }}</span></div>
-                <div class="mt-5 rounded-2xl bg-[#090b1e]/60 p-4 text-left"><div class="flex justify-between text-xs text-indigo-200"><span>Level {{ $level }}</span><strong class="text-white">{{ number_format($xp,0,',','.') }} XP</strong></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 progress-fill" style="width:{{ $levelProgress }}%"></div></div>@php $nextLeague = \App\Services\Dashboard\GamificationService::nextLeagueThreshold($xp); @endphp<p class="mt-2 text-xs text-indigo-200">League {{ $league }}</p><p class="mt-1 text-[11px] text-indigo-300">@if ($nextLeague){{ number_format($xp,0,',','.') }} / {{ number_format($nextLeague['threshold'],0,',','.') }} XP menuju League {{ $nextLeague['name'] }}@else League tertinggi tercapai @endif</p></div>
+                <div class="mt-5 rounded-2xl bg-[#090b1e]/60 p-4 text-left"><div class="flex justify-between text-xs text-indigo-200"><span>Level {{ $level }}</span><strong class="text-white">{{ number_format($xp,0,',','.') }} XP</strong></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 progress-fill" style="width:{{ $levelProgress }}%"></div></div>@php $nextLeague = \App\Services\Dashboard\GamificationService::nextLeagueThreshold($seasonXp); @endphp<p class="mt-2 text-xs text-indigo-200">League {{ $league }} · {{ $leagueSeason['label'] }}</p><p class="mt-1 text-[11px] text-indigo-300">@if ($nextLeague){{ number_format($seasonXp,0,',','.') }} / {{ number_format($nextLeague['threshold'],0,',','.') }} XP season menuju League {{ $nextLeague['name'] }}@else League tertinggi season ini tercapai @endif</p><p class="mt-1 text-[10px] text-indigo-400">League direset setiap 3 bulan. XP dan level tetap permanen.</p></div>
                 <nav class="mt-5 flex gap-1 overflow-x-auto pb-1 text-left text-xs font-semibold text-indigo-100 lg:grid lg:pb-0 lg:text-sm"><a href="#ringkasan" class="shrink-0 rounded-xl bg-black/25 px-3 py-2">Ringkasan</a><a href="#daily-mission" class="shrink-0 rounded-xl px-3 py-2 hover:bg-black/25">Daily Mission</a><a href="#pencapaian" class="shrink-0 rounded-xl px-3 py-2 hover:bg-black/25">Pencapaian</a><a href="#aktivitas" class="shrink-0 rounded-xl px-3 py-2 hover:bg-black/25">Aktivitas</a></nav>
             </aside>
             <div class="space-y-5">
