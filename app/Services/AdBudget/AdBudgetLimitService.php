@@ -5,6 +5,7 @@ namespace App\Services\AdBudget;
 use App\Models\RsmAdBudgetLimit;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\Reports\ReportFormService;
 use App\Support\AreaRegionals;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -183,7 +184,7 @@ class AdBudgetLimitService
             // Every coordinator submission is a new approved/disbursed
             // allocation. The aggregate campus limit grows, while each
             // allocation gets its own reporting row for separate evidence.
-            if ($actor->role === RsmUser::ROLE_KOORDINATOR && ! str_starts_with($unitName, 'Iklan Regional ')) {
+            if ($actor->role === RsmUser::ROLE_KOORDINATOR) {
                 self::syncApprovedCampusReport($area, $period, $wilayah, $unitName, $budgetLimit, $actor);
             }
         });
@@ -213,26 +214,33 @@ class AdBudgetLimitService
         float $budgetLimit,
         RsmUser $actor
     ): void {
-        $campus = DB::table('partner_campuses')
-            ->where('display_name', $unitName)
-            ->orWhere('name', $unitName)
-            ->first();
+        $isRegionalAdUnit = ReportFormService::isRegionalAdUnit($unitName, $wilayah);
+        $campus = $isRegionalAdUnit
+            ? null
+            : DB::table('partner_campuses')
+                ->where('display_name', $unitName)
+                ->orWhere('name', $unitName)
+                ->first();
 
         $canonicalUnit = trim((string) ($campus->display_name ?? $unitName));
-        $staff = RsmUser::query()
-            ->where('role', RsmUser::ROLE_STAFF)
-            ->where('is_active', true)
-            ->where('regional', $wilayah)
-            ->where(function ($query) use ($canonicalUnit, $campus): void {
-                $query->where('campus_name', $canonicalUnit);
-                if (filled($campus?->name)) {
-                    $query->orWhere('campus_name', $campus->name);
-                }
-            })
-            ->orderBy('id')
-            ->first();
+        $staff = $isRegionalAdUnit
+            ? null
+            : RsmUser::query()
+                ->where('role', RsmUser::ROLE_STAFF)
+                ->where('is_active', true)
+                ->where('regional', $wilayah)
+                ->where(function ($query) use ($canonicalUnit, $campus): void {
+                    $query->where('campus_name', $canonicalUnit);
+                    if (filled($campus?->name)) {
+                        $query->orWhere('campus_name', $campus->name);
+                    }
+                })
+                ->orderBy('id')
+                ->first();
 
-        $campaignName = "Anggaran Iklan {$canonicalUnit} - {$period}";
+        $campaignName = $isRegionalAdUnit
+            ? "Anggaran {$canonicalUnit} - {$period}"
+            : "Anggaran Iklan {$canonicalUnit} - {$period}";
         RsmReport::create([
             'area' => $area,
             'report_type' => RsmReport::TYPE_ADS,
@@ -241,7 +249,7 @@ class AdBudgetLimitService
             'partner_campus_id' => $campus?->id,
             'wilayah' => $wilayah,
             'unit_name' => $canonicalUnit,
-            'staff_name' => $staff?->name ?? '',
+            'staff_name' => $isRegionalAdUnit ? $actor->name : ($staff?->name ?? ''),
             'created_by_name' => $actor->name,
             'created_by_role' => $actor->role,
             'status' => 'Disetujui',

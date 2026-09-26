@@ -263,6 +263,18 @@ class AdBudgetPendingPanelTest extends TestCase
             'budget_limit' => 1000000,
         ])->assertRedirect()->assertSessionHasNoErrors();
 
+        $automaticReport = RsmReport::where('unit_name', 'Iklan Regional 5')
+            ->where('ad_period', 'Agustus 2026')
+            ->where('created_by_name', $owner->name)
+            ->firstOrFail();
+        $this->assertSame('Disetujui', $automaticReport->status);
+        $this->assertSame(1000000.0, (float) $automaticReport->budget_approved);
+
+        $this->actingAs($owner)->get('/anggaran?ad_period=Agustus%202026')
+            ->assertOk()
+            ->assertSee('Anggaran Iklan Regional 5 - Agustus 2026')
+            ->assertSee(route('reports.edit', $automaticReport));
+
         $this->actingAs($owner)->post(route('anggaran.store'), [
             'report_date' => '2026-08-15',
             'ad_period' => 'Agustus 2026',
@@ -304,6 +316,7 @@ class AdBudgetPendingPanelTest extends TestCase
         $this->actingAs($owner)->post(route('anggaran.verifikasi', $report))->assertForbidden();
 
         $report->delete();
+        $automaticReport->delete();
         RsmAdBudgetLimit::where('wilayah', 'Regional 5')->delete();
         $owner->delete();
         $otherCoordinator->delete();
