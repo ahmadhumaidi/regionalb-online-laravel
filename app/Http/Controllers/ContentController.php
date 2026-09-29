@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\RsmUser;
+use App\Models\PartnerCampus;
 use App\Models\RsmSocialAccount;
 use App\Models\RsmSocialPost;
 use App\Services\Content\ContentSummaryService;
@@ -53,7 +54,14 @@ class ContentController extends Controller
     {
         $user = $request->user();
         $data = $request->validate(['wilayah'=>'required|string|max:120','unit_name'=>'required|string|max:180','instagram_username'=>'required|string|max:180','pic_name'=>'nullable|string|max:180','pic_phone'=>'nullable|string|max:80']);
-        RsmSocialAccount::updateOrCreate(['area'=>$user->area ?: 'Regional B','unit_name'=>$data['unit_name'],'instagram_username'=>ltrim($data['instagram_username'],'@')], $data + ['created_by_user_id'=>$user->id,'created_by_name'=>$user->name,'is_active'=>true,'connection_status'=>'Manual']);
+        $username = ltrim($data['instagram_username'], '@');
+        RsmSocialAccount::updateOrCreate(['area'=>$user->area ?: 'Regional B','unit_name'=>$data['unit_name'],'instagram_username'=>$username], $data + ['instagram_username'=>$username,'created_by_user_id'=>$user->id,'created_by_name'=>$user->name,'is_active'=>true,'connection_status'=>'Manual']);
+        PartnerCampus::query()->get()->first(fn (PartnerCampus $campus): bool =>
+            \App\Support\CampusMatcher::matches($data['unit_name'], $campus->display_name ?: $campus->name)
+        )?->update([
+            'instagram_username' => $username,
+            'instagram_url' => 'https://www.instagram.com/'.$username.'/',
+        ]);
         return back()->with('status','Akun Instagram berhasil disimpan.');
     }
 

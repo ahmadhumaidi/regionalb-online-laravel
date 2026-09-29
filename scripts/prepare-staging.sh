@@ -31,12 +31,23 @@ normalize_runtime_permissions() {
     fi
 }
 
+normalize_public_build_permissions() {
+    if [[ ! -d public/build ]]; then
+        return
+    fi
+
+    find public/build -type d ! -perm 755 -exec chmod 755 {} +
+    find public/build -type f ! -perm 644 -exec chmod 644 {} +
+}
+
 find app resources routes config -type d ! -perm 755 -exec chmod 755 {} +
 find app resources routes config -type f ! -perm 644 -exec chmod 644 {} +
 chown -R "$RUNTIME_USER:$RUNTIME_GROUP" storage bootstrap/cache
 normalize_runtime_permissions
+normalize_public_build_permissions
 artisan optimize:clear
 artisan view:cache
 chown -R "$RUNTIME_USER:$RUNTIME_GROUP" storage bootstrap/cache
 normalize_runtime_permissions
+normalize_public_build_permissions
 echo "Laravel staging permissions and caches prepared."

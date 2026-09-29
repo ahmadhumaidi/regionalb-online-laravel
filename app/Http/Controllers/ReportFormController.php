@@ -74,7 +74,7 @@ class ReportFormController extends Controller
         $user = Auth::user();
         abort_unless(ReportFormService::canEdit($report, $user), 403);
         abort_unless(ReportFormService::visible($report, $user), 404);
-        $data = $this->validated($request, $report->report_type, true, $user);
+        $data = $this->validated($request, $report->report_type, true, $user, $report);
         ReportFormService::update($report, $data, $request->file('attachment_path'), $user, $request->file('insight_attachment_path'));
 
         if ($report->report_type === RsmReport::TYPE_ADS && $request->hasFile('ad_leads_file')) {
@@ -165,10 +165,10 @@ class ReportFormController extends Controller
         ]);
     }
 
-    private function validated(Request $request, string $type, bool $editing, RsmUser $user): array
+    private function validated(Request $request, string $type, bool $editing, RsmUser $user, ?RsmReport $report = null): array
     {
         if ($type === RsmReport::TYPE_ADS && $editing) {
-            return $request->validate($this->adsEditRules($user));
+            return $request->validate($this->adsEditRules($user, $report));
         }
 
         $common = [
@@ -201,7 +201,7 @@ class ReportFormController extends Controller
     }
 
     /** Role-specific rules for editing an ads report, matching report_fields_for_type('ads', $role). */
-    private function adsEditRules(RsmUser $user): array
+    private function adsEditRules(RsmUser $user, ?RsmReport $report = null): array
     {
         if ($user->role === RsmUser::ROLE_STAFF) {
             return [
@@ -230,7 +230,11 @@ class ReportFormController extends Controller
             'notes' => ['nullable', 'string'],
         ];
 
-        if ($user->role === RsmUser::ROLE_KOORDINATOR) {
+        if (
+            $user->role === RsmUser::ROLE_KOORDINATOR
+            && $report
+            && ReportFormService::isRegionalAdUnit($report->unit_name, $report->wilayah)
+        ) {
             $rules += [
                 'campaign_name' => ['nullable', 'string', 'max:220'],
                 'ad_goal' => ['required', Rule::in(['Leads', 'Awareness', 'Traffic', 'Conversion'])],

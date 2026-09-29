@@ -5,7 +5,7 @@
 
     <section class="rounded-2xl glass-card p-5">
         @php
-            $liveActive = request('periode') === 'daily';
+            $liveActive = request('periode', 'daily') === 'daily';
             $yesterdayActive = request('periode') === 'yesterday';
             $periodeValue = $liveActive ? 'daily' : ($yesterdayActive ? 'yesterday' : 'monthly');
             $currentMonthValue = substr($filters['date_from'], 0, 7);
@@ -56,19 +56,9 @@
 
         @if (auth()->user()->role === 'super_user')
             <section class="mt-5 rounded-2xl glass-card p-5">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h2 class="text-base font-semibold text-ink">Bahan WhatsApp Otomatis</h2>
-                        <p class="text-xs text-ink-muted">Ringkasan pencapaian sesuai periode & filter terpilih di atas, siap salin ke WhatsApp.</p>
-                    </div>
-                    <form method="POST" action="{{ route('rekap.whatsapp') }}">
-                        @csrf
-                        <input type="hidden" name="date_from" value="{{ $filters['date_from'] }}">
-                        <input type="hidden" name="date_to" value="{{ $filters['date_to'] }}">
-                        <input type="hidden" name="wilayah" value="{{ $filters['wilayah'] }}">
-                        <input type="hidden" name="unit_name" value="{{ $filters['unit_name'] }}">
-                        <button class="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Generate Sekarang</button>
-                    </form>
+                <div>
+                    <h2 class="text-base font-semibold text-ink">Bahan WhatsApp Otomatis</h2>
+                    <p class="text-xs text-ink-muted">Otomatis diperbarui saat menu Laporan &amp; Rekap dibuka, sesuai periode dan filter terpilih.</p>
                 </div>
                 @if ($whatsappArtifact['text'] ?? null)
                     @php $period = $whatsappArtifact['period'] ?? null; @endphp
@@ -87,7 +77,7 @@
                         <button type="button" onclick="const t=document.getElementById('whatsapp-artifact-text'); t.select(); navigator.clipboard.writeText(t.value); this.textContent='Tersalin!'; setTimeout(() => this.textContent='Copy Text Otomatis', 1500);" class="rounded-lg border border-border px-3 py-2 text-sm font-semibold text-ink">Copy Text Otomatis</button>
                     </div>
                 @else
-                    <p class="mt-3 text-sm text-ink-muted">Belum ada bahan otomatis. Klik Generate Sekarang.</p>
+                    <p class="mt-3 text-sm text-ink-muted">Belum ada bahan otomatis.</p>
                 @endif
             </section>
         @endif

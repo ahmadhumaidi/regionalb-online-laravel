@@ -45,6 +45,7 @@ class Menu
                 'title' => 'Konten & Kegiatan',
                 'items' => [
                     ['key' => 'konten', 'label' => 'Monitoring Konten Kampus', 'icon' => 'photo'],
+                    ['key' => 'upload-konten-sosmed', 'label' => 'Upload Konten Sosmed', 'icon' => 'cloud'],
                     ['key' => 'kegiatan', 'label' => 'Kegiatan Marketing', 'icon' => 'briefcase'],
                     ['key' => 'aktivitas', 'label' => 'Aktivitas Lain', 'icon' => 'bolt'],
                 ],
@@ -104,6 +105,7 @@ class Menu
             'jadwal-koordinator' => 'Jadwal Koordinator',
             'bdc-users' => 'BDC Marketing',
             'konten' => 'Monitoring Konten Kampus',
+            'upload-konten-sosmed' => 'Upload Konten Sosmed',
             'kegiatan' => 'Kegiatan Marketing',
             'anggaran' => 'Anggaran & Laporan Iklan',
             'aktivitas' => 'Aktivitas Lain',
@@ -147,6 +149,7 @@ class Menu
             'forum' => route('forum'),
             'anggaran' => route('anggaran'),
             'konten' => route('konten'),
+            'upload-konten-sosmed' => route('upload-konten-sosmed'),
             'pencapaian' => route('pencapaian'),
             'kegiatan' => route('kegiatan'),
             'aktivitas' => route('aktivitas'),

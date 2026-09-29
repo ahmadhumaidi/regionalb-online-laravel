@@ -25,12 +25,15 @@ class ReportRecapController extends Controller
     {
         $user = Auth::user();
         $area = $user->area ?: 'Regional B';
-        $type = (string) $request->query('rekap_type', 'all');
+        $type = (string) $request->query('rekap_type', 'pencapaian');
         if (! in_array($type, ['all', RsmReport::TYPE_MARKETING, RsmReport::TYPE_ADS, RsmReport::TYPE_OTHER, 'pencapaian'], true)) {
             $type = 'all';
         }
         $filters = DashboardFilters::fromRequest($request, 'rekap');
         $recap = $type === 'pencapaian' ? null : ReportRecapService::build($area, $filters, $type, $user);
+        $whatsappArtifact = $user->role === 'super_user' && $type === 'pencapaian'
+            ? AchievementWhatsappService::generate($area, $filters, $user)
+            : AchievementWhatsappService::latest();
 
         return view('rekap.index', [
             'active' => 'rekap',
@@ -38,7 +41,7 @@ class ReportRecapController extends Controller
             'type' => $type,
             'recap' => $recap,
             'references' => ReferenceOptionsService::build($area, $user),
-            'whatsappArtifact' => AchievementWhatsappService::latest(),
+            'whatsappArtifact' => $whatsappArtifact,
             'achievementReport' => $type === 'pencapaian' ? AchievementReportService::build($area, $filters, $user) : null,
         ]);
     }

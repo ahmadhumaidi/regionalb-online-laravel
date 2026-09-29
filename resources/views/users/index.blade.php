@@ -6,7 +6,8 @@
     </form></section>
     <section class="mt-5 overflow-x-auto rounded-2xl glass-card p-5"><h2 class="mb-3 text-base font-semibold text-ink">Daftar User RSM</h2><table class="w-full min-w-[1150px] text-left text-sm"><thead><tr class="border-b border-border text-xs text-ink-muted"><th class="py-2 pr-3">Nama</th><th class="py-2 pr-3">Username</th><th class="py-2 pr-3">Role</th><th class="py-2 pr-3">Area/Regional</th><th class="py-2 pr-3">Status</th><th class="py-2">Aksi</th></tr></thead><tbody>@foreach($users as $managedUser)<tr class="border-b border-border/60 align-top"><td class="py-2 pr-3">{{ $managedUser->name }}</td><td class="py-2 pr-3">{{ $managedUser->username }}</td><td class="py-2 pr-3">{{ RsmRole::label($managedUser->role) }}</td><td class="py-2 pr-3">{{ $managedUser->area ?: '-' }} / {{ $managedUser->regional ?: '-' }}</td><td class="py-2 pr-3">{{ $managedUser->is_active ? 'Aktif' : 'Nonaktif' }}</td><td class="py-2"><div class="flex flex-wrap items-center gap-1.5"><div x-data="{ open: false }">
     <button type="button" @click="open = true" title="Edit" aria-label="Edit" class="rounded-md border border-border p-1.5 text-ink-muted hover:text-ink"><x-icon name="edit" class="h-3.5 w-3.5" /></button>
-    <div x-show="open" x-cloak @keydown.escape.window="open = false" class="fixed inset-0 z-40 flex items-center justify-center p-4" style="background: rgba(15,23,42,0.45)">
+    <template x-teleport="body">
+    <div x-show="open" x-cloak @keydown.escape.window="open = false" class="fixed inset-0 z-[110] flex items-center justify-center p-4" style="background: rgba(15,23,42,0.45)">
         <div @click.outside="open = false" class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-2xl">
             <div class="mb-4 flex items-center justify-between gap-3">
                 <h3 class="text-base font-semibold text-ink">Edit {{ $managedUser->name }}</h3>
@@ -27,5 +28,6 @@
             </form>
         </div>
     </div>
+    </template>
 </div><form method="POST" action="{{ route('users.toggle',$managedUser) }}">@csrf<button title="{{ $managedUser->is_active ? 'Nonaktifkan' : 'Aktifkan' }}" aria-label="{{ $managedUser->is_active ? 'Nonaktifkan' : 'Aktifkan' }}" class="rounded-md border p-1.5 {{ $managedUser->is_active ? 'border-tone-amber text-tone-amber' : 'border-tone-green text-tone-green' }}"><x-icon name="ban" class="h-3.5 w-3.5" /></button></form>@if($managedUser->id !== auth()->id())<form method="POST" action="{{ route('users.reset-password',$managedUser) }}" class="flex items-center gap-1">@csrf<input name="new_password" minlength="6" placeholder="Password baru" class="w-24 rounded-md border border-border px-1.5 py-1 text-xs"><button title="Reset password" aria-label="Reset password" class="rounded-md border border-border p-1.5 text-ink-muted hover:text-ink"><x-icon name="lock" class="h-3.5 w-3.5" /></button></form><form method="POST" action="{{ route('users.destroy',$managedUser) }}" onsubmit="return confirm('Hapus user ini?')">@csrf @method('DELETE')<button title="Hapus" aria-label="Hapus" class="rounded-md border border-tone-red p-1.5 text-tone-red"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>@endif</div></td></tr>@endforeach</tbody></table></section>
 </x-layouts.app>

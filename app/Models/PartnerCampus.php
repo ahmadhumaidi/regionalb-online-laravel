@@ -18,6 +18,9 @@ class PartnerCampus extends Model
         'longitude',
         'latitude',
         'logo_url',
+        'instagram_username',
+        'instagram_url',
+        'wilayah',
     ];
 
     public function users(): HasMany

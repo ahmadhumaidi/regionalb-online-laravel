@@ -52,4 +52,15 @@ return [
         'sync_window_days' => (int) env('COLLAB_SYNC_WINDOW_DAYS', 2),
     ],
 
+    'social_content_sheets' => [
+        'feed_url' => env(
+            'SOCIAL_CONTENT_FEED_SHEET_URL',
+            'https://docs.google.com/spreadsheets/d/1eJJYaOYYo-ePmPX--IfFzpIIy9y1crYw05SaRF515kE/edit?usp=drivesdk'
+        ),
+        'story_url' => env(
+            'SOCIAL_CONTENT_STORY_SHEET_URL',
+            'https://docs.google.com/spreadsheets/d/1oFcweYV_5rsm-PguG2AsB-Yh_QrH99xcBlRUwPrPL6Q/edit?usp=drivesdk'
+        ),
+    ],
+
 ];

@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AktivitasController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\ContentController;
+use App\Http\Controllers\SocialContentUploadController;
 use App\Http\Controllers\CrmLeadController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ForumController;
@@ -84,6 +85,10 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/konten', [ContentController::class, 'index'])->name('konten');
     Route::post('/konten/accounts', [ContentController::class, 'storeAccount'])->name('konten.accounts.store');
     Route::post('/konten/posts', [ContentController::class, 'storePost'])->name('konten.posts.store');
+    Route::get('/upload-konten-sosmed', [SocialContentUploadController::class, 'index'])->name('upload-konten-sosmed');
+    Route::post('/upload-konten-sosmed', [SocialContentUploadController::class, 'store'])->name('upload-konten-sosmed.store');
+    Route::patch('/upload-konten-sosmed/{post}', [SocialContentUploadController::class, 'update'])->name('upload-konten-sosmed.update');
+    Route::delete('/upload-konten-sosmed/{post}', [SocialContentUploadController::class, 'destroy'])->name('upload-konten-sosmed.destroy');
     Route::get('/pencapaian', [AchievementController::class, 'index'])->name('pencapaian');
     Route::get('/kegiatan', [KegiatanController::class, 'index'])->name('kegiatan');
     Route::get('/aktivitas', [AktivitasController::class, 'index'])->name('aktivitas');

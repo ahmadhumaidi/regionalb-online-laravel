@@ -8,7 +8,12 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-surface-muted font-sans text-ink antialiased" x-data="{ sidebarOpen: false }">
+<body
+    class="min-h-screen bg-surface-muted font-sans text-ink antialiased"
+    x-data="{ sidebarOpen: false }"
+    @click.window="if (sidebarOpen && !$event.target.closest('.app-sidebar') && !$event.target.closest('[data-sidebar-toggle]')) sidebarOpen = false"
+    @keydown.escape.window="sidebarOpen = false"
+>
 
     <div class="flex min-h-screen">
         <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"></div>
@@ -57,7 +62,7 @@
             <header class="sticky top-0 z-20 border-b border-white/10 px-3 py-2 text-white shadow-[0_12px_40px_rgba(0,0,0,0.24)] lg:px-8 lg:py-3" style="background-color: rgba(16, 18, 39, 0.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);">
                 <div class="flex flex-wrap items-center justify-between gap-2 lg:gap-4">
                 <div class="flex items-center gap-3">
-                    <button @click="sidebarOpen = true" type="button" class="rounded-xl border border-white/15 bg-white/10 p-2 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white lg:hidden">
+                    <button data-sidebar-toggle @click="sidebarOpen = true" type="button" class="rounded-xl border border-white/15 bg-white/10 p-2 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white lg:hidden">
                         <x-icon name="menu" class="h-6 w-6" />
                     </button>
                     <div>
