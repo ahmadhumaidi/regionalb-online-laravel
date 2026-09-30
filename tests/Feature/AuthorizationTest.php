@@ -155,6 +155,13 @@ class AuthorizationTest extends TestCase
             'area' => 'Regional B', 'regional' => 'Regional 4', 'is_active' => true,
         ]);
 
+        $this->actingAs($superUser)->get('/users')
+            ->assertOk()
+            ->assertViewHas('area', 'all')
+            ->assertViewHas('users', fn ($users): bool => $users->contains('id', $regionalAStaff->id)
+                && $users->contains('id', $regionalBStaff->id)
+            );
+
         $this->actingAs($superUser)->get('/users?area=Regional%20A')
             ->assertOk()
             ->assertViewHas('users', fn ($users): bool => $users->contains('id', $regionalAStaff->id)

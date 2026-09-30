@@ -22,7 +22,10 @@ class UserManagementController extends Controller
         $users = RsmUser::query()
             ->when(
                 $actor->role === RsmUser::ROLE_SUPER_USER,
-                fn ($query) => $query->where(fn ($areaQuery) => $areaQuery->where('area', $area)->orWhereNull('area')),
+                fn ($query) => $query->when(
+                    $area !== 'all',
+                    fn ($areaQuery) => $areaQuery->where(fn ($scopedQuery) => $scopedQuery->where('area', $area)->orWhereNull('area')),
+                ),
                 fn ($query) => $query->where('area', $area)->whereNotIn('role', [RsmUser::ROLE_SUPER_USER, RsmUser::ROLE_SENIOR]),
             )
             ->orderByDesc('is_active')
@@ -31,7 +34,9 @@ class UserManagementController extends Controller
             ->orderBy('name')
             ->get();
 
-        $regionals = AreaRegionals::forArea($area);
+        $regionals = $area === 'all'
+            ? array_merge(AreaRegionals::forArea('Regional A'), AreaRegionals::forArea('Regional B'))
+            : AreaRegionals::forArea($area);
         $campuses = DB::table('partner_campuses')
             ->whereIn('wilayah', $regionals)
             ->selectRaw('COALESCE(display_name, name) as label')
@@ -41,8 +46,9 @@ class UserManagementController extends Controller
             ->values()
             ->all();
         $manageableRoles = $this->manageableRoles($actor);
+        $formArea = $area === 'all' ? ($actor->area ?: 'Regional B') : $area;
 
-        return view('users.index', compact('users', 'area', 'regionals', 'campuses', 'manageableRoles'));
+        return view('users.index', compact('users', 'area', 'formArea', 'regionals', 'campuses', 'manageableRoles'));
     }
 
     public function store(Request $request)
@@ -140,9 +146,9 @@ class UserManagementController extends Controller
     private function selectedArea(Request $request): string
     {
         $actor = $request->user();
-        $requestedArea = (string) $request->query('area', $actor->area ?: 'Regional B');
+        $requestedArea = (string) $request->query('area', 'all');
 
-        return $actor->role === RsmUser::ROLE_SUPER_USER && in_array($requestedArea, ['Regional A', 'Regional B'], true)
+        return $actor->role === RsmUser::ROLE_SUPER_USER && in_array($requestedArea, ['all', 'Regional A', 'Regional B'], true)
             ? $requestedArea
             : ($actor->area ?: 'Regional B');
     }
