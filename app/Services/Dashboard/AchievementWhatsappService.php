@@ -3,6 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Models\RsmUser;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -17,8 +18,6 @@ use Illuminate\Support\Facades\Storage;
  */
 class AchievementWhatsappService
 {
-    private const CACHE_KEY = 'achievement_whatsapp_latest.json';
-
     private const MONTHS_ID = [
         1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
         5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
@@ -29,35 +28,36 @@ class AchievementWhatsappService
     {
         $payload = AchievementReportService::build($area, $filters, $actor);
         $generatedAt = now('Asia/Jakarta');
-        $text = self::buildText($filters['date_from'], $filters['date_to'], $generatedAt, $payload);
+        $text = self::buildText($area, $filters['date_from'], $filters['date_to'], $generatedAt, $payload);
 
         $artifact = [
             'text' => $text,
             'generated_at' => $generatedAt->format('Y-m-d H:i:s'),
             'period' => ['date_from' => $filters['date_from'], 'date_to' => $filters['date_to']],
         ];
-        Storage::disk('local')->put(self::CACHE_KEY, json_encode($artifact, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        Storage::disk('local')->put(self::cacheKey($area), json_encode($artifact, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
         return $artifact;
     }
 
-    public static function latest(): ?array
+    public static function latest(string $area = 'Regional B'): ?array
     {
-        if (! Storage::disk('local')->exists(self::CACHE_KEY)) {
+        $cacheKey = self::cacheKey($area);
+        if (! Storage::disk('local')->exists($cacheKey)) {
             return null;
         }
-        $decoded = json_decode(Storage::disk('local')->get(self::CACHE_KEY), true);
+        $decoded = json_decode(Storage::disk('local')->get($cacheKey), true);
 
         return is_array($decoded) ? $decoded : null;
     }
 
-    private static function buildText(string $dateFrom, string $dateTo, \Illuminate\Support\Carbon $generatedAt, array $payload): string
+    private static function buildText(string $area, string $dateFrom, string $dateTo, Carbon $generatedAt, array $payload): string
     {
         $periodText = $dateFrom === $dateTo
             ? self::formatDateLong($dateFrom)
             : self::formatDateLong($dateFrom).' s/d '.self::formatDateLong($dateTo);
 
-        $lines = ['*Laporan Pencapaian Regional B*'];
+        $lines = ['*Laporan Pencapaian '.$area.'*'];
         $lines[] = 'Periode : '.$periodText;
         $lines[] = 'Sinkron : '.$generatedAt->format('H:i:s');
         $lines[] = '___________________________________________';
@@ -88,6 +88,11 @@ class AchievementWhatsappService
         }
 
         return trim(implode("\n", $lines));
+    }
+
+    private static function cacheKey(string $area): string
+    {
+        return 'achievement_whatsapp_'.strtolower(str_replace(' ', '_', $area)).'_latest.json';
     }
 
     private static function formatDateLong(string $date): string

@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PartnerCampus;
 use App\Models\RsmSocialAccount;
 use App\Models\RsmSocialPost;
 use App\Models\RsmUser;
-use App\Models\PartnerCampus;
-use App\Services\Content\SocialScope;
 use App\Services\Content\SocialContentSpreadsheetService;
+use App\Services\Content\SocialScope;
 use App\Services\Dashboard\ReferenceOptionsService;
+use App\Support\AreaRegionals;
 use App\Support\CampusMatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,7 @@ class SocialContentUploadController extends Controller
 
         $referenceOptions = ReferenceOptionsService::build($area, $user);
         $campusProfiles = PartnerCampus::query()
+            ->whereIn('wilayah', AreaRegionals::forArea($area))
             ->get(['id', 'name', 'display_name', 'wilayah', 'instagram_username', 'instagram_url'])
             ->map(fn (PartnerCampus $campus): array => [
                 'id' => $campus->id,
@@ -74,8 +76,7 @@ class SocialContentUploadController extends Controller
                 'url' => $campus->instagram_url ?: '',
             ]);
         $referenceOptions['campuses'] = collect($referenceOptions['campuses'])->map(function (array $option) use ($campusProfiles): array {
-            $profile = $campusProfiles->first(fn (array $campus): bool =>
-                ($option['id'] && (int) $option['id'] === (int) $campus['id'])
+            $profile = $campusProfiles->first(fn (array $campus): bool => ($option['id'] && (int) $option['id'] === (int) $campus['id'])
                 || CampusMatcher::matches($option['label'], $campus['label'])
             );
 
@@ -117,8 +118,7 @@ class SocialContentUploadController extends Controller
         $username = $this->instagramUsername($data['instagram_username'] ?? null, $data['instagram_url'] ?? null);
 
         DB::transaction(function () use ($data, $user, $username): void {
-            $campus = PartnerCampus::query()->get()->first(fn (PartnerCampus $campus): bool =>
-                CampusMatcher::matches($data['unit_name'], $campus->display_name ?: $campus->name)
+            $campus = PartnerCampus::query()->where('wilayah', $data['wilayah'])->get()->first(fn (PartnerCampus $campus): bool => CampusMatcher::matches($data['unit_name'], $campus->display_name ?: $campus->name)
             );
             $campus?->update([
                 'instagram_username' => $username,

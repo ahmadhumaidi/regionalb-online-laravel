@@ -25,10 +25,10 @@ class RsmRole
 
     /** Mirrors dashboard.php's $roles[$key]['label'] (line 14-22). */
     public const ROLE_LABELS = [
-        'super_user' => 'Super User',
+        'super_user' => 'Developer Super User',
         'executive_director' => 'Executive Director',
         'director' => 'Director',
-        'senior' => 'Senior Manager',
+        'senior' => 'Senior Manager Regional',
         'mentor' => 'Mentor',
         'koordinator' => 'Koordinator Wilayah',
         'staff' => 'Staff Unit',

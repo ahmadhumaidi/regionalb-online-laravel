@@ -6,7 +6,10 @@ use App\Models\RsmActivityLog;
 use App\Models\RsmAdBudgetLimit;
 use App\Models\RsmMonthlyTarget;
 use App\Models\RsmUser;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schema;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AuthorizationTest extends TestCase
@@ -22,7 +25,7 @@ class AuthorizationTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('managementPagesProvider')]
+    #[DataProvider('managementPagesProvider')]
     public function test_staff_cannot_open_management_pages(string $path): void
     {
         $staff = new RsmUser(['id' => 900001, 'name' => 'Test Staff', 'role' => 'staff', 'area' => 'Regional B', 'is_active' => true]);
@@ -48,11 +51,13 @@ class AuthorizationTest extends TestCase
     public function test_super_user_can_update_managed_user_via_edit_form_fields(): void
     {
         Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105946_create_partner_campuses_table.php',
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
             'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
         ]]);
+        Schema::table('partner_campuses', fn (Blueprint $table) => $table->string('wilayah', 120)->nullable());
 
         $superUser = RsmUser::create([
             'id' => 900004, 'name' => 'Test Super', 'username' => 'test_super_900004',
@@ -80,6 +85,85 @@ class AuthorizationTest extends TestCase
         $this->assertNotEmpty($managedUser->fresh()->jabatan);
 
         $managedUser->delete();
+        $superUser->delete();
+    }
+
+    public function test_senior_can_only_manage_lower_roles_in_own_area(): void
+    {
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105946_create_partner_campuses_table.php',
+            'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
+            'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
+        ]]);
+        Schema::table('partner_campuses', fn (Blueprint $table) => $table->string('wilayah', 120)->nullable());
+
+        $senior = RsmUser::create([
+            'id' => 900014, 'name' => 'Senior Regional A', 'username' => 'test_senior_a_900014',
+            'password_hash' => 'x', 'role' => RsmUser::ROLE_SENIOR, 'jabatan' => 'Senior Manager Regional',
+            'area' => 'Regional A', 'is_active' => true,
+        ]);
+        $ownStaff = RsmUser::create([
+            'id' => 900015, 'name' => 'Staff Regional A', 'username' => 'test_staff_a_900015',
+            'password_hash' => 'x', 'role' => RsmUser::ROLE_STAFF, 'jabatan' => 'Staff Unit',
+            'area' => 'Regional A', 'regional' => 'Regional 1', 'is_active' => true,
+        ]);
+        $otherStaff = RsmUser::create([
+            'id' => 900016, 'name' => 'Staff Regional B', 'username' => 'test_staff_b_900016',
+            'password_hash' => 'x', 'role' => RsmUser::ROLE_STAFF, 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 4', 'is_active' => true,
+        ]);
+
+        $this->actingAs($senior)->get('/users')
+            ->assertOk()
+            ->assertSee('Staff Regional A')
+            ->assertDontSee('Staff Regional B')
+            ->assertDontSee('Developer Super User');
+
+        $this->actingAs($senior)->post("/users/{$otherStaff->id}/toggle")->assertForbidden();
+
+        $otherStaff->delete();
+        $ownStaff->delete();
+        $senior->delete();
+    }
+
+    public function test_super_user_can_select_regional_a_user_directory(): void
+    {
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105946_create_partner_campuses_table.php',
+            'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
+            'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
+        ]]);
+        Schema::table('partner_campuses', fn (Blueprint $table) => $table->string('wilayah', 120)->nullable());
+
+        $superUser = RsmUser::create([
+            'id' => 900017, 'name' => 'Global Super', 'username' => 'test_super_global_900017',
+            'password_hash' => 'x', 'role' => RsmUser::ROLE_SUPER_USER, 'jabatan' => 'Developer Super User',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $regionalAStaff = RsmUser::create([
+            'id' => 900018, 'name' => 'Visible Regional A Staff', 'username' => 'test_visible_a_900018',
+            'password_hash' => 'x', 'role' => RsmUser::ROLE_STAFF, 'jabatan' => 'Staff Unit',
+            'area' => 'Regional A', 'regional' => 'Regional 1', 'is_active' => true,
+        ]);
+        $regionalBStaff = RsmUser::create([
+            'id' => 900019, 'name' => 'Hidden Regional B Staff', 'username' => 'test_hidden_b_900019',
+            'password_hash' => 'x', 'role' => RsmUser::ROLE_STAFF, 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 4', 'is_active' => true,
+        ]);
+
+        $this->actingAs($superUser)->get('/users?area=Regional%20A')
+            ->assertOk()
+            ->assertViewHas('users', fn ($users): bool => $users->contains('id', $regionalAStaff->id)
+                && ! $users->contains('id', $regionalBStaff->id)
+            )
+            ->assertViewHas('regionals', ['Regional 1', 'Regional 2', 'Regional 3']);
+
+        $regionalBStaff->delete();
+        $regionalAStaff->delete();
         $superUser->delete();
     }
 

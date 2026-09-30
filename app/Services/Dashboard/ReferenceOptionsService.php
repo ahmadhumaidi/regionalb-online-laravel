@@ -3,6 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Models\RsmUser;
+use App\Support\AreaRegionals;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -26,6 +27,7 @@ class ReferenceOptionsService
 
         $regionalsQuery = RsmUser::query()
             ->where('role', 'staff')
+            ->where('area', $area)
             ->where('is_active', true)
             ->whereNotNull('regional');
 
@@ -37,6 +39,7 @@ class ReferenceOptionsService
 
         $staffQuery = RsmUser::query()
             ->where('role', 'staff')
+            ->where('area', $area)
             ->where('is_active', true);
         if ($regionals !== []) {
             $staffQuery->whereIn('regional', $regionals);
@@ -49,8 +52,11 @@ class ReferenceOptionsService
         $campusesQuery = DB::table('partner_campuses')
             ->select('id')
             ->selectRaw('COALESCE(display_name, name) as label');
-        if ($user->role === 'koordinator' && trim((string) $user->regional) !== '' && Schema::hasColumn('partner_campuses', 'wilayah')) {
-            $campusesQuery->where(fn ($q) => $q->where('wilayah', $user->regional)->orWhereNull('wilayah'));
+        if (Schema::hasColumn('partner_campuses', 'wilayah')) {
+            $allowedRegionals = $user->role === 'koordinator' && trim((string) $user->regional) !== ''
+                ? [$user->regional]
+                : AreaRegionals::forArea($area);
+            $campusesQuery->whereIn('wilayah', $allowedRegionals);
         }
         $campuses = $campusesQuery
             ->orderByRaw('COALESCE(display_name, name)')

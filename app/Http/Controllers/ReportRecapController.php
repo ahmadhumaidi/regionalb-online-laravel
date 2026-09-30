@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Exports\AdsRekapExport;
 use App\Exports\RekapExport;
 use App\Models\RsmReport;
-use App\Models\RsmUser;
 use App\Services\Dashboard\AchievementReportService;
 use App\Services\Dashboard\AchievementWhatsappService;
 use App\Services\Dashboard\DashboardFilters;
@@ -33,7 +32,7 @@ class ReportRecapController extends Controller
         $recap = $type === 'pencapaian' ? null : ReportRecapService::build($area, $filters, $type, $user);
         $whatsappArtifact = $user->role === 'super_user' && $type === 'pencapaian'
             ? AchievementWhatsappService::generate($area, $filters, $user)
-            : AchievementWhatsappService::latest();
+            : AchievementWhatsappService::latest($area);
 
         return view('rekap.index', [
             'active' => 'rekap',

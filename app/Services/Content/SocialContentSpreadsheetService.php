@@ -3,6 +3,7 @@
 namespace App\Services\Content;
 
 use App\Models\RsmUser;
+use App\Support\AreaRegionals;
 use App\Support\CampusMatcher;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Cache;
@@ -13,6 +14,7 @@ use Throwable;
 class SocialContentSpreadsheetService
 {
     private const REGIONALS = [
+        'Regional 1', 'Regional 2', 'Regional 3',
         'Regional 4', 'Regional 5', 'Regional 6', 'Regional 7',
     ];
 
@@ -148,6 +150,9 @@ class SocialContentSpreadsheetService
 
     private static function visible(array $row, RsmUser $user): bool
     {
+        if (! in_array($row['regional'], AreaRegionals::forArea($user->area ?: 'Regional B'), true)) {
+            return false;
+        }
         if ($user->role === RsmUser::ROLE_KOORDINATOR) {
             return $row['regional'] === $user->regional;
         }

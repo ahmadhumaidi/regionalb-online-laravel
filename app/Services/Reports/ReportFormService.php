@@ -9,11 +9,10 @@ use App\Services\AdBudget\AdBudgetPeriods;
 use App\Services\Dashboard\ReportScope;
 use App\Services\Dashboard\XpService;
 use App\Services\NotificationService;
-use App\Support\RsmRole;
+use App\Support\AreaRegionals;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class ReportFormService
@@ -188,8 +187,12 @@ class ReportFormService
         $staff = $user->role === RsmUser::ROLE_STAFF ? $user->name : trim((string) ($data['staff_name'] ?? ''));
         $wilayah = $user->role === RsmUser::ROLE_STAFF ? (string) $user->regional : trim((string) ($data['wilayah'] ?? ''));
         $unit = $user->role === RsmUser::ROLE_STAFF ? (string) $user->campus_name : trim((string) ($data['unit_name'] ?? ''));
-        $staffRow = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('name', $staff)->when($wilayah !== '', fn ($q) => $q->where('regional', $wilayah))->first();
-        $campus = DB::table('partner_campuses')->where('display_name', $unit)->orWhere('name', $unit)->first();
+        $area = $user->area ?: 'Regional B';
+        if ($wilayah !== '' && ! in_array($wilayah, AreaRegionals::forArea($area), true)) {
+            throw ValidationException::withMessages(['wilayah' => 'Wilayah tersebut bukan bagian dari '.$area.'.']);
+        }
+        $staffRow = RsmUser::query()->where('area', $area)->where('role', RsmUser::ROLE_STAFF)->where('name', $staff)->when($wilayah !== '', fn ($q) => $q->where('regional', $wilayah))->first();
+        $campus = self::findCampus($unit, $area);
 
         $campusWilayah = Schema::hasColumn('partner_campuses', 'wilayah') ? ($campus->wilayah ?? null) : null;
         if ($user->role === RsmUser::ROLE_KOORDINATOR && $campus && $campusWilayah && $campusWilayah !== $user->regional) {
@@ -233,13 +236,13 @@ class ReportFormService
         // plafon anggaran regional (lihat create(), skip validateBudget()).
         $isSeniorExpense = $type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_SUPER_USER;
         if ($isSeniorExpense) {
-            $wilayah = 'Regional B';
-            $unit = 'Regional B';
+            $wilayah = $area;
+            $unit = $area;
             $status = 'Disetujui';
         }
 
         return [
-            'area' => $user->area ?: 'Regional B',
+            'area' => $area,
             'report_type' => $type,
             'report_date' => $data['report_date'] ?? now()->toDateString(),
             'user_id' => $staffRow?->id,
@@ -289,8 +292,12 @@ class ReportFormService
         $wilayah = trim((string) $posted('wilayah', $existing->wilayah));
         $unit = trim((string) $posted('unit_name', $existing->unit_name));
         $staff = trim((string) $posted('staff_name', $existing->staff_name));
-        $staffRow = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('name', $staff)->when($wilayah !== '', fn ($q) => $q->where('regional', $wilayah))->first();
-        $campus = DB::table('partner_campuses')->where('display_name', $unit)->orWhere('name', $unit)->first();
+        $area = $user->area ?: 'Regional B';
+        if ($wilayah !== '' && ! in_array($wilayah, AreaRegionals::forArea($area), true)) {
+            throw ValidationException::withMessages(['wilayah' => 'Wilayah tersebut bukan bagian dari '.$area.'.']);
+        }
+        $staffRow = RsmUser::query()->where('area', $area)->where('role', RsmUser::ROLE_STAFF)->where('name', $staff)->when($wilayah !== '', fn ($q) => $q->where('regional', $wilayah))->first();
+        $campus = self::findCampus($unit, $area);
 
         $campusWilayah = Schema::hasColumn('partner_campuses', 'wilayah') ? ($campus->wilayah ?? null) : null;
         if ($user->role === RsmUser::ROLE_KOORDINATOR && $campus && $campusWilayah && $campusWilayah !== $user->regional) {
@@ -313,7 +320,7 @@ class ReportFormService
         $computedCpm = $newImpressionsCount > 0 ? round(($newRealizationAmount / $newImpressionsCount) * 1000, 2) : 0.0;
 
         $base = [
-            'area' => $user->area ?: 'Regional B',
+            'area' => $area,
             'report_type' => RsmReport::TYPE_ADS,
             'report_date' => $posted('report_date', optional($existing->report_date)->toDateString()),
             'user_id' => $staffRow?->id ?? $existing->user_id,
@@ -383,6 +390,18 @@ class ReportFormService
             ]),
             default => $base,
         };
+    }
+
+    private static function findCampus(string $unit, string $area): ?object
+    {
+        $query = DB::table('partner_campuses')
+            ->where(fn ($campusQuery) => $campusQuery->where('display_name', $unit)->orWhere('name', $unit));
+
+        if (Schema::hasColumn('partner_campuses', 'wilayah')) {
+            $query->whereIn('wilayah', AreaRegionals::forArea($area));
+        }
+
+        return $query->first();
     }
 
     private static function validateBudget(string $type, array $data, ?RsmReport $existing = null): void

@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Storage;
  * (rsm_db.php:4310-4474): unauthenticated GET against api.p2k.co.id,
  * cached locally with a 15-minute TTL (matching legacy), and upserted into
  * rsm_bdc_report_user_snapshots — the table SyncHealth reads for the "BDC
- * Marketing" health card. Only Regional B wilayah rows are stored, matching
- * legacy (this app only ever served Regional B).
+ * Marketing" health card. Rows for both application areas are stored; each
+ * consuming page scopes them with AreaRegionals according to the logged-in user.
  */
 class BdcReportUsersService
 {
@@ -103,7 +103,10 @@ class BdcReportUsersService
             $snapshotDate = now()->toDateString();
         }
 
-        $allowedRegionals = array_flip(AreaRegionals::forArea('Regional B'));
+        $allowedRegionals = array_flip(array_merge(
+            AreaRegionals::forArea('Regional A'),
+            AreaRegionals::forArea('Regional B'),
+        ));
         $now = now();
         $records = [];
 
