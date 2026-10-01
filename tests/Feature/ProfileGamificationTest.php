@@ -230,6 +230,12 @@ class ProfileGamificationTest extends TestCase
         // of progress text). Updated to match current markup - unrelated to
         // the Gamification Phase 1 XP ledger this test file also covers.
         $response->assertOk();
+        $response->assertSee('Aktivitas Wajib Staff Unit');
+        $response->assertSee('Selamat datang, Daily!');
+        $response->assertSee('Update Konten Instagram &amp; Facebook', false);
+        $response->assertSee('Follow Up BDC');
+        $response->assertSee('Laporan Aktivitas Lainnya');
+        $response->assertSee('13 aktivitas');
         $response->assertSee('Daily Mission');
         $response->assertSee('Login');
         $response->assertSee('Follow Up 30');

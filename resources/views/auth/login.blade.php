@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Masuk - {{ config('app.name') }}</title>
+    <title>Dashboard Regional</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -12,7 +12,7 @@
     <div class="w-full max-w-sm">
         <div class="mb-8 text-center">
             <span class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 text-lg font-bold text-white">RB</span>
-            <h1 class="text-xl font-semibold text-ink">{{ config('app.name') }}</h1>
+            <h1 class="text-xl font-semibold text-ink">Dashboard Regional</h1>
             <p class="mt-1 text-sm text-ink-muted">Masuk untuk melanjutkan ke dashboard regional.</p>
         </div>
 
