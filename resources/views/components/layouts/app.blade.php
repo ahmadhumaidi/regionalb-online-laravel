@@ -37,15 +37,23 @@
                 </span>
             </a>
 
-            <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+            <nav class="flex-1 space-y-2 overflow-y-auto px-3 py-4">
                 @foreach ($menuSections as $section)
-                    <div>
-                        <p class="px-2 text-xs font-semibold tracking-wide text-white/70 uppercase">{{ $section['title'] }}</p>
-                        <div class="mt-2 space-y-0.5">
+                    @php
+                        $sectionHasActive = collect($section['items'])->contains('key', $active);
+                        $sectionDefaultOpen = in_array($section['key'], ['utama', 'pekerjaan'], true);
+                    @endphp
+                    <div x-data="{ open: @js($sectionHasActive) || localStorage.getItem(@js('sidebar-section-'.$section['key'])) === 'open' || (localStorage.getItem(@js('sidebar-section-'.$section['key'])) === null && @js($sectionDefaultOpen)) }">
+                        <button type="button" @click="open = !open; localStorage.setItem(@js('sidebar-section-'.$section['key']), open ? 'open' : 'closed')" class="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-xs font-semibold tracking-wide text-white/70 uppercase transition hover:bg-white/10 hover:text-white" :aria-expanded="open">
+                            <span>{{ $section['title'] }}</span>
+                            <x-icon name="chevron-down" class="h-3.5 w-3.5 transition-transform" ::class="open ? 'rotate-180' : ''" />
+                        </button>
+                        <div x-show="open" x-cloak class="mt-1 space-y-0.5">
                             @foreach ($section['items'] as $item)
                                 @php $isActive = $active === $item['key']; @endphp
                                 <a
                                     href="{{ \App\Support\Menu::routeFor($item['key']) }}"
+                                    @click="sidebarOpen = false"
                                     class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ $isActive ? 'bg-white/20 text-white shadow-sm' : 'text-white/85 hover:bg-white/10 hover:text-white' }}"
                                 >
                                     <x-icon :name="$item['icon']" class="h-5 w-5 shrink-0 text-white/80" />
@@ -72,6 +80,18 @@
                 </div>
 
                 <div class="flex flex-nowrap items-center gap-2.5 overflow-x-auto">
+                    <div x-data="{ open: false }" class="relative shrink-0">
+                        <button type="button" @click="open = !open" class="flex items-center gap-1.5 rounded-xl bg-sky-500 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-950/20 transition hover:bg-sky-400" aria-label="Buat laporan baru">
+                            <x-icon name="plus" class="h-4 w-4" />
+                            <span class="hidden md:inline">Buat Laporan</span>
+                        </button>
+                        <div x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false" class="fixed right-3 top-16 z-50 w-60 rounded-2xl border border-border bg-surface p-2 text-left text-ink shadow-2xl lg:absolute lg:right-0 lg:top-full lg:mt-2">
+                            <p class="px-3 py-2 text-[11px] font-bold tracking-wider text-ink-muted uppercase">Pilih jenis laporan</p>
+                            <a href="{{ route('kegiatan.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-surface-muted"><x-icon name="briefcase" class="h-4 w-4 text-brand-600" />Kegiatan Marketing</a>
+                            <a href="{{ route('aktivitas.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-surface-muted"><x-icon name="bolt" class="h-4 w-4 text-brand-600" />Aktivitas Lain</a>
+                            <a href="{{ route('anggaran.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-surface-muted"><x-icon name="currency" class="h-4 w-4 text-brand-600" />Laporan Iklan</a>
+                        </div>
+                    </div>
                     @if (count($allowedRoleKeys ?? []) > 1)
                         <form method="GET" action="{{ url()->current() }}">
                             @foreach (request()->except('role') as $name => $value)

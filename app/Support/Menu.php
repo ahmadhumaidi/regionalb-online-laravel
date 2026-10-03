@@ -14,82 +14,51 @@ use App\Models\RsmUser;
 class Menu
 {
     /**
-     * @return list<array{title: string, items: list<array{key: string, label: string, icon: string}>}>
+     * @return list<array{key: string, title: string, items: list<array{key: string, label: string, icon: string}>}>
      */
     public static function sections(RsmUser $user): array
     {
         $sections = [
-            [
-                'title' => 'Utama',
-                'items' => array_values(array_filter([
-                    ['key' => 'dashboard', 'label' => 'Dashboard Utama', 'icon' => 'home'],
-                    ['key' => 'forum', 'label' => 'Forum Diskusi', 'icon' => 'chat'],
-                    in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true)
-                        ? ['key' => 'staff-journey', 'label' => 'Journey Staff Unit', 'icon' => 'flag']
-                        : null,
-                ])),
-            ],
-            [
-                'title' => 'Kinerja & Tim',
-                'items' => array_values(array_filter([
-                    ['key' => 'pencapaian', 'label' => 'Pencapaian Staff', 'icon' => 'chart-bar'],
-                    ['key' => 'closing-kampus', 'label' => 'Pencapaian Kampus', 'icon' => 'chart-bar'],
-                    $user->role === RsmUser::ROLE_SUPER_USER
-                        ? ['key' => 'closing-target-simulation', 'label' => 'Simulasi Target Closing', 'icon' => 'chart-bar']
-                        : null,
-                    RsmRole::canViewScoringTable($user)
-                        ? ['key' => 'scoring', 'label' => 'Scoring', 'icon' => 'chart-bar']
-                        : null,
-                    ['key' => 'badges', 'label' => 'League Season & Badge', 'icon' => 'trophy'],
-                    RsmRole::canViewJadwalKoordinator($user)
-                        ? ['key' => 'jadwal-koordinator', 'label' => 'Jadwal Koordinator', 'icon' => 'calendar']
-                        : null,
-                    ['key' => 'bdc-users', 'label' => 'BDC Marketing', 'icon' => 'users'],
-                ])),
-            ],
-            [
-                'title' => 'Konten & Kegiatan',
-                'items' => [
-                    ['key' => 'konten', 'label' => 'Monitoring Konten Kampus', 'icon' => 'photo'],
-                    ['key' => 'upload-konten-sosmed', 'label' => 'Upload Konten Sosmed', 'icon' => 'cloud'],
-                    ['key' => 'kegiatan', 'label' => 'Kegiatan Marketing', 'icon' => 'briefcase'],
-                    ['key' => 'aktivitas', 'label' => 'Aktivitas Lain', 'icon' => 'bolt'],
-                ],
-            ],
-            [
-                'title' => 'CRM',
-                'items' => [
-                    ['key' => 'crm', 'label' => 'CRM Leads', 'icon' => 'users'],
-                ],
-            ],
-            [
-                'title' => 'Anggaran & Laporan',
-                'items' => [
-                    ['key' => 'anggaran', 'label' => 'Anggaran & Laporan Iklan', 'icon' => 'currency'],
-                    ['key' => 'rekap', 'label' => 'Laporan & Rekap', 'icon' => 'document'],
-                ],
-            ],
-            [
-                'title' => 'Administrasi',
-                'items' => array_values(array_filter([
-                    RsmRole::canViewUsersPage($user)
-                        ? ['key' => 'users', 'label' => 'Kelola User', 'icon' => 'user-group']
-                        : null,
-                    RsmRole::canSyncCollab($user)
-                        ? ['key' => 'sumber-collab', 'label' => 'Sumber Data Collab', 'icon' => 'cloud']
-                        : null,
-                    RsmRole::canManageTargets($user)
-                        ? ['key' => 'jadwal-personalia', 'label' => 'Jadwal Personalia', 'icon' => 'clipboard']
-                        : null,
-                ])),
-            ],
-            [
-                'title' => 'Akun',
-                'items' => [
-                    ['key' => 'role', 'label' => 'Peran & Log Aktivitas', 'icon' => 'shield'],
-                    ['key' => 'password', 'label' => 'Ganti Password', 'icon' => 'lock'],
-                ],
-            ],
+            ['key' => 'utama', 'title' => 'Utama', 'items' => [
+                ['key' => 'dashboard', 'label' => 'Dashboard Utama', 'icon' => 'home'],
+                ['key' => 'forum', 'label' => 'Forum Diskusi', 'icon' => 'chat'],
+            ]],
+            ['key' => 'pekerjaan', 'title' => 'Pekerjaan Saya', 'items' => array_values(array_filter([
+                in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true)
+                    ? ['key' => 'staff-journey', 'label' => 'Journey Staff', 'icon' => 'flag']
+                    : null,
+                ['key' => 'crm', 'label' => 'CRM Leads', 'icon' => 'users'],
+                ['key' => 'kegiatan', 'label' => 'Kegiatan Marketing', 'icon' => 'briefcase'],
+                ['key' => 'aktivitas', 'label' => 'Aktivitas Lain', 'icon' => 'bolt'],
+                ['key' => 'upload-konten-sosmed', 'label' => 'Upload Konten', 'icon' => 'cloud'],
+            ]))],
+            ['key' => 'kinerja', 'title' => 'Kinerja', 'items' => array_values(array_filter([
+                ['key' => 'pencapaian', 'label' => 'Pencapaian Staff', 'icon' => 'chart-bar'],
+                ['key' => 'closing-kampus', 'label' => 'Pencapaian Kampus', 'icon' => 'chart-bar'],
+                RsmRole::canViewScoringTable($user) ? ['key' => 'scoring', 'label' => 'Scoring Tim', 'icon' => 'chart-bar'] : null,
+                ['key' => 'badges', 'label' => 'League & Badge', 'icon' => 'trophy'],
+                ['key' => 'konten', 'label' => 'Monitoring Konten', 'icon' => 'photo'],
+                ['key' => 'bdc-users', 'label' => 'BDC Marketing', 'icon' => 'users'],
+            ]))],
+            ['key' => 'perencanaan', 'title' => 'Perencanaan Tim', 'items' => array_values(array_filter([
+                RsmRole::canManageTargets($user) ? ['key' => 'targets', 'label' => 'Target Bulanan', 'icon' => 'target'] : null,
+                $user->role === RsmUser::ROLE_SUPER_USER ? ['key' => 'closing-target-simulation', 'label' => 'Simulasi Target', 'icon' => 'target'] : null,
+                RsmRole::canViewJadwalKoordinator($user) ? ['key' => 'jadwal-koordinator', 'label' => 'Jadwal Koordinator', 'icon' => 'calendar'] : null,
+                RsmRole::canManageTargets($user) ? ['key' => 'jadwal-personalia', 'label' => 'Jadwal Personalia', 'icon' => 'clipboard'] : null,
+            ]))],
+            ['key' => 'laporan', 'title' => 'Anggaran & Laporan', 'items' => [
+                ['key' => 'anggaran', 'label' => 'Anggaran Iklan', 'icon' => 'currency'],
+                ['key' => 'rekap', 'label' => 'Rekap Laporan', 'icon' => 'document'],
+            ]],
+            ['key' => 'administrasi', 'title' => 'Administrasi', 'items' => array_values(array_filter([
+                RsmRole::canViewUsersPage($user) ? ['key' => 'users', 'label' => 'Kelola User', 'icon' => 'user-group'] : null,
+                RsmRole::canSyncCollab($user) ? ['key' => 'sumber-collab', 'label' => 'Sumber Data Collab', 'icon' => 'cloud'] : null,
+                $user->role !== RsmUser::ROLE_STAFF ? ['key' => 'role', 'label' => 'Peran & Log Aktivitas', 'icon' => 'shield'] : null,
+            ]))],
+            ['key' => 'akun', 'title' => 'Akun', 'items' => [
+                ['key' => 'profile', 'label' => 'Profil Saya', 'icon' => 'user'],
+                ['key' => 'password', 'label' => 'Ganti Password', 'icon' => 'lock'],
+            ]],
         ];
 
         return array_values(array_filter($sections, fn (array $section) => $section['items'] !== []));
@@ -120,6 +89,7 @@ class Menu
             'rekap' => 'Laporan & Rekap',
             'role' => 'Peran & Log Aktivitas',
             'password' => 'Ganti Password',
+            'profile' => 'Profil Saya',
             'targets' => 'Target Bulanan',
             'users' => 'Kelola User',
             'sumber-collab' => 'Sumber Data Collab',
@@ -177,6 +147,7 @@ class Menu
             'closing-target-simulation' => route('closing-target-simulation'),
             'scoring' => route('scoring'),
             'badges' => route('badges'),
+            'profile' => route('profile'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),
         };
