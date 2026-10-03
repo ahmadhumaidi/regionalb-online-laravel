@@ -6,6 +6,7 @@ use App\Models\RsmUser;
 use App\Services\BdcReportUsersService;
 use App\Services\CollabSourceService;
 use App\Services\Dashboard\CollabMetricsService;
+use App\Services\Dashboard\ActionCenterService;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\DashboardOverviewService;
 use App\Services\Dashboard\GamificationService;
@@ -54,6 +55,7 @@ class DashboardController extends Controller
             : $user;
         $gamification = GamificationService::build($area, $filters, $gamificationUser);
         $referenceOptions = ReferenceOptionsService::build($area, $user);
+        $actionItems = ActionCenterService::build($area, $user);
 
         // Rekap Pencapaian's "Total Closing Kampus" card: same "Closing Kampus
         // Regional" collab report as /sumber-collab, not the staff-level
@@ -108,6 +110,7 @@ class DashboardController extends Controller
             'topStaffMaxValue' => $topStaffMaxValue,
             'gamification' => $gamification,
             'dailyReports' => $overview['daily_reports'],
+            'actionItems' => $actionItems,
         ]);
     }
 

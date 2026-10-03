@@ -1,4 +1,5 @@
 <x-layouts.app title="Dashboard Utama" active="dashboard">
+    <x-dashboard.action-center :items="$actionItems" />
     <x-dashboard.filter-bar :filters="$filters" :reference-options="$referenceOptions" :is-senior-tier="$isSeniorTier" />
     @unless (in_array(auth()->user()->role, ['staff', 'koordinator'], true))
         <x-dashboard.summary-cards :cards="$summaryCards" />
