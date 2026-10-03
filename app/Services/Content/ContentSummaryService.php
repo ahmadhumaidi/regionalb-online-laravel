@@ -75,6 +75,8 @@ class ContentSummaryService
             'feed' => (int) $posts->where('media_type', 'feed')->count(),
             'reels' => (int) $posts->where('media_type', 'reels')->count(),
             'story' => (int) $posts->where('media_type', 'story')->count(),
+            'facebook' => (int) $posts->where('media_type', 'facebook')->count(),
+            'tiktok' => (int) $posts->where('media_type', 'tiktok')->count(),
             'score' => (int) $posts->sum('score'),
             'posted_units' => $posts->map(fn ($p) => $p->account_wilayah.'|'.$p->account_unit_name)->unique()->count(),
         ];
@@ -86,6 +88,8 @@ class ContentSummaryService
                     'feed' => (int) $rows->where('media_type', 'feed')->count(),
                     'reels' => (int) $rows->where('media_type', 'reels')->count(),
                     'story' => (int) $rows->where('media_type', 'story')->count(),
+                    'facebook' => (int) $rows->where('media_type', 'facebook')->count(),
+                    'tiktok' => (int) $rows->where('media_type', 'tiktok')->count(),
                     'posts' => $rows->count(),
                     'score' => (int) $rows->sum('score'),
                 ];

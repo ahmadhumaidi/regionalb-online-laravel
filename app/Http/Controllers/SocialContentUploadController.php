@@ -23,6 +23,8 @@ class SocialContentUploadController extends Controller
         'feed' => 'Feed',
         'reels' => 'Reels',
         'story' => 'Story',
+        'facebook' => 'Facebook',
+        'tiktok' => 'TikTok',
     ];
 
     public function index(Request $request): View
@@ -65,16 +67,31 @@ class SocialContentUploadController extends Controller
             ->withQueryString();
 
         $referenceOptions = ReferenceOptionsService::build($area, $user);
+        $spreadsheetRecap = SocialContentSpreadsheetService::septemberRecap($user);
+        $spreadsheetProfiles = collect($spreadsheetRecap['rows'] ?? [])->filter(fn (array $row): bool => filled($row['profile_url'] ?? null));
         $campusProfiles = PartnerCampus::query()
             ->whereIn('wilayah', AreaRegionals::forArea($area))
             ->get(['id', 'name', 'display_name', 'wilayah', 'instagram_username', 'instagram_url'])
             ->map(fn (PartnerCampus $campus): array => [
                 'id' => $campus->id,
+                'name' => $campus->name,
                 'label' => $campus->display_name ?: $campus->name,
                 'wilayah' => $campus->wilayah ?: '',
                 'username' => $campus->instagram_username ?: '',
                 'url' => $campus->instagram_url ?: '',
-            ]);
+            ])->map(function (array $campus) use ($spreadsheetProfiles): array {
+                if ($campus['username'] !== '' || $campus['url'] !== '') {
+                    return $campus;
+                }
+                $sheetProfile = $spreadsheetProfiles->first(fn (array $row): bool =>
+                    CampusMatcher::matches($campus['name'], (string) ($row['campus'] ?? ''))
+                    || CampusMatcher::matches($campus['label'], (string) ($row['campus'] ?? ''))
+                );
+                $url = trim((string) ($sheetProfile['profile_url'] ?? ''));
+                $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
+
+                return array_merge($campus, ['username' => $path !== '' ? explode('/', $path)[0] : '', 'url' => $url]);
+            });
         $referenceOptions['campuses'] = collect($referenceOptions['campuses'])->map(function (array $option) use ($campusProfiles): array {
             $profile = $campusProfiles->first(fn (array $campus): bool => ($option['id'] && (int) $option['id'] === (int) $campus['id'])
                 || CampusMatcher::matches($option['label'], $campus['label'])
@@ -101,9 +118,11 @@ class SocialContentUploadController extends Controller
                 ['label' => 'Feed', 'value' => (int) $counts->get('feed', 0), 'tone' => 'cyan', 'note' => 'Posting feed tercatat'],
                 ['label' => 'Reels', 'value' => (int) $counts->get('reels', 0), 'tone' => 'purple', 'note' => 'Reels tercatat'],
                 ['label' => 'Story', 'value' => (int) $counts->get('story', 0), 'tone' => 'amber', 'note' => 'Story tercatat'],
+                ['label' => 'Facebook', 'value' => (int) $counts->get('facebook', 0), 'tone' => 'blue', 'note' => 'Konten Facebook tercatat'],
+                ['label' => 'TikTok', 'value' => (int) $counts->get('tiktok', 0), 'tone' => 'green', 'note' => 'Konten TikTok tercatat'],
             ],
             'filters' => compact('dateFrom', 'dateTo', 'wilayah', 'unitName'),
-            'spreadsheetRecap' => SocialContentSpreadsheetService::septemberRecap($user),
+            'spreadsheetRecap' => $spreadsheetRecap,
         ]);
     }
 
@@ -111,19 +130,29 @@ class SocialContentUploadController extends Controller
     {
         /** @var RsmUser $user */
         $user = $request->user();
+        $request->merge([
+            'media_types' => collect((array) $request->input('post_urls', []))
+                ->filter(fn (mixed $url): bool => filled($url))
+                ->keys()
+                ->values()
+                ->all(),
+        ]);
         $data = $request->validate($this->storeRules($user), [
-            'media_types.required' => 'Pilih minimal satu jenis konten.',
+            'media_types.required' => 'Isi minimal satu link konten.',
+            'media_types.min' => 'Isi minimal satu link konten.',
         ]);
         $this->assertIdentityAllowed($user, $data['wilayah'], $data['unit_name']);
-        $username = $this->instagramUsername($data['instagram_username'] ?? null, $data['instagram_url'] ?? null);
+        $username = $this->instagramUsername($data['instagram_username'] ?? null, $data['instagram_url'] ?? null, $data['unit_name']);
 
         DB::transaction(function () use ($data, $user, $username): void {
             $campus = PartnerCampus::query()->where('wilayah', $data['wilayah'])->get()->first(fn (PartnerCampus $campus): bool => CampusMatcher::matches($data['unit_name'], $campus->display_name ?: $campus->name)
             );
-            $campus?->update([
-                'instagram_username' => $username,
-                'instagram_url' => $data['instagram_url'] ?? 'https://www.instagram.com/'.$username.'/',
-            ]);
+            if (filled($data['instagram_username'] ?? null) || filled($data['instagram_url'] ?? null)) {
+                $campus?->update([
+                    'instagram_username' => $username,
+                    'instagram_url' => $data['instagram_url'] ?? 'https://www.instagram.com/'.$username.'/',
+                ]);
+            }
 
             $account = RsmSocialAccount::firstOrCreate(
                 [
@@ -196,8 +225,8 @@ class SocialContentUploadController extends Controller
             'post_date' => ['required', 'date'],
             'wilayah' => ['required', 'string', 'max:120'],
             'unit_name' => ['required', 'string', 'max:180'],
-            'instagram_username' => ['nullable', 'string', 'max:180', 'required_without:instagram_url'],
-            'instagram_url' => ['nullable', 'url', 'max:500', 'required_without:instagram_username'],
+            'instagram_username' => ['nullable', 'string', 'max:180'],
+            'instagram_url' => ['nullable', 'url', 'max:500'],
             'media_types' => ['required', 'array', 'min:1'],
             'media_types.*' => ['required', 'distinct', Rule::in(array_keys(self::MEDIA_LABELS))],
             'post_urls' => ['nullable', 'array'],
@@ -230,10 +259,10 @@ class SocialContentUploadController extends Controller
 
     private function score(string $mediaType, bool $keywordMatch): int
     {
-        return ['feed' => 10, 'reels' => 15, 'story' => 5][$mediaType] + ($keywordMatch ? 5 : 0);
+        return ['feed' => 10, 'reels' => 15, 'story' => 5, 'facebook' => 10, 'tiktok' => 15][$mediaType] + ($keywordMatch ? 5 : 0);
     }
 
-    private function instagramUsername(?string $username, ?string $url): string
+    private function instagramUsername(?string $username, ?string $url, string $unitName): string
     {
         $username = ltrim(trim((string) $username), '@');
         if ($username !== '') {
@@ -241,7 +270,9 @@ class SocialContentUploadController extends Controller
         }
 
         $path = trim((string) parse_url((string) $url, PHP_URL_PATH), '/');
-        abort_if($path === '', 422, 'Link Instagram tidak memuat username yang valid.');
+        if ($path === '') {
+            return 'social-'.strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $unitName), '-'));
+        }
 
         return explode('/', $path)[0];
     }

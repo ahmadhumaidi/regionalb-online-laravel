@@ -30,6 +30,7 @@ use App\Http\Controllers\CollabSourceController;
 use App\Http\Controllers\BdcUsersController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ClosingCampusController;
+use App\Http\Controllers\ClosingTargetSimulationController;
 use App\Http\Controllers\ScoringController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/profile/password', [ProfileController::class, 'edit'])->name('password.edit');
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+    Route::get('/journey-staff-unit', [ProfileController::class, 'journey'])->name('staff-journey');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/daily-mission/{missionKey}/claim', [ProfileController::class, 'claimMission'])->name('profile.daily-mission.claim');
     Route::get('/users/{user}/photo', [ProfileController::class, 'photo'])->name('users.photo');
@@ -124,6 +126,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/bdc-users/refresh', [BdcUsersController::class, 'refresh'])->name('bdc-users.refresh');
     Route::get('/role', [RoleController::class, 'index'])->name('role');
     Route::get('/closing-kampus', [ClosingCampusController::class, 'index'])->name('closing-kampus');
+    Route::get('/simulasi-target-closing', [ClosingTargetSimulationController::class, 'index'])->name('closing-target-simulation');
     Route::get('/scoring', [ScoringController::class, 'index'])->name('scoring');
     Route::get('/scoring/targets', [TargetController::class, 'index'])->name('scoring.targets');
     Route::post('/scoring/targets', [TargetController::class, 'store'])->name('scoring.targets.store');

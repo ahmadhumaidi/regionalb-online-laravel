@@ -30,7 +30,7 @@ class ImpersonationController extends Controller
         $target = RsmUser::where('is_active', true)->find($data['user_id']);
         abort_if(! $target, 422, 'User tujuan tidak ditemukan atau tidak aktif.');
 
-        if (! empty($target->area) && $target->area !== $actor->area) {
+        if ($actor->role !== RsmUser::ROLE_SUPER_USER && ! empty($target->area) && $target->area !== $actor->area) {
             abort(422, 'User tujuan berada di luar area ini.');
         }
 

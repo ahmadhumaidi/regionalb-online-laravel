@@ -41,6 +41,7 @@ class ExampleTest extends TestCase
             'closing-kampus' => ['/closing-kampus'],
             'badges' => ['/badges'],
             'profile' => ['/profile'],
+            'staff-journey' => ['/journey-staff-unit'],
         ];
     }
 }

@@ -13,6 +13,8 @@
                         <th class="py-2 pr-3 text-right font-medium">Feed</th>
                         <th class="py-2 pr-3 text-right font-medium">Reels</th>
                         <th class="py-2 pr-3 text-right font-medium">Story</th>
+                        <th class="py-2 pr-3 text-right font-medium">Facebook</th>
+                        <th class="py-2 pr-3 text-right font-medium">TikTok</th>
                         <th class="py-2 pr-3 text-right font-medium">Post</th>
                         <th class="py-2 text-right font-medium">Poin</th>
                     </tr>
@@ -24,6 +26,8 @@
                             <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['feed'], 0, ',', '.') }}</td>
                             <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['reels'], 0, ',', '.') }}</td>
                             <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['story'], 0, ',', '.') }}</td>
+                            <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['facebook'], 0, ',', '.') }}</td>
+                            <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['tiktok'], 0, ',', '.') }}</td>
                             <td class="py-2 pr-3 text-right text-ink">{{ number_format($row['posts'], 0, ',', '.') }}</td>
                             <td class="py-2 text-right font-semibold text-ink">{{ number_format($row['score'], 0, ',', '.') }}</td>
                         </tr>

@@ -1,7 +1,7 @@
 @props(['posts'])
 
 @php
-    $mediaLabels = ['feed' => 'Feed', 'reels' => 'Reels', 'story' => 'Story', 'no_post' => 'Belum ada postingan'];
+    $mediaLabels = ['feed' => 'Instagram Feed', 'reels' => 'Instagram Reels', 'story' => 'Instagram Story', 'facebook' => 'Facebook', 'tiktok' => 'TikTok', 'no_post' => 'Belum ada postingan'];
 @endphp
 
 <section class="rounded-2xl glass-card p-5">

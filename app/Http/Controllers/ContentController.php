@@ -36,7 +36,9 @@ class ContentController extends Controller
             ['label' => 'Feed', 'value' => number_format($summary['totals']['feed'], 0, ',', '.'), 'tone' => 'cyan', 'note' => 'Post feed pada periode/filter ini'],
             ['label' => 'Reels', 'value' => number_format($summary['totals']['reels'], 0, ',', '.'), 'tone' => 'purple', 'note' => 'Post reels pada periode/filter ini'],
             ['label' => 'Story', 'value' => number_format($summary['totals']['story'], 0, ',', '.'), 'tone' => 'amber', 'note' => 'Post story pada periode/filter ini'],
-            ['label' => 'Poin Konten', 'value' => number_format($summary['totals']['score'], 0, ',', '.'), 'tone' => 'green', 'note' => 'Feed +10, reels +15, story +5, keyword PMB +5'],
+            ['label' => 'Facebook', 'value' => number_format($summary['totals']['facebook'], 0, ',', '.'), 'tone' => 'blue', 'note' => 'Konten Facebook pada periode/filter ini'],
+            ['label' => 'TikTok', 'value' => number_format($summary['totals']['tiktok'], 0, ',', '.'), 'tone' => 'green', 'note' => 'Konten TikTok pada periode/filter ini'],
+            ['label' => 'Poin Konten', 'value' => number_format($summary['totals']['score'], 0, ',', '.'), 'tone' => 'green', 'note' => 'Feed +10, reels/TikTok +15, story +5, keyword PMB +5'],
         ];
 
         return view('konten.index', [
@@ -68,14 +70,14 @@ class ContentController extends Controller
     public function storePost(Request $request)
     {
         $user = $request->user();
-        $data = $request->validate(['account_id'=>'required|integer|exists:rsm_social_accounts,id','post_date'=>'required|date','media_type'=>['required',\Illuminate\Validation\Rule::in(['no_post','feed','reels','story'])],'caption'=>'nullable|string|max:5000','post_url'=>'nullable|url|max:500','keyword_match'=>'nullable|boolean','reach_count'=>'nullable|integer|min:0','like_count'=>'nullable|integer|min:0','comment_count'=>'nullable|integer|min:0']);
+        $data = $request->validate(['account_id'=>'required|integer|exists:rsm_social_accounts,id','post_date'=>'required|date','media_type'=>['required',\Illuminate\Validation\Rule::in(['no_post','feed','reels','story','facebook','tiktok'])],'caption'=>'nullable|string|max:5000','post_url'=>'nullable|url|max:500','keyword_match'=>'nullable|boolean','reach_count'=>'nullable|integer|min:0','like_count'=>'nullable|integer|min:0','comment_count'=>'nullable|integer|min:0']);
         $account = SocialScope::apply(
             RsmSocialAccount::where('id',$data['account_id'])->where('area',$user->area ?: 'Regional B'),
             $user
         )->firstOrFail();
         $ownCampus = trim((string) $user->campus_name);
         abort_if($user->role === 'staff' && $ownCampus !== '' && ! \App\Support\CampusMatcher::matches($account->unit_name, $ownCampus), 403);
-        $score = ['feed'=>10,'reels'=>15,'story'=>5,'no_post'=>0][$data['media_type']] + (!empty($data['keyword_match']) ? 5 : 0);
+        $score = ['feed'=>10,'reels'=>15,'story'=>5,'facebook'=>10,'tiktok'=>15,'no_post'=>0][$data['media_type']] + (!empty($data['keyword_match']) ? 5 : 0);
         RsmSocialPost::create($data + ['area'=>$user->area ?: 'Regional B','score'=>$score,'source_name'=>'Manual','created_by_user_id'=>$user->id,'created_by_name'=>$user->name]);
         return back()->with('status','Post konten berhasil dicatat.');
     }

@@ -17,7 +17,9 @@ return new class extends Migration
             $table->string('koordinator_home', 120)->nullable();
             $table->string('wilayah', 120);
             $table->string('unit_name', 180);
-            $table->enum('visit_type', ['Fisik', 'Zoom', 'Telepon'])->default('Zoom');
+            // Keep the legacy value for old imports while fresh installs use
+            // "Visit" (the follow-up migration converts existing rows).
+            $table->enum('visit_type', ['Fisik', 'Visit', 'Zoom', 'Telepon'])->default('Zoom');
             $table->string('agenda', 220);
             $table->enum('status', ['Rencana', 'Dijadwalkan', 'Selesai', 'Reschedule'])->default('Rencana');
             $table->text('result_text')->nullable();

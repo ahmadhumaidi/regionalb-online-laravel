@@ -11,8 +11,8 @@ use Illuminate\Console\Command;
 
 class SyncLegacySources extends Command
 {
-    protected $signature = 'rsm:sync-sources {--only= : personalia,collab,bdc atau kosong untuk semua} {--window= : collab saja - batasi ingest daily_metrics ke N hari terakhir (kosong = penuh)}';
-    protected $description = 'Refresh snapshot sumber Personalia, Collab, dan BDC';
+    protected $signature = 'rsm:sync-sources {--only= : personalia,collab,attendance,bdc atau kosong untuk semua} {--window= : collab saja - batasi ingest daily_metrics ke N hari terakhir (kosong = penuh)}';
+    protected $description = 'Refresh snapshot sumber Personalia, Collab, absensi GGKlik, dan BDC';
 
     public function handle(): int
     {
@@ -58,6 +58,12 @@ class SyncLegacySources extends Command
                 $this->line("Collab XP: {$reconciled} staff direkonsiliasi, {$awarded} transaksi/baseline dibuat");
                 $this->line("Scoring XP: {$reconciled} staff direkonsiliasi, {$scoringAwarded} transaksi dibuat");
             }
+        }
+        // Attendance has four explicit business-hour schedules and is not
+        // included in the catch-all nightly sync.
+        if (in_array('attendance', $only, true)) {
+            $data = CollabSourceService::syncAttendance();
+            $this->line('Absen Staff: '.($data['ok'] ? $data['rows'].' baris tersinkron' : 'gagal/kosong'));
         }
         if ($run('bdc')) {
             $data = BdcReportUsersService::refresh();

@@ -198,6 +198,7 @@ class AdBudgetPendingPanelTest extends TestCase
         $report = RsmReport::create([
             'area' => 'Regional B', 'report_type' => RsmReport::TYPE_ADS, 'report_date' => now(),
             'wilayah' => 'Regional 6', 'unit_name' => 'Campus Delete Test', 'status' => 'Disetujui',
+            'staff_name' => 'Historical Staff', 'created_by_role' => 'staff',
             'title' => 'Historical Campaign', 'platform' => 'Meta Ads', 'ad_period' => 'Agustus 2026',
             'campaign_name' => 'Historical Campaign', 'budget_requested' => 750000, 'budget_approved' => 750000,
         ]);
@@ -275,7 +276,7 @@ class AdBudgetPendingPanelTest extends TestCase
             ->assertSee('Anggaran Iklan Regional 5 - Agustus 2026')
             ->assertSee(route('reports.edit', $automaticReport));
 
-        $this->actingAs($owner)->post(route('anggaran.store'), [
+        $this->actingAs($owner)->patch(route('reports.update', $automaticReport), [
             'report_date' => '2026-08-15',
             'ad_period' => 'Agustus 2026',
             'wilayah' => 'Regional 4',
@@ -283,13 +284,13 @@ class AdBudgetPendingPanelTest extends TestCase
             'platform' => 'Meta Ads',
             'campaign_name' => 'Campaign Regional Lima',
             'ad_goal' => 'Leads',
-            'budget_requested' => 500000,
+            'budget_requested' => 1000000,
         ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $report = RsmReport::where('campaign_name', 'Campaign Regional Lima')->firstOrFail();
+        $report = $automaticReport->fresh();
         $this->assertSame('Regional 5', $report->wilayah);
         $this->assertSame('Kundi Harto', $report->created_by_name);
-        $report->update(['status' => 'Disetujui', 'budget_approved' => 500000]);
+        $report->update(['status' => 'Disetujui']);
 
         $this->actingAs($owner)->patch(route('reports.update', $report), [
             'report_date' => '2026-08-15',
@@ -299,7 +300,7 @@ class AdBudgetPendingPanelTest extends TestCase
             'platform' => 'Meta Ads',
             'campaign_name' => 'Campaign Regional Lima',
             'ad_goal' => 'Leads',
-            'budget_requested' => 500000,
+            'budget_requested' => 1000000,
             'realization_amount' => 450000,
             'impressions_count' => 9000,
             'campaign_link' => 'https://example.test/campaign-regional-5',
@@ -308,7 +309,8 @@ class AdBudgetPendingPanelTest extends TestCase
         $report->refresh();
         $this->assertSame('Dilaporkan Unit', $report->status);
         $this->assertSame(450000.0, (float) $report->realization_amount);
-        $this->assertSame(9000, (int) $report->impressions_count);
+        // Impressions are only retained for Awareness campaigns.
+        $this->assertSame(0, (int) $report->impressions_count);
         $this->assertSame('Kundi Harto', $report->staff_name);
 
         $this->actingAs($otherCoordinator)->get(route('reports.show', $report))->assertNotFound();
@@ -316,7 +318,6 @@ class AdBudgetPendingPanelTest extends TestCase
         $this->actingAs($owner)->post(route('anggaran.verifikasi', $report))->assertForbidden();
 
         $report->delete();
-        $automaticReport->delete();
         RsmAdBudgetLimit::where('wilayah', 'Regional 5')->delete();
         $owner->delete();
         $otherCoordinator->delete();
@@ -592,6 +593,7 @@ class AdBudgetPendingPanelTest extends TestCase
 
         $response = $this->actingAs($staff)->patch(route('reports.update', $report), [
             'campaign_name' => 'CPL Campaign',
+            'ad_goal' => 'Leads',
             'realization_amount' => 500000,
         ]);
 

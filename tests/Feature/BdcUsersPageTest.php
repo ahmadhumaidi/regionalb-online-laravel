@@ -52,20 +52,24 @@ class BdcUsersPageTest extends TestCase
 
     public function test_bdc_users_page_scopes_staff_to_own_campus(): void
     {
+        $cacheRoot = sys_get_temp_dir().'/bdc-cache';
+        if (! is_dir($cacheRoot)) {
+            mkdir($cacheRoot, 0775, true);
+        }
+        config()->set('filesystems.disks.local.root', $cacheRoot);
+        Storage::forgetDisk('local');
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
             'database/migrations/2026_08_05_110004_create_rsm_bdc_report_user_snapshots_table.php',
         ]]);
         DB::table('rsm_bdc_report_user_snapshots')->delete();
 
-        Http::fake([
-            '*' => Http::response([
-                'listdata' => [
-                    ['wilayah' => 'Regional 6', 'kampus' => 'STIESIA Surabaya', 'nama' => 'Own Staff', 'total' => 5, 'closing' => 2, 'fu_hari_ini' => 1],
-                    ['wilayah' => 'Regional 6', 'kampus' => 'Universitas Lain', 'nama' => 'Other Staff', 'total' => 9, 'closing' => 4, 'fu_hari_ini' => 3],
-                ],
-            ], 200),
-        ]);
+        Storage::disk('local')->put('bdc_report_users.json', json_encode([
+            'listdata' => [
+                ['wilayah' => 'Regional 6', 'kampus' => 'STIESIA Surabaya', 'nama' => 'Own Staff', 'total' => 5, 'closing' => 2, 'fu_hari_ini' => 1],
+                ['wilayah' => 'Regional 6', 'kampus' => 'Universitas Lain', 'nama' => 'Other Staff', 'total' => 9, 'closing' => 4, 'fu_hari_ini' => 3],
+            ],
+        ]));
 
         $staff = RsmUser::create([
             'id' => 900011, 'name' => 'Test Staff', 'username' => 'test_staff_900011',
@@ -80,5 +84,6 @@ class BdcUsersPageTest extends TestCase
         $response->assertDontSee('Other Staff');
 
         $staff->delete();
+        Storage::forgetDisk('local');
     }
 }

@@ -28,6 +28,8 @@ class ProfileGamificationTest extends TestCase
             'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
             'database/migrations/2026_08_09_120000_add_insight_attachment_path_to_rsm_reports_table.php',
             'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
+            'database/migrations/2026_08_05_105957_create_rsm_social_accounts_table.php',
+            'database/migrations/2026_08_05_105958_create_rsm_social_posts_table.php',
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
             'database/migrations/2026_08_05_110009_create_rsm_collab_daily_metrics_table.php',
@@ -158,13 +160,12 @@ class ProfileGamificationTest extends TestCase
             $reports[] = $report;
         }
 
-        // Team pooled total is 174 (87 points/staff x 2, see the original
-        // pooled-XP comment this test replaced) across 2 active staff ->
-        // 87 XP average, not the raw 174 pooled sum, and not 0.
+        // Team pooled total is 158 (79 points/staff x 2) across 2 active
+        // staff -> 79 XP average, not the raw pooled sum, and not 0.
         $response = $this->actingAs($koordinator)->get(route('profile'));
 
         $response->assertOk();
-        $response->assertSee('87 XP');
+        $response->assertSee('79 XP');
         $response->assertSee('Level 1');
         $response->assertSee('League Starter');
         // Badges still reflect the pooled team total - unchanged by this
@@ -219,8 +220,17 @@ class ProfileGamificationTest extends TestCase
             'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->toDateString(),
             'entity_key' => 'daily-reg-1', 'staff_name' => 'Daily Mission Staff', 'regional' => 'Regional 6', 'value' => 1,
         ]);
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Sebar Brosur', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'daily-brosur-1', 'staff_name' => 'Daily Mission Staff', 'regional' => 'Regional 6', 'value' => 200,
+        ]);
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Pasang Spanduk', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'daily-spanduk-1', 'staff_name' => 'Daily Mission Staff', 'regional' => 'Regional 6', 'value' => 6,
+        ]);
 
-        $response = $this->actingAs($staff)->get(route('profile'));
+        $profileResponse = $this->actingAs($staff)->get(route('profile'));
+        $response = $this->get(route('staff-journey'));
 
         // Pre-existing test assertions here referenced a "5/5 selesai"
         // summary counter and per-mission "X/Y" progress text that no
@@ -230,20 +240,26 @@ class ProfileGamificationTest extends TestCase
         // of progress text). Updated to match current markup - unrelated to
         // the Gamification Phase 1 XP ledger this test file also covers.
         $response->assertOk();
-        $response->assertSee('Aktivitas Wajib Staff Unit');
-        $response->assertSee('Selamat datang, Daily!');
-        $response->assertSee('Update Konten Instagram &amp; Facebook', false);
-        $response->assertSee('Follow Up BDC');
-        $response->assertSee('Laporan Aktivitas Lainnya');
-        $response->assertSee('13 aktivitas');
-        $response->assertSee('Daily Mission');
-        $response->assertSee('Login');
-        $response->assertSee('Follow Up 30');
-        $response->assertSee('Share FB');
-        $response->assertSee('Aktivitas Lain');
-        $response->assertSee('Closing Reg 1');
+        $profileResponse->assertOk();
+        $profileResponse->assertDontSee('Journey Aktivitas Staff Unit');
+        $response->assertSee('Gamification KPI Staff Unit');
+        $response->assertSee('Setiap 1 Aktivitas Selesai = Naik 1 Checkpoint');
+        $response->assertSee('Aktivitas bebas dikerjakan, tidak harus urut.');
+        $response->assertSee('Konten Instagram');
+        $response->assertSee('Konten Facebook');
+        $response->assertSee('FU BDC');
+        $response->assertSee('CHECKPOINT 7');
+        $response->assertSee('Target Harian Tuntas');
+        $response->assertSee('Daftar Aktivitas KPI');
+        $response->assertSee('Leaderboard Hari Ini');
+        $profileResponse->assertSee('Daily Mission');
+        $profileResponse->assertSee('Login');
+        $profileResponse->assertSee('Follow Up 30');
+        $profileResponse->assertSee('Share FB');
+        $profileResponse->assertSee('Aktivitas Lain');
+        $profileResponse->assertSee('Closing Reg 1');
 
-        \App\Models\RsmCollabDailyMetric::whereIn('entity_key', ['daily-share-1', 'daily-reg-1'])->delete();
+        \App\Models\RsmCollabDailyMetric::whereIn('entity_key', ['daily-share-1', 'daily-reg-1', 'daily-brosur-1', 'daily-spanduk-1'])->delete();
         RsmAdLead::where('report_id', $adReport->id)->delete();
         $otherReport->delete();
         $adReport->delete();

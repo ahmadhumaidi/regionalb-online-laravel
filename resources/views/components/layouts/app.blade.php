@@ -75,7 +75,15 @@
                     @if (count($allowedRoleKeys ?? []) > 1)
                         <form method="GET" action="{{ url()->current() }}">
                             @foreach (request()->except('role') as $name => $value)
-                                <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @if (is_array($value))
+                                    @foreach ($value as $item)
+                                        @if (is_scalar($item))
+                                            <input type="hidden" name="{{ $name }}[]" value="{{ $item }}">
+                                        @endif
+                                    @endforeach
+                                @else
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @endif
                             @endforeach
                             <label class="flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs text-slate-300 shadow-sm">
                                 <span class="hidden sm:inline">Tampilan sebagai</span>

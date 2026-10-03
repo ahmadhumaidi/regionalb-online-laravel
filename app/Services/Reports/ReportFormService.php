@@ -32,7 +32,7 @@ class ReportFormService
             RsmReport::TYPE_OTHER => [
                 'title' => 'Aktivitas Lain',
                 'label' => 'aktivitas',
-                'options' => ['Meeting internal', 'Briefing', 'Training', 'Koordinasi kampus', 'Koordinasi mitra', 'Pelayanan calon mahasiswa', 'Administrasi PMB', 'Follow up pembayaran', 'Lainnya'],
+                'options' => ['Meeting internal', 'Briefing', 'Training', 'Koordinasi kampus', 'Koordinasi mitra', 'Pelayanan calon mahasiswa', 'Administrasi PMB', 'Follow up pembayaran', 'Sapa Grup Affiliate', 'Spanduk Kerjasama', 'Live Streaming Night', 'Lainnya'],
                 'statuses' => ['Draft', 'Dikirim'],
                 'fields' => ['report_date', 'wilayah', 'unit_name', 'staff_name', 'category', 'title', 'result_text', 'obstacle_text', 'follow_up_text', 'attachment_path'],
             ],
@@ -211,10 +211,7 @@ class ReportFormService
             }
         }
 
-        $status = $type === RsmReport::TYPE_ADS ? 'Pengajuan' : ((string) ($data['status'] ?? 'Draft'));
-        if ($existing && $user->role !== RsmUser::ROLE_STAFF) {
-            $status = in_array($status, ['Draft', 'Revisi', 'Dikirim'], true) ? $status : $existing->status;
-        }
+        $status = $type === RsmReport::TYPE_ADS ? 'Pengajuan' : ($existing?->status ?? 'Dikirim');
 
         // "Aktivitas Lain" dengan Kendala terisi otomatis masuk antrian
         // tindak lanjut korwil/Senior Manager begitu disimpan - staff tidak

@@ -27,8 +27,11 @@ class CollabSourceService
         'Share FB Group',
         'Live Streaming',
         'Canvasing',
+        'Sebar Brosur',
+        'Pasang Spanduk',
         'Affiliator Mahasiswa',
         'Affiliator Non Mahasiswa',
+        'Absen Staff',
     ];
 
     private const AUTHENTICATED_REPORTS = [
@@ -41,8 +44,11 @@ class CollabSourceService
         'Share FB Group',
         'Live Streaming',
         'Canvasing',
+        'Sebar Brosur',
+        'Pasang Spanduk',
         'Affiliator Mahasiswa',
         'Affiliator Non Mahasiswa',
+        'Absen Staff',
     ];
 
     /**
@@ -61,8 +67,11 @@ class CollabSourceService
         'Follow Up BDC',
         'Share FB Group',
         'Live Streaming',
+        'Sebar Brosur',
+        'Pasang Spanduk',
         'Affiliator Mahasiswa',
         'Affiliator Non Mahasiswa',
+        'Absen Staff',
     ];
 
     private const SOURCE_URLS = [
@@ -75,8 +84,11 @@ class CollabSourceService
         'Share FB Group' => 'https://cb.web.id/pencapaian_share_fb.php',
         'Live Streaming' => 'https://cb.web.id/pencapaian_live_streaming.php',
         'Canvasing' => 'https://cb.web.id/data_canvassing_harian_peregional.php',
+        'Sebar Brosur' => 'https://cb.web.id/data_sebar_brosur_peregional.php',
+        'Pasang Spanduk' => 'https://cb.web.id/data_pasang_spanduk_peregional.php',
         'Affiliator Mahasiswa' => 'https://cb.web.id/pencapaian_kar_aff_mhs.php',
         'Affiliator Non Mahasiswa' => 'https://cb.web.id/pencapaian_kar_aff_non_mhs.php',
+        'Absen Staff' => 'https://cb.web.id/ggklikv2/rekap_user/harian',
     ];
 
     private const CACHE_KEY = 'collab_achievement.json';
@@ -230,6 +242,11 @@ class CollabSourceService
         ];
 
         foreach (self::knownReports() as $reportName) {
+            // Absensi GGKlik has its own lightweight schedule because its
+            // endpoint is daily and does not need the 30-minute full Collab cadence.
+            if ($reportName === 'Absen Staff') {
+                continue;
+            }
             $report = self::reportFromUrl($reportName);
             if ($report === []) {
                 $result['errors'][$reportName] = 'Source tidak terbaca saat sinkronisasi.';
@@ -262,8 +279,34 @@ class CollabSourceService
             }
         }
         self::cacheWrite($result);
+        CollabUserDirectoryService::sync($result);
 
         return $result;
+    }
+
+    /** Sync only GGKlik attendance without fetching every Collab report. */
+    public static function syncAttendance(?string $date = null): array
+    {
+        $date ??= now()->toDateString();
+        $report = self::attendanceReport($date);
+        if ($report === []) {
+            return ['date' => $date, 'rows' => 0, 'ok' => false];
+        }
+
+        self::ingestDailyMetrics('Absen Staff', $report);
+        $syncedAt = now()->format('Y-m-d H:i:s');
+        $report['source_mode'] = 'cache_auto';
+        $report['cached_at'] = $syncedAt;
+
+        $cache = self::cacheRead();
+        $cache['reports'] = (array) ($cache['reports'] ?? []);
+        $cache['errors'] = (array) ($cache['errors'] ?? []);
+        $cache['reports']['Absen Staff'] = $report;
+        unset($cache['errors']['Absen Staff']);
+        $cache['attendance_synced_at'] = $syncedAt;
+        self::cacheWrite($cache);
+
+        return ['date' => $date, 'rows' => count((array) ($report['attendance'] ?? [])), 'ok' => true];
     }
 
     /**
@@ -366,7 +409,7 @@ class CollabSourceService
             return [];
         }
 
-        $tables = self::parseHtmlTables($html);
+        $tables = self::normalizeReportTables($reportName, self::parseHtmlTables($html));
         if ($tables === []) {
             return [];
         }
@@ -382,7 +425,8 @@ class CollabSourceService
 
     private static function buildSnapshotEntry(string $reportName, array $report, string $error = ''): array
     {
-        $rows = $report['tables'][0] ?? [];
+        $tables = self::normalizeReportTables($reportName, (array) ($report['tables'] ?? []));
+        $rows = $tables[0] ?? [];
         $rows = is_array($rows) ? $rows : [];
 
         $dataStart = 0;
@@ -420,6 +464,10 @@ class CollabSourceService
 
     private static function reportFromUrl(string $reportName): array
     {
+        if ($reportName === 'Absen Staff') {
+            return self::attendanceReport(now()->toDateString());
+        }
+
         $url = self::sourceUrl($reportName);
         if ($url === '') {
             return [];
@@ -435,7 +483,7 @@ class CollabSourceService
             return [];
         }
 
-        $tables = self::parseHtmlTables($html);
+        $tables = self::normalizeReportTables($reportName, self::parseHtmlTables($html));
         if ($tables === []) {
             return [];
         }
@@ -489,6 +537,74 @@ class CollabSourceService
         } catch (\Throwable) {
             return '';
         }
+    }
+
+    /** Fetch GGKlik v2's per-day attendance JSON using its own login flow. */
+    private static function attendanceReport(string $date): array
+    {
+        $credentials = self::credentials();
+        if ($credentials === null || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return [];
+        }
+
+        try {
+            $jar = new CookieJar;
+            $headers = ['Accept' => 'text/html,application/xhtml+xml,application/json', 'User-Agent' => 'RegionalB-Dashboard/1.0'];
+            Http::withOptions(['cookies' => $jar])
+                ->timeout(30)->connectTimeout(10)->withHeaders($headers)
+                ->asForm()->post('https://cb.web.id/ggklikv2/login', [
+                    'username' => $credentials['username'],
+                    'password' => $credentials['password'],
+                ]);
+
+            $response = Http::withOptions(['cookies' => $jar])
+                ->timeout(40)->connectTimeout(10)->withHeaders($headers)
+                ->get('https://cb.web.id/ggklikv2/rekap_user/get_data_harian/'.$date);
+            $payload = json_decode($response->body(), true);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        $attendance = [];
+        $table = [['Tanggal', $date], ['No', 'Nama Karyawan', 'NIK', 'Kampus', 'Wilayah', 'Jam Masuk', 'Status', 'Radius']];
+        $number = 1;
+        foreach ($payload as $key => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $nik = trim((string) ($row['nik'] ?? $key));
+            $name = trim((string) ($row['nama'] ?? ''));
+            if ($nik === '' || $name === '') {
+                continue;
+            }
+            $clockIn = trim((string) ($row['absen_masuk'] ?? ($row['masuk']['jam'] ?? '')));
+            $regional = trim((string) ($row['wilayah'] ?? ''));
+            $campus = trim((string) ($row['kampus'] ?? ''));
+            $radius = trim((string) ($row['masuk']['radius'] ?? ''));
+            $status = trim((string) ($row['status_absen_masuk'] ?? ''));
+            $present = $clockIn !== '' && $clockIn !== '-';
+
+            $attendance[] = compact('nik', 'name', 'regional', 'campus', 'clockIn', 'radius', 'status', 'present');
+            $table[] = [$number++, $name, $nik, $campus, $regional, $clockIn ?: '-', $status ?: ($present ? 'Hadir' : 'Belum Absen'), $radius ?: '-'];
+        }
+
+        if ($attendance === []) {
+            return [];
+        }
+
+        return [
+            'name' => 'Absen Staff',
+            'created_at' => now()->format('Y-m-d H:i:s'),
+            'source_url' => self::sourceUrl('Absen Staff'),
+            'source_mode' => 'live_url',
+            'attendance_date' => $date,
+            'attendance' => $attendance,
+            'tables' => [$table],
+        ];
     }
 
     private static function plainHtml(string $url): string
@@ -545,7 +661,14 @@ class CollabSourceService
                     }
 
                     if (count($tds) === 1 && (int) $tds[0]->getAttribute('colspan') > 1) {
-                        continue;
+                        $spanningLabel = trim(preg_replace('/\s+/', ' ', (string) $tds[0]->textContent) ?? '');
+                        // Keep regional section markers: unit-activity
+                        // reports need them to scope the staff rows that
+                        // follow. Decorative single-cell banners remain
+                        // excluded from the normalized table.
+                        if (! preg_match('/^Regional(?:\s|\s*-)/i', $spanningLabel)) {
+                            continue;
+                        }
                     }
 
                     $cells = [];
@@ -629,6 +752,43 @@ class CollabSourceService
         return $tables;
     }
 
+    /**
+     * Apply known ownership corrections that are not represented correctly by
+     * the Collab source's regional section labels.
+     */
+    private static function normalizeReportTables(string $reportName, array $tables): array
+    {
+        if ($reportName !== 'Pasang Spanduk') {
+            return $tables;
+        }
+
+        foreach ($tables as &$rows) {
+            if (! is_array($rows)) {
+                continue;
+            }
+            foreach ($rows as &$row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                foreach ($row as &$cell) {
+                    if (! is_string($cell)) {
+                        continue;
+                    }
+                    $cell = preg_replace(
+                        '/^(Total\s+)?Regional\s*-\s*-\s*Nugroho Budi Santoso$/i',
+                        '$1Regional 7 - Nugroho Budi Santoso',
+                        $cell
+                    ) ?? $cell;
+                }
+                unset($cell);
+            }
+            unset($row);
+        }
+        unset($rows);
+
+        return $tables;
+    }
+
     private static function archiveReport(string $reportName, array $report): void
     {
         $rows = $report['tables'][0] ?? [];
@@ -665,11 +825,19 @@ class CollabSourceService
         }
         $decoded['source_mode'] = 'archive';
 
+        $decoded['tables'] = self::normalizeReportTables($reportName, (array) $decoded['tables']);
+
         return $decoded;
     }
 
     private static function ingestDailyMetrics(string $reportName, array $report, ?int $windowDays = null): void
     {
+        if ($reportName === 'Absen Staff') {
+            self::ingestAttendanceMetrics($report);
+
+            return;
+        }
+
         $rows = $report['tables'][0] ?? [];
         if (! is_array($rows) || count($rows) < 3) {
             return;
@@ -698,6 +866,10 @@ class CollabSourceService
             'Closing Personal Per Regional', 'Herreg Personal Per Regional', 'Follow Up BDC',
             'Share FB Group', 'Live Streaming', 'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
         ], true);
+        // Sebar Brosur uses a per-unit activity layout: No, NIK - Nama,
+        // Kode, Kampus, day columns, Total. A staff member can occur once
+        // per campus, so rows must be summed by staff/day before upserting.
+        $isUnitActivity = in_array($reportName, ['Sebar Brosur', 'Pasang Spanduk'], true);
         $valueBase = $isCampus ? 4 : 5;
 
         $dayValueIndexes = [];
@@ -707,7 +879,7 @@ class CollabSourceService
             if (! preg_match('/^\d{1,2}$/', $dayLabel)) {
                 continue;
             }
-            $dayValueIndexes[(int) $dayLabel] = $isPersonalRegional ? $headerIndex : $valueBase + $offset;
+            $dayValueIndexes[(int) $dayLabel] = ($isPersonalRegional || $isUnitActivity) ? $headerIndex : $valueBase + $offset;
             $offset++;
         }
         if ($dayValueIndexes === []) {
@@ -771,6 +943,35 @@ class CollabSourceService
                 $regional = $currentRegional;
                 $entityKey = self::usernameFromNikOrName($staffNik, $staffName);
                 $campusName = null;
+            } elseif ($isUnitActivity) {
+                $label = trim((string) ($row[0] ?? ''));
+                if (preg_match('/^Regional\s+([1-7])\s*-/i', $label, $regionalMatch)) {
+                    $currentRegional = 'Regional '.$regionalMatch[1];
+
+                    continue;
+                }
+                // cb.web.id renders Regional A as "Regional - - <Korwil>".
+                if (preg_match('/^Regional\s*-\s*-/i', $label)) {
+                    $currentRegional = 'Regional A';
+
+                    continue;
+                }
+                if ($currentRegional === null || preg_match('/^(Total|Sub\.?\s*Total)/i', $label)) {
+                    continue;
+                }
+
+                $staffLabel = trim((string) ($row[1] ?? ''));
+                if (! preg_match('/^([A-Za-z]{1,4}[.\d-]+)\s*-\s*(.+)$/', $staffLabel, $nameMatch)) {
+                    continue;
+                }
+                $staffNik = trim($nameMatch[1]);
+                $staffName = trim((string) preg_replace('/\s+Tim Terpilih$/i', '', trim($nameMatch[2])));
+                if ($staffName === '') {
+                    continue;
+                }
+                $regional = $currentRegional;
+                $entityKey = self::usernameFromNikOrName($staffNik, $staffName);
+                $campusName = null;
             } else {
                 $regionalDigit = trim((string) ($row[(int) $layout['regional_index']] ?? ''));
                 $staffNik = trim((string) ($row[(int) $layout['staff_nik_index']] ?? ''));
@@ -793,7 +994,7 @@ class CollabSourceService
                     continue;
                 }
                 $value = self::numberValue($row[$valueIndex] ?? 0);
-                $records[] = [
+                $record = [
                     'report_name' => $reportName,
                     'metric_date' => $metricDate,
                     'entity_key' => $entityKey,
@@ -804,6 +1005,16 @@ class CollabSourceService
                     'value' => $value,
                     'synced_at' => $now,
                 ];
+                if ($isUnitActivity) {
+                    $recordKey = $metricDate.'|'.$entityKey;
+                    if (isset($records[$recordKey])) {
+                        $records[$recordKey]['value'] += $value;
+                    } else {
+                        $records[$recordKey] = $record;
+                    }
+                } else {
+                    $records[] = $record;
+                }
             }
         }
 
@@ -812,7 +1023,7 @@ class CollabSourceService
         }
 
         DB::transaction(function () use ($records) {
-            foreach (array_chunk($records, 500) as $chunk) {
+            foreach (array_chunk(array_values($records), 500) as $chunk) {
                 DB::table('rsm_collab_daily_metrics')->upsert(
                     $chunk,
                     ['report_name', 'metric_date', 'entity_key'],
@@ -820,6 +1031,47 @@ class CollabSourceService
                 );
             }
         });
+    }
+
+    private static function ingestAttendanceMetrics(array $report): void
+    {
+        $date = (string) ($report['attendance_date'] ?? '');
+        $attendance = (array) ($report['attendance'] ?? []);
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || $attendance === []) {
+            return;
+        }
+
+        $now = now();
+        $records = [];
+        foreach ($attendance as $row) {
+            if (! is_array($row) || empty($row['present'])) {
+                continue;
+            }
+            $nik = trim((string) ($row['nik'] ?? ''));
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($nik === '' || $name === '') {
+                continue;
+            }
+            $records[] = [
+                'report_name' => 'Absen Staff',
+                'metric_date' => $date,
+                'entity_key' => self::usernameFromNikOrName($nik, $name),
+                'staff_nik' => $nik,
+                'staff_name' => $name,
+                'regional' => trim((string) ($row['regional'] ?? '')) ?: null,
+                'campus_name' => trim((string) ($row['campus'] ?? '')) ?: null,
+                'value' => 1,
+                'synced_at' => $now,
+            ];
+        }
+
+        foreach (array_chunk($records, 500) as $chunk) {
+            DB::table('rsm_collab_daily_metrics')->upsert(
+                $chunk,
+                ['report_name', 'metric_date', 'entity_key'],
+                ['staff_nik', 'staff_name', 'regional', 'campus_name', 'value', 'synced_at']
+            );
+        }
     }
 
     private static function usernameFromNikOrName(?string $nik, string $name): string

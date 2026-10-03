@@ -14,7 +14,10 @@
             </div>
             @if ($whatsappArtifact['text'] ?? null)
                 <p class="mt-3 text-xs text-ink-muted">Dibuat {{ $whatsappArtifact['generated_at'] ?? '-' }}</p>
-                <textarea readonly rows="8" class="mt-1 w-full rounded-lg border-border bg-surface text-sm">{{ $whatsappArtifact['text'] }}</textarea>
+                <textarea id="coordinator-whatsapp-report" readonly rows="8" class="mt-1 w-full rounded-lg border-border bg-surface text-sm">{{ $whatsappArtifact['text'] }}</textarea>
+                <div class="mt-3 flex justify-end border-t border-emerald-200 pt-3">
+                    <button type="button" onclick="const t=document.getElementById('coordinator-whatsapp-report'); t.select(); navigator.clipboard.writeText(t.value); this.textContent='Tersalin!'; setTimeout(() => this.textContent='Copy Laporan WhatsApp', 1500);" class="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-ink">Copy Laporan WhatsApp</button>
+                </div>
             @endif
         </section>
     @endif

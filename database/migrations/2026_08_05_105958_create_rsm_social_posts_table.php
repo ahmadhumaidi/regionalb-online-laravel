@@ -13,7 +13,7 @@ return new class extends Migration
             $table->unsignedInteger('account_id');
             $table->string('area', 40);
             $table->date('post_date');
-            $table->enum('media_type', ['no_post', 'feed', 'reels', 'story']);
+            $table->enum('media_type', ['no_post', 'feed', 'reels', 'story', 'facebook', 'tiktok']);
             $table->time('post_time')->nullable();
             $table->text('caption')->nullable();
             $table->string('post_url', 500)->nullable();

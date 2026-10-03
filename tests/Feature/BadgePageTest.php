@@ -14,8 +14,13 @@ class BadgePageTest extends TestCase
     {
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
+            'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
+            'database/migrations/2026_08_05_110009_create_rsm_collab_daily_metrics_table.php',
             'database/migrations/2026_08_12_090000_create_rsm_badge_settings_table.php',
             'database/migrations/2026_08_12_092000_add_indicator_key_to_rsm_badge_settings_table.php',
+            'database/migrations/2026_08_13_090000_create_rsm_gamification_transactions_table.php',
         ]]);
 
         $user = RsmUser::create([
@@ -32,16 +37,15 @@ class BadgePageTest extends TestCase
         $response = $this->actingAs($user)->get('/badges');
 
         $response->assertOk();
-        $response->assertSee('Badge &amp; League', false);
+        $response->assertSee('League Season &amp; Badge', false);
         $response->assertSee('Follow Up Hero');
         $response->assertSee('Minimal 10 FU');
-        $response->assertSee('Indikator');
         $response->assertSee('Kampus Growth');
         $response->assertSee('Share FB Booster');
         $response->assertSee('Affiliator Non Mahasiswa');
         $response->assertSee('League');
         $response->assertSee('Diamond');
-        $response->assertSee('On Progress');
+        $response->assertSee('Terkunci');
 
         $user->delete();
     }
@@ -50,8 +54,13 @@ class BadgePageTest extends TestCase
     {
         Artisan::call('migrate', ['--path' => [
             'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_105954_create_rsm_reports_table.php',
+            'database/migrations/2026_08_12_094000_add_cpm_fields_to_rsm_reports_table.php',
+            'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
+            'database/migrations/2026_08_05_110009_create_rsm_collab_daily_metrics_table.php',
             'database/migrations/2026_08_12_090000_create_rsm_badge_settings_table.php',
             'database/migrations/2026_08_12_092000_add_indicator_key_to_rsm_badge_settings_table.php',
+            'database/migrations/2026_08_13_090000_create_rsm_gamification_transactions_table.php',
         ]]);
 
         $user = RsmUser::create([

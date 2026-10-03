@@ -76,7 +76,7 @@
         </div>
 
         <div class="mt-4 max-h-[70vh] overflow-auto rounded-xl border border-border">
-            <table class="collab-raw-table">
+            <table class="collab-raw-table {{ in_array($activeReport, ['Sebar Brosur', 'Pasang Spanduk'], true) ? 'collab-sticky-name' : '' }}">
                 @if(($reportData['rows'] ?? []) === [])
                     <tbody><tr><td class="px-3 py-6 text-center text-sm text-ink-muted">Belum ada data tersinkron untuk sumber ini.</td></tr></tbody>
                 @else

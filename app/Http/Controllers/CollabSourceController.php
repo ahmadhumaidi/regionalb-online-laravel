@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncCollabSnapshot;
 use App\Services\CollabSourceService;
 use App\Support\CollabTableRenderer;
 use App\Support\RsmRole;
@@ -90,9 +91,9 @@ class CollabSourceController extends Controller
     public function sync(Request $request)
     {
         abort_unless(RsmRole::canSyncCollab($request->user()), 403);
-        CollabSourceService::sync();
+        SyncCollabSnapshot::dispatch();
 
-        return redirect()->route('sumber-collab')->with('status', 'Snapshot Collab berhasil disegarkan.');
+        return redirect()->route('sumber-collab')->with('status', 'Penyegaran snapshot dimulai di background. Muat ulang halaman beberapa menit lagi untuk melihat hasil terbaru.');
     }
 
     private function monthLabel(string $month): string

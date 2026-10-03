@@ -21,16 +21,22 @@ class Menu
         $sections = [
             [
                 'title' => 'Utama',
-                'items' => [
+                'items' => array_values(array_filter([
                     ['key' => 'dashboard', 'label' => 'Dashboard Utama', 'icon' => 'home'],
                     ['key' => 'forum', 'label' => 'Forum Diskusi', 'icon' => 'chat'],
-                ],
+                    in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true)
+                        ? ['key' => 'staff-journey', 'label' => 'Journey Staff Unit', 'icon' => 'flag']
+                        : null,
+                ])),
             ],
             [
                 'title' => 'Kinerja & Tim',
                 'items' => array_values(array_filter([
                     ['key' => 'pencapaian', 'label' => 'Pencapaian Staff', 'icon' => 'chart-bar'],
                     ['key' => 'closing-kampus', 'label' => 'Pencapaian Kampus', 'icon' => 'chart-bar'],
+                    $user->role === RsmUser::ROLE_SUPER_USER
+                        ? ['key' => 'closing-target-simulation', 'label' => 'Simulasi Target Closing', 'icon' => 'chart-bar']
+                        : null,
                     RsmRole::canViewScoringTable($user)
                         ? ['key' => 'scoring', 'label' => 'Scoring', 'icon' => 'chart-bar']
                         : null,
@@ -101,6 +107,7 @@ class Menu
         return [
             'dashboard' => 'Dashboard Utama',
             'forum' => 'Forum Diskusi',
+            'staff-journey' => 'Journey Staff Unit',
             'pencapaian' => 'Pencapaian Staff',
             'jadwal-koordinator' => 'Jadwal Koordinator',
             'bdc-users' => 'BDC Marketing',
@@ -118,6 +125,7 @@ class Menu
             'sumber-collab' => 'Sumber Data Collab',
             'jadwal-personalia' => 'Jadwal Personalia',
             'closing-kampus' => 'Pencapaian Kampus',
+            'closing-target-simulation' => 'Simulasi Target Closing',
             'scoring' => 'Scoring',
             'badges' => 'League Season & Badge',
         ];
@@ -126,7 +134,7 @@ class Menu
     /** Keys gated to the same role list as Target Bulanan / Kelola User / Sumber Data Collab (dashboard.php:568-579). */
     public static function isRestricted(string $key): bool
     {
-        return in_array($key, ['targets', 'users', 'sumber-collab', 'jadwal-personalia'], true);
+        return in_array($key, ['targets', 'users', 'sumber-collab', 'jadwal-personalia', 'closing-target-simulation'], true);
     }
 
     public static function isAllowed(string $key, RsmUser $user): bool
@@ -137,6 +145,8 @@ class Menu
             'users' => RsmRole::canViewUsersPage($user),
             'sumber-collab' => RsmRole::canSyncCollab($user),
             'scoring' => RsmRole::canViewScoringTable($user),
+            'closing-target-simulation' => $user->role === RsmUser::ROLE_SUPER_USER,
+            'staff-journey' => in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true),
             default => true,
         };
     }
@@ -147,6 +157,7 @@ class Menu
         return match ($key) {
             'dashboard' => route('dashboard'),
             'forum' => route('forum'),
+            'staff-journey' => route('staff-journey'),
             'anggaran' => route('anggaran'),
             'konten' => route('konten'),
             'upload-konten-sosmed' => route('upload-konten-sosmed'),
@@ -163,6 +174,7 @@ class Menu
             'bdc-users' => route('bdc-users'),
             'role' => route('role'),
             'closing-kampus' => route('closing-kampus'),
+            'closing-target-simulation' => route('closing-target-simulation'),
             'scoring' => route('scoring'),
             'badges' => route('badges'),
             'password' => route('password.edit'),

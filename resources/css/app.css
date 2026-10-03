@@ -43,6 +43,36 @@
     --color-tone-slate: #64748b;
 }
 
+/* Journey Staff Unit — a live mission map rather than a decorative chart. */
+.journey-arena-grid {
+    background-image: linear-gradient(rgba(148,163,184,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.09) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+.journey-live-dot { width:.5rem; height:.5rem; border-radius:999px; background:#22d3ee; box-shadow:0 0 0 0 rgba(34,211,238,.55); animation:journey-ping 1.8s infinite; }
+.journey-team-progress { background:linear-gradient(90deg,#22d3ee,#3b82f6,#8b5cf6); box-shadow:0 0 14px rgba(34,211,238,.55); transition:width .7s ease; }
+.journey-map-scroll { scrollbar-color:#334155 transparent; scrollbar-width:thin; }
+.journey-stage { padding-top:1.2rem; }
+.journey-stage-1,.journey-stage-3,.journey-stage-5,.journey-stage-7,.journey-stage-9 { padding-top:4.5rem; }
+.journey-stage-node { position:relative; display:grid; place-items:center; width:2.7rem; height:2.7rem; border-radius:.8rem; border:2px solid #cbd5e1; background:linear-gradient(145deg,#fff,#e2e8f0); color:#64748b; box-shadow:0 6px 14px rgba(15,23,42,.12),inset 0 1px 0 rgba(255,255,255,.9); transform:rotate(45deg); transition:.3s ease; }
+.journey-stage-node::before { content:''; position:absolute; inset:3px; border:1px solid rgba(148,163,184,.22); border-radius:.5rem; }
+.journey-stage-icon { position:relative; z-index:1; font-size:.72rem; filter:grayscale(1); transform:rotate(-45deg); }
+.journey-stage-number { position:absolute; right:-6px; top:-6px; display:grid; place-items:center; width:1.1rem; height:1.1rem; border-radius:999px; border:2px solid white; background:#64748b; color:white; font-size:.5rem; font-weight:900; transform:rotate(-45deg); }
+.journey-stage.is-active .journey-stage-node { border-color:#38bdf8; color:white; background:linear-gradient(145deg,#06b6d4,#2563eb); box-shadow:0 0 0 4px rgba(56,189,248,.12),0 10px 22px rgba(37,99,235,.22); transform:rotate(45deg) translate(-1px,-1px); }
+.journey-stage.is-active .journey-stage-icon { filter:none; }
+.journey-stage.is-active .journey-stage-number { background:#22d3ee; color:#082f49; }
+.journey-stage-node.is-start { border-radius:50%; }
+.journey-stage-node.is-finish { border-color:#f59e0b; background:linear-gradient(145deg,#fbbf24,#f59e0b); box-shadow:0 0 0 4px rgba(245,158,11,.1),0 10px 22px rgba(245,158,11,.22); }
+.journey-stage-node.is-finish .journey-stage-icon { filter:none; }
+.journey-player-bay { min-height:6.1rem; transition:border-color .25s,background .25s; }
+.journey-stage.is-active .journey-player-bay { border-color:rgba(14,165,233,.3); background:rgba(240,249,255,.95); }
+.journey-avatar-glow { background:#22d3ee; opacity:0; filter:blur(7px); transition:opacity .2s; }
+.group:hover .journey-avatar-glow { opacity:.5; }
+@keyframes journey-ping { 70% { box-shadow:0 0 0 8px rgba(34,211,238,0); } 100% { box-shadow:0 0 0 0 rgba(34,211,238,0); } }
+@media (prefers-reduced-motion: reduce) {
+    .journey-arena *, .journey-arena *::before, .journey-arena *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
 /*
  * Tailwind v4 only emits an @theme variable into the compiled CSS when it
  * can statically prove some utility class uses it (e.g. `text-tone-green`
@@ -221,6 +251,49 @@
     .collab-raw-table thead th:first-child {
         left: 0;
         z-index: 3;
+        box-shadow: 1px 1px 0 var(--color-border);
+    }
+
+    /* Sebar Brosur starts with a narrow row-number column. Keep the useful
+       identity column (NIK - Nama) visible while scrolling horizontally. */
+    .collab-raw-table.collab-sticky-name tbody td:first-child {
+        position: static;
+        box-shadow: none;
+    }
+
+    .collab-raw-table.collab-sticky-name tbody td:nth-child(2) {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        width: 12rem;
+        min-width: 12rem;
+        max-width: 12rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: var(--color-surface);
+        box-shadow: 1px 0 0 var(--color-border);
+    }
+
+    .collab-raw-table.collab-sticky-name tbody tr:nth-child(even) td:nth-child(2) {
+        background: color-mix(in srgb, var(--color-surface-muted) 60%, var(--color-surface));
+    }
+
+    .collab-raw-table.collab-sticky-name tbody tr:hover td:nth-child(2) {
+        background: var(--color-brand-50);
+    }
+
+    .collab-raw-table.collab-sticky-name thead th:first-child,
+    .collab-raw-table.collab-sticky-name thead th.sticky-col {
+        left: auto;
+        box-shadow: 0 1px 0 var(--color-border);
+    }
+
+    .collab-raw-table.collab-sticky-name thead tr:first-child th:nth-child(2) {
+        left: 0;
+        z-index: 3;
+        width: 12rem;
+        min-width: 12rem;
+        max-width: 12rem;
         box-shadow: 1px 1px 0 var(--color-border);
     }
 

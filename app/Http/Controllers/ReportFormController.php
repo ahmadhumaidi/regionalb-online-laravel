@@ -24,7 +24,16 @@ class ReportFormController extends Controller
         $this->assertType($type);
         abort_unless(ReportFormService::canCreate($type, $user), 403);
 
-        return $this->formView($type, new RsmReport, false, $user);
+        $report = new RsmReport;
+        if ($type === RsmReport::TYPE_OTHER) {
+            $requestedActivity = trim((string) request()->query('activity'));
+            if (in_array($requestedActivity, ReportFormService::config($type)['options'], true)) {
+                $report->category = $requestedActivity;
+                $report->title = $requestedActivity;
+            }
+        }
+
+        return $this->formView($type, $report, false, $user);
     }
 
     public function store(Request $request, string $type): RedirectResponse
@@ -176,7 +185,6 @@ class ReportFormController extends Controller
             'wilayah' => ['nullable', 'string', 'max:120'],
             'unit_name' => ['nullable', 'string', 'max:180'],
             'staff_name' => ['nullable', 'string', 'max:180'],
-            'status' => ['nullable', Rule::in($editing ? ['Draft', 'Dikirim', 'Revisi'] : ['Draft', 'Dikirim'])],
             'attachment_path' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
         ];
         $rules = match ($type) {

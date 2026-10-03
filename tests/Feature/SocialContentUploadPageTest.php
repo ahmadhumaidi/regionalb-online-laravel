@@ -28,6 +28,8 @@ class SocialContentUploadPageTest extends TestCase
         $this->assertSame(10, $method->invoke($controller, 'feed', false));
         $this->assertSame(20, $method->invoke($controller, 'reels', true));
         $this->assertSame(10, $method->invoke($controller, 'story', true));
+        $this->assertSame(15, $method->invoke($controller, 'tiktok', false));
+        $this->assertSame(10, $method->invoke($controller, 'facebook', false));
     }
 
     public function test_feed_and_story_archive_links_are_configured(): void

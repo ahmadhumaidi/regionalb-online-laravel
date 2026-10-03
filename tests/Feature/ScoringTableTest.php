@@ -25,6 +25,7 @@ class ScoringTableTest extends TestCase
             'database/migrations/2026_08_05_110009_create_rsm_collab_daily_metrics_table.php',
             'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
             'database/migrations/2026_08_11_100003_add_indicator_targets_to_rsm_monthly_targets_table.php',
+            'database/migrations/2026_08_13_090000_create_rsm_gamification_transactions_table.php',
         ]]);
     }
 

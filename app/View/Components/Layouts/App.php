@@ -33,26 +33,31 @@ class App extends Component
     ) {
         /** @var RsmUser $user */
         $user = Auth::user();
+        $originalId = (int) session('impersonation.original_id', 0);
+        $impersonationActor = $originalId > 0 ? RsmUser::find($originalId) : $user;
 
         $this->user = $user;
         $this->eyebrow = str_replace('Regional B', 'RSM B', $eyebrow !== '' ? $eyebrow : ($user->area ?: 'Regional B'));
         $this->menuSections = Menu::sections($user);
-        $this->impersonationUsers = RsmRole::canImpersonate($user)
+        $this->impersonationUsers = RsmRole::canImpersonate($impersonationActor)
             ? RsmUser::where('is_active', true)
                 ->when(
-                    $user->role === RsmUser::ROLE_KOORDINATOR,
+                    $impersonationActor->role === RsmUser::ROLE_KOORDINATOR,
                     fn ($q) => $q
                         ->where('role', RsmUser::ROLE_STAFF)
-                        ->where('area', $user->area)
+                        ->where('area', $impersonationActor->area)
                         ->when(
-                            filled($user->regional),
-                            fn ($regionalQuery) => $regionalQuery->where('regional', $user->regional),
+                            filled($impersonationActor->regional),
+                            fn ($regionalQuery) => $regionalQuery->where('regional', $impersonationActor->regional),
                             fn ($regionalQuery) => $regionalQuery->whereRaw('1 = 0'),
                         ),
-                    fn ($q) => $q->where(fn ($areaQuery) => $areaQuery
-                        ->where('area', $user->area)
-                        ->orWhereNull('area')
-                        ->orWhere('area', '')),
+                    fn ($q) => $q->when(
+                        $impersonationActor->role !== RsmUser::ROLE_SUPER_USER,
+                        fn ($areaQuery) => $areaQuery->where(fn ($scopedQuery) => $scopedQuery
+                            ->where('area', $impersonationActor->area)
+                            ->orWhereNull('area')
+                            ->orWhere('area', '')),
+                    ),
                 )
                 ->get()
                 ->sortBy([

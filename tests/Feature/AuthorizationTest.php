@@ -41,6 +41,13 @@ class AuthorizationTest extends TestCase
         $this->actingAs($staff)->post('/jadwal-koordinator/generate', ['month' => '2026-08'])->assertForbidden();
     }
 
+    public function test_unrelated_management_role_cannot_open_staff_journey(): void
+    {
+        $director = new RsmUser(['id' => 900021, 'name' => 'Test Director', 'role' => 'director', 'area' => 'Regional B', 'is_active' => true]);
+
+        $this->actingAs($director)->get('/journey-staff-unit')->assertForbidden();
+    }
+
     public function test_only_super_user_can_generate_whatsapp_schedule_report(): void
     {
         $senior = new RsmUser(['id' => 900003, 'name' => 'Test Senior', 'role' => 'senior', 'area' => 'Regional B', 'is_active' => true]);

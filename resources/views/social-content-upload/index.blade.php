@@ -14,7 +14,7 @@
             <div class="max-w-3xl">
                 <p class="text-xs font-bold tracking-[0.18em] text-cyan-100 uppercase">Konten & Kegiatan</p>
                 <h2 class="mt-2 text-2xl font-bold">Upload Konten Sosmed</h2>
-                <p class="mt-2 text-sm leading-6 text-indigo-100">Catat Feed, Reels, dan Story langsung di sistem. Data otomatis masuk ke Monitoring Konten Kampus.</p>
+                <p class="mt-2 text-sm leading-6 text-indigo-100">Catat Feed, Reels, Story, dan TikTok langsung di sistem. Data otomatis masuk ke Monitoring Konten Kampus dan Journey Staff Unit.</p>
             </div>
             <div class="flex shrink-0 flex-wrap gap-2">
                 @if ($sheetUrls['feed'])
@@ -90,32 +90,35 @@
         @endif
     </section>
 
-    <section class="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <section id="input-aktivitas-konten" class="mb-6 scroll-mt-6 rounded-2xl border border-border bg-surface p-5 shadow-sm">
         <div class="mb-4">
             <h2 class="text-base font-semibold text-ink">Input aktivitas konten</h2>
-            <p class="mt-1 text-sm text-ink-muted">Pilih beberapa jenis sekaligus untuk mencatat aktivitas harian dalam satu kali simpan.</p>
+            <p class="mt-1 text-sm text-ink-muted">Isi link konten yang dikerjakan. Jenis laporan akan terdeteksi otomatis dari kolom yang diisi.</p>
         </div>
         <form method="POST" action="{{ route('upload-konten-sosmed.store') }}" class="space-y-5" x-data="{ regional: @js(old('wilayah', auth()->user()->regional)), username: @js(old('instagram_username', '')), instagramUrl: @js(old('instagram_url', '')), selectedCampus: @js(old('unit_name', auth()->user()->campus_name)), campuses: @js($referenceOptions['campuses']), filteredCampuses() { return this.regional ? this.campuses.filter(item => item.wilayah === this.regional) : []; } }" x-init="const campus = campuses.find(item => item.label === selectedCampus && item.wilayah === regional); if (campus && !username && !instagramUrl) { username = campus.instagram_username || ''; instagramUrl = campus.instagram_url || ''; } else if (!campus) { selectedCampus = ''; }">
             @csrf
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="grid gap-4 md:grid-cols-3">
                 <label class="block"><span class="mb-1.5 block text-xs font-semibold text-ink-muted">Tanggal</span><input type="date" name="post_date" value="{{ old('post_date', now('Asia/Jakarta')->toDateString()) }}" required class="w-full rounded-xl border-border bg-surface-muted text-sm"></label>
                 <label class="block"><span class="mb-1.5 block text-xs font-semibold text-ink-muted">Wilayah</span><select name="wilayah" x-model="regional" required @change="selectedCampus = ''; username = ''; instagramUrl = ''" class="w-full rounded-xl border-border bg-surface-muted text-sm"><option value="">Pilih wilayah</option>@foreach ($referenceOptions['regionals'] as $regional)<option value="{{ $regional }}">{{ $regional }}</option>@endforeach</select></label>
                 <label class="block"><span class="mb-1.5 block text-xs font-semibold text-ink-muted">Unit/Kampus</span><select name="unit_name" x-model="selectedCampus" required :disabled="!regional" @change="const campus = campuses.find(item => item.label === $event.target.value && item.wilayah === regional); username = campus?.instagram_username || ''; instagramUrl = campus?.instagram_url || '';" class="w-full rounded-xl border-border bg-surface-muted text-sm disabled:cursor-not-allowed disabled:opacity-60"><option value="">Pilih kampus</option><template x-for="campus in filteredCampuses()" :key="campus.id || campus.label"><option :value="campus.label" x-text="campus.label"></option></template></select></label>
-                <label class="block"><span class="mb-1.5 block text-xs font-semibold text-ink-muted">Username Instagram</span><div class="flex rounded-xl border border-border bg-surface-muted focus-within:ring-2 focus-within:ring-brand-500"><span class="px-3 py-2 text-sm text-ink-muted">@</span><input name="instagram_username" x-model="username" placeholder="username_kampus" class="min-w-0 flex-1 border-0 bg-transparent px-0 text-sm focus:ring-0"></div></label>
             </div>
 
-            <label class="block"><span class="mb-1.5 block text-xs font-semibold text-ink-muted">Link profil Instagram</span><input type="url" name="instagram_url" x-model="instagramUrl" placeholder="https://instagram.com/username_kampus" class="w-full rounded-xl border-border bg-surface-muted text-sm"><span class="mt-1 block text-xs text-ink-muted">Username atau link profil cukup diisi sekali dan akan tersimpan sebagai atribut kampus.</span></label>
+            <div class="grid gap-4 xl:grid-cols-3">
+                <section class="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/60 p-4">
+                    <div class="mb-3"><h3 class="font-black text-fuchsia-800">Instagram</h3><p class="text-xs text-fuchsia-700/70">Feed, Reels, dan Story Instagram</p></div>
+                    <div class="mb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2"><label class="block"><span class="mb-1 block text-[11px] font-semibold text-slate-500">Username</span><input name="instagram_username" x-model="username" placeholder="@username_kampus" class="w-full rounded-lg border-fuchsia-200 bg-white text-xs"></label><label class="block"><span class="mb-1 block text-[11px] font-semibold text-slate-500">Link profil</span><input type="url" name="instagram_url" x-model="instagramUrl" placeholder="https://instagram.com/..." class="w-full rounded-lg border-fuchsia-200 bg-white text-xs"></label></div>
+                    <div class="space-y-2">@foreach (['feed'=>'Feed','reels'=>'Reels','story'=>'Story'] as $type=>$label)<label class="block rounded-xl border border-fuchsia-100 bg-white p-2.5"><span class="text-sm font-semibold">{{ $label }}</span><input type="url" name="post_urls[{{ $type }}]" value="{{ old('post_urls.'.$type) }}" placeholder="Link {{ $label }} Instagram" class="mt-2 w-full rounded-lg border-slate-200 text-xs"></label>@endforeach</div>
+                </section>
 
-            <div>
-                <span class="mb-2 block text-xs font-semibold text-ink-muted">Jenis dan link konten</span>
-                <div class="grid gap-3 md:grid-cols-3">
-                    @foreach ($mediaLabels as $type => $label)
-                        <div class="rounded-xl border border-border bg-surface-muted p-3">
-                            <label class="flex items-center gap-2 text-sm font-semibold text-ink"><input type="checkbox" name="media_types[]" value="{{ $type }}" @checked(in_array($type, old('media_types', []), true)) class="rounded border-border text-brand-600 focus:ring-brand-500"> {{ $label }}</label>
-                            <input type="url" name="post_urls[{{ $type }}]" value="{{ old('post_urls.'.$type) }}" placeholder="https://instagram.com/..." class="mt-2 w-full rounded-lg border-border bg-white text-xs">
-                        </div>
-                    @endforeach
-                </div>
+                <section class="rounded-2xl border border-blue-200 bg-blue-50/60 p-4">
+                    <div class="mb-3"><h3 class="font-black text-blue-800">Facebook</h3><p class="text-xs text-blue-700/70">Posting konten Facebook</p></div>
+                    <label class="block rounded-xl border border-blue-100 bg-white p-3"><span class="text-sm font-semibold">Link konten Facebook</span><input type="url" name="post_urls[facebook]" value="{{ old('post_urls.facebook') }}" placeholder="https://facebook.com/..." class="mt-3 w-full rounded-lg border-slate-200 text-xs"></label>
+                </section>
+
+                <section class="rounded-2xl border border-slate-300 bg-slate-100/70 p-4">
+                    <div class="mb-3"><h3 class="font-black text-slate-900">TikTok</h3><p class="text-xs text-slate-500">Video TikTok harian</p></div>
+                    <label class="block rounded-xl border border-slate-200 bg-white p-3"><span class="text-sm font-semibold">Link video TikTok</span><input type="url" name="post_urls[tiktok]" value="{{ old('post_urls.tiktok') }}" placeholder="https://tiktok.com/..." class="mt-3 w-full rounded-lg border-slate-200 text-xs"></label>
+                </section>
             </div>
 
             <div class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">

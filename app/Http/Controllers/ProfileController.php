@@ -11,6 +11,7 @@ use App\Services\CoordinatorLiburService;
 use App\Services\Dashboard\CollabMetricsService;
 use App\Services\Dashboard\GamificationService;
 use App\Services\Dashboard\XpService;
+use App\Services\Dashboard\StaffJourneyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -208,6 +209,58 @@ class ProfileController extends Controller
             'todayEnergy', 'weekEnergy', 'monthEnergy', 'dailyChestTiers', 'weeklyChestTiers', 'monthlyChestTiers',
             'missionResetAt', 'weekResetAt', 'monthResetAt'
         ));
+    }
+
+    public function journey(Request $request): View
+    {
+        /** @var RsmUser $user */
+        $user = Auth::user();
+        abort_unless(in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true), 403);
+
+        $validated = $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
+        $journey = StaffJourneyService::build($user, $validated['date'] ?? null);
+
+        return view('staff-journey.index', [
+            'user' => $user,
+            'dailyMissions' => $this->dailyMissions($user),
+            'activityProgress' => $this->staffJourneyProgress($user),
+            'journeyStaff' => $journey['staff'],
+            'journeyDate' => $journey['date'],
+            'trackedDaily' => $journey['tracked_daily'],
+        ]);
+    }
+
+    private function staffJourneyProgress(RsmUser $user): array
+    {
+        $filters = [
+            'date_from' => now()->startOfWeek()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'wilayah' => '',
+            'unit_name' => '',
+            'staff_name' => (string) $user->name,
+        ];
+        $sebarBrosur = CollabMetricsService::personalTotal($filters, $user->area ?: 'Regional B', $user, 'Sebar Brosur');
+
+        $twoMonthFilters = $filters;
+        $twoMonthFilters['date_from'] = now()->subMonth()->startOfMonth()->toDateString();
+        $pasangSpanduk = CollabMetricsService::personalTotal($twoMonthFilters, $user->area ?: 'Regional B', $user, 'Pasang Spanduk');
+
+        return [
+            'sebar_brosur' => [
+                'actual' => $sebarBrosur,
+                'target' => 200,
+                'progress' => min(100, (int) round(($sebarBrosur / 200) * 100)),
+                'done' => $sebarBrosur >= 200,
+                'claimed' => false,
+            ],
+            'pasang_spanduk' => [
+                'actual' => $pasangSpanduk,
+                'target' => 6,
+                'progress' => min(100, (int) round(($pasangSpanduk / 6) * 100)),
+                'done' => $pasangSpanduk >= 6,
+                'claimed' => false,
+            ],
+        ];
     }
 
     private function dailyMissions(RsmUser $user): array
