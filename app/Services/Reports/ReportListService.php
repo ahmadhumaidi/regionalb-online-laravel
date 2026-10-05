@@ -36,10 +36,11 @@ class ReportListService
     private const SENIOR_ROLES = ['super_user', 'executive_director', 'director', 'senior'];
 
     /** @return list<array> */
-    public static function build(string $reportType, string $area, RsmUser $user): array
+    public static function build(string|array $reportType, string $area, RsmUser $user): array
     {
+        $reportTypes = (array) $reportType;
         $reports = ReportScope::apply(
-            RsmReport::query()->where('area', $area)->where('report_type', $reportType),
+            RsmReport::query()->where('area', $area)->whereIn('report_type', $reportTypes),
             $user
         )->orderByDesc('report_date')->orderByDesc('id')->limit(50)->get();
 
@@ -62,13 +63,15 @@ class ReportListService
 
         $escalatedToRole = $hasKendala ? $report->escalated_to_role : null;
         $isResponsible = $hasKendala && (
-            in_array($user->role, self::SENIOR_ROLES, true)
+            $user->role === RsmUser::ROLE_SUPER_USER
             || ($escalatedToRole === null && $user->role === 'koordinator' && $report->wilayah === $user->regional)
             || ($escalatedToRole !== null && $user->role === $escalatedToRole)
         );
 
         return [
             'id' => $report->id,
+            'report_type' => $report->report_type,
+            'report_type_label' => $report->report_type === RsmReport::TYPE_MARKETING ? 'Kegiatan Marketing' : 'Aktivitas Lain',
             'report_date' => optional($report->report_date)->format('d M Y') ?? '-',
             'wilayah' => $report->wilayah,
             'unit_name' => $report->unit_name,

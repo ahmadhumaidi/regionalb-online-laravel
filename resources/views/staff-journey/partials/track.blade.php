@@ -17,6 +17,9 @@
     .journey-arena:fullscreen { display: flex; height: 100vh; flex-direction: column; overflow: hidden; border-radius: 0; background: #fff; }
     .journey-arena:fullscreen .journey-map-scroll { flex: 1 1 auto; }
     .journey-arena::backdrop { background: #0f172a; }
+    .journey-fallback-fullscreen { overflow: hidden; }
+    .journey-fallback-fullscreen .journey-arena { position: fixed; inset: 0; z-index: 9999; display: flex; height: 100vh; flex-direction: column; overflow: hidden; border-radius: 0; background: #fff; }
+    .journey-fallback-fullscreen .journey-map-scroll { flex: 1 1 auto; }
 </style>
 <section x-ref="journeyArena" class="journey-arena relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 text-slate-900 shadow-xl shadow-blue-950/5 backdrop-blur">
     <div class="journey-arena-grid pointer-events-none absolute inset-0"></div>
@@ -51,10 +54,10 @@
 
             @foreach($journeyStages as $stage)
                 <article class="journey-stage journey-stage-{{ $stage['step'] }} relative z-10 flex min-w-0 flex-col items-center text-center" :class="{{ $stage['step'] === 9 ? "at(9).length ? 'is-active' : ''" : "at({$stage['step']}).length ? 'is-active' : ''" }}">
-                    <div class="journey-stage-node {{ $stage['step'] === 0 ? 'is-start' : ($stage['step'] === 9 ? 'is-finish' : '') }}">
+                    <button type="button" @click="selectedCheckpoint={{ Illuminate\Support\Js::from($stage) }}" class="journey-stage-node cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 {{ $stage['step'] === 0 ? 'is-start' : ($stage['step'] === 9 ? 'is-finish' : '') }}" title="Lihat staff di {{ $stage['label'] }}">
                         <span class="journey-stage-icon">{{ $stage['icon'] }}</span>
                         @if($stage['step'] > 0)<span class="journey-stage-number">{{ $stage['step'] }}</span>@endif
-                    </div>
+                    </button>
                     <strong class="mt-2.5 block text-xs font-black">{{ $stage['label'] }}</strong>
                     <span class="mt-0.5 text-[9px] font-semibold tracking-wide text-slate-500">{{ $stage['hint'] }}</span>
 
@@ -77,5 +80,31 @@
         <span class="flex items-center gap-2"><i class="h-2 w-2 rounded-full bg-cyan-400"></i> Sedang berjuang</span>
         <span class="flex items-center gap-2"><i class="h-2 w-2 rounded-full bg-amber-400"></i> Finish hari ini</span>
         <span class="ml-auto hidden text-slate-500 sm:block">Geser arena untuk melihat seluruh checkpoint →</span>
+    </div>
+
+    @include('staff-journey.partials.drawer', ['activities'=>$activities])
+
+    <div x-cloak x-show="selectedCheckpoint" x-transition.opacity class="fixed inset-0 z-[80] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm" @click.self="selectedCheckpoint=null" role="dialog" aria-modal="true" aria-label="Staff pada checkpoint">
+        <section x-show="selectedCheckpoint" x-transition class="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <header class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <div class="flex min-w-0 items-center gap-3">
+                    <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-xl" x-text="selectedCheckpoint?.icon"></span>
+                    <div class="min-w-0"><p class="text-[10px] font-black uppercase tracking-[.18em] text-blue-600">Posisi Pemain</p><h3 class="truncate text-lg font-black text-slate-900" x-text="selectedCheckpoint?.label"></h3><p class="text-xs text-slate-500" x-text="checkpointPeople().length+' staff pada checkpoint ini'"></p></div>
+                </div>
+                <button type="button" @click="selectedCheckpoint=null" class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-xl text-slate-500 hover:bg-slate-200" aria-label="Tutup">×</button>
+            </header>
+            <div class="overflow-y-auto p-4 sm:p-5">
+                <div class="space-y-2">
+                    <template x-for="person in checkpointPeople()" :key="person.id">
+                        <button type="button" @click="openStaffFromCheckpoint(person)" class="flex w-full items-center gap-3 rounded-2xl border border-slate-200 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50/60">
+                            <img :src="person.avatar" :alt="person.name" x-on:error="$event.target.onerror=null; $event.target.src=person.avatar_fallback" class="h-12 w-12 shrink-0 rounded-full object-cover shadow-sm">
+                            <span class="min-w-0 flex-1"><b class="block truncate text-sm text-slate-900" x-text="person.name"></b><small class="block truncate text-slate-500" x-text="person.unit+' · '+person.regional"></small><span class="mt-1 block text-[11px] font-bold text-blue-600" x-text="person.completed_daily+' / '+person.total_daily+' aktivitas selesai'"></span></span>
+                            <span class="text-xs font-bold text-slate-400">Profil →</span>
+                        </button>
+                    </template>
+                    <p x-show="checkpointPeople().length===0" class="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">Belum ada staff pada checkpoint ini.</p>
+                </div>
+            </div>
+        </section>
     </div>
 </section>

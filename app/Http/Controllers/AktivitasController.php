@@ -25,7 +25,7 @@ class AktivitasController extends Controller
 
         return view('aktivitas.index', [
             'active' => 'aktivitas',
-            'rows' => ReportListService::build(RsmReport::TYPE_OTHER, $area, $user),
+            'rows' => ReportListService::build([RsmReport::TYPE_MARKETING, RsmReport::TYPE_OTHER], $area, $user),
         ]);
     }
 }

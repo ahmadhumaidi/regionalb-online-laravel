@@ -25,6 +25,7 @@
                         <th class="py-2 pr-3 font-medium">Tanggal</th>
                         <th class="py-2 pr-3 font-medium">Wilayah / Kampus</th>
                         <th class="py-2 pr-3 font-medium">Staff</th>
+                        <th class="py-2 pr-3 font-medium">Jenis</th>
                         <th class="py-2 pr-3 font-medium">Kategori</th>
                         <th class="py-2 pr-3 font-medium">Hasil</th>
                         <th class="py-2 pr-3 font-medium">Status</th>
@@ -37,6 +38,7 @@
                             <td class="py-2 pr-3 text-ink-muted">{{ $row['report_date'] }}</td>
                             <td class="py-2 pr-3 text-ink">{{ $row['unit_name'] ?: '-' }} <span class="text-xs text-ink-muted">{{ $row['wilayah'] }}</span></td>
                             <td class="py-2 pr-3 text-ink">{{ $row['staff_name'] ?: '-' }}</td>
+                            <td class="py-2 pr-3"><span class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">{{ $row['report_type_label'] }}</span></td>
                             <td class="py-2 pr-3 text-ink-muted">{{ $row['category'] ?: '-' }}</td>
                             <td class="py-2 pr-3 text-ink-muted">
                                 {{ \Illuminate\Support\Str::limit((string) ($row['title'] ?: $row['result_text']), 60) ?: '-' }}

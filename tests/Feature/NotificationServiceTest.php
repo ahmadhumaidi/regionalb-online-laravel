@@ -22,7 +22,7 @@ class NotificationServiceTest extends TestCase
         ]]);
     }
 
-    public function test_kendala_notification_reaches_koordinator_and_senior_tier_roles(): void
+    public function test_kendala_notification_reaches_only_matching_koordinator(): void
     {
         $this->migrate();
 
@@ -62,7 +62,7 @@ class NotificationServiceTest extends TestCase
         NotificationService::notifyKendala($report);
 
         $expectedIds = $recipients
-            ->whereIn('name', ['Notif Super', 'Notif Executive', 'Notif Director', 'Notif Senior', 'Notif Korwil'])
+            ->whereIn('name', ['Notif Korwil'])
             ->pluck('id')
             ->sort()
             ->values()
@@ -76,7 +76,7 @@ class NotificationServiceTest extends TestCase
         $recipients->each->delete();
     }
 
-    public function test_escalation_to_senior_notifies_every_senior_tier_role(): void
+    public function test_escalation_to_senior_notifies_senior_manager(): void
     {
         $this->migrate();
 
@@ -124,12 +124,7 @@ class NotificationServiceTest extends TestCase
         NotificationService::notifyEscalation($report, RsmUser::ROLE_SENIOR, $actor);
 
         $expectedIds = $recipients
-            ->whereIn('role', [
-                RsmUser::ROLE_SUPER_USER,
-                RsmUser::ROLE_EXECUTIVE_DIRECTOR,
-                RsmUser::ROLE_DIRECTOR,
-                RsmUser::ROLE_SENIOR,
-            ])
+            ->whereIn('role', [RsmUser::ROLE_SENIOR])
             ->pluck('id')
             ->sort()
             ->values()

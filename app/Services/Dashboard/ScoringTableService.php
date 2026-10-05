@@ -7,6 +7,7 @@ use App\Models\RsmSocialPost;
 use App\Models\RsmUser;
 use App\Support\CampusMatcher;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * "Scoring" menu: one wide table collecting every assessment indicator
@@ -46,13 +47,15 @@ class ScoringTableService
         $attendanceByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Absen Tepat Waktu');
         $affMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Mahasiswa');
         $affNonMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Non Mahasiswa');
-        $socialPosts = RsmSocialPost::query()
-            ->with('account:id,unit_name')
-            ->where('area', $area)
-            ->when($filters['date_from'] !== '', fn ($query) => $query->whereDate('post_date', '>=', $filters['date_from']))
-            ->when($filters['date_to'] !== '', fn ($query) => $query->whereDate('post_date', '<=', $filters['date_to']))
-            ->where('media_type', '!=', 'no_post')
-            ->get(['id', 'account_id', 'media_type']);
+        $socialPosts = Schema::hasTable('rsm_social_posts')
+            ? RsmSocialPost::query()
+                ->with('account:id,unit_name')
+                ->where('area', $area)
+                ->when($filters['date_from'] !== '', fn ($query) => $query->whereDate('post_date', '>=', $filters['date_from']))
+                ->when($filters['date_to'] !== '', fn ($query) => $query->whereDate('post_date', '<=', $filters['date_to']))
+                ->where('media_type', '!=', 'no_post')
+                ->get(['id', 'account_id', 'media_type'])
+            : collect();
 
         $rows = $roster
             ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg, $shareFbByName, $liveStreamingByName, $attendanceByName, $affMhsByName, $affNonMhsByName, $socialPosts, $indicators, $targetsByName) {

@@ -76,20 +76,10 @@ class NotificationService
         );
     }
 
-    /** Staff melaporkan Kendala baru: beri tahu koordinator wilayah + semua Senior Manager di area itu. */
+    /** Staff melaporkan Kendala baru: beri tahu koordinator wilayah terkait. */
     public static function notifyKendala(RsmReport $report): void
     {
-        $recipients = RsmUser::query()
-            ->where('area', $report->area)
-            ->where('is_active', true)
-            ->where(function ($query) use ($report) {
-                $query->where(function ($q) use ($report) {
-                    $q->where('role', RsmUser::ROLE_KOORDINATOR)
-                        ->where('regional', $report->wilayah);
-                })->orWhereIn('role', self::SENIOR_TIER_ROLES);
-            })
-            ->pluck('id')
-            ->all();
+        $recipients = self::recipientIds($report->area, RsmUser::ROLE_KOORDINATOR, $report->wilayah);
 
         self::notify(
             $recipients,
@@ -103,9 +93,7 @@ class NotificationService
     /** Korwil/Senior Manager mengeskalasi laporan kendala ke role lain. */
     public static function notifyEscalation(RsmReport $report, string $toRole, RsmUser $actor): void
     {
-        $recipientIds = in_array($toRole, self::SENIOR_TIER_ROLES, true)
-            ? self::seniorTierRecipientIds($report->area)
-            : self::recipientIds($report->area, $toRole);
+        $recipientIds = self::recipientIds($report->area, $toRole);
 
         self::notify(
             $recipientIds,

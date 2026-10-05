@@ -46,6 +46,7 @@ class ContentController extends Controller
             'summaryCards' => $summaryCards,
             'regionals' => $summary['regionals'],
             'posts' => $summary['posts'],
+            'accounts' => $summary['accounts'],
         ]);
     }
 

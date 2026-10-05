@@ -92,7 +92,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::patch('/upload-konten-sosmed/{post}', [SocialContentUploadController::class, 'update'])->name('upload-konten-sosmed.update');
     Route::delete('/upload-konten-sosmed/{post}', [SocialContentUploadController::class, 'destroy'])->name('upload-konten-sosmed.destroy');
     Route::get('/pencapaian', [AchievementController::class, 'index'])->name('pencapaian');
-    Route::get('/kegiatan', [KegiatanController::class, 'index'])->name('kegiatan');
+    Route::get('/kegiatan', fn () => redirect()->route('aktivitas'))->name('kegiatan');
     Route::get('/aktivitas', [AktivitasController::class, 'index'])->name('aktivitas');
     Route::get('/crm', [CrmLeadController::class, 'index'])->name('crm');
     Route::post('/crm', [CrmLeadController::class, 'store'])->name('crm.store');

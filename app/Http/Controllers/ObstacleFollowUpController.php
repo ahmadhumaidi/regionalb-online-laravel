@@ -87,7 +87,7 @@ class ObstacleFollowUpController extends Controller
         abort_if(trim((string) $report->obstacle_text) === '', 404);
         abort_unless($report->area === ($user->area ?: 'Regional B'), 404);
 
-        $isResponsible = in_array($user->role, self::SENIOR_ROLES, true)
+        $isResponsible = $user->role === RsmUser::ROLE_SUPER_USER
             || ($report->escalated_to_role === null && $user->role === RsmUser::ROLE_KOORDINATOR && $report->wilayah === $user->regional)
             || ($report->escalated_to_role !== null && $user->role === $report->escalated_to_role);
 

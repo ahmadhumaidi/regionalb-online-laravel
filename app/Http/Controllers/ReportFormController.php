@@ -195,7 +195,11 @@ class ReportFormController extends Controller
             ],
             RsmReport::TYPE_OTHER => $common + [
                 'category' => ['nullable', 'string', 'max:120'], 'title' => ['required', 'string', 'max:220'],
-                'result_text' => ['nullable', 'string'], 'obstacle_text' => ['nullable', 'string'], 'follow_up_text' => ['nullable', 'string'],
+                'result_text' => ['nullable', 'string'],
+                'obstacle_text' => [Rule::requiredIf(fn () => $request->boolean('kendala')), 'nullable', 'string'],
+                'follow_up_text' => ['nullable', 'string'],
+                'kendala' => ['nullable', 'boolean'],
+                'eskalasi_ke' => [Rule::requiredIf(fn () => $request->boolean('kendala')), 'nullable', Rule::in([RsmUser::ROLE_KOORDINATOR])],
             ],
             RsmReport::TYPE_ADS => $common + [
                 'ad_period' => ['required', 'string', 'max:40'], 'platform' => ['required', 'string', 'max:120'],
