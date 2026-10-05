@@ -53,6 +53,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::get('/journey-staff-unit', [ProfileController::class, 'journey'])->name('staff-journey');
+    Route::post('/sync-sources', [ProfileController::class, 'syncSources'])->name('sources.sync');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/daily-mission/{missionKey}/claim', [ProfileController::class, 'claimMission'])->name('profile.daily-mission.claim');
     Route::get('/users/{user}/photo', [ProfileController::class, 'photo'])->name('users.photo');

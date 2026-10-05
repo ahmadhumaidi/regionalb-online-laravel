@@ -7,6 +7,7 @@ use App\Models\RsmCoordinatorSchedule;
 use App\Models\RsmDailyMissionClaim;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Jobs\SyncAllSources;
 use App\Services\CoordinatorLiburService;
 use App\Services\Dashboard\CollabMetricsService;
 use App\Services\Dashboard\GamificationService;
@@ -228,6 +229,16 @@ class ProfileController extends Controller
             'journeyDate' => $journey['date'],
             'trackedDaily' => $journey['tracked_daily'],
         ]);
+    }
+
+    public function syncSources(Request $request): RedirectResponse
+    {
+        SyncAllSources::dispatch();
+
+        return back()->with(
+            'notice',
+            'Sinkronisasi semua sumber dimulai di background: Personalia, Collab, Absensi, dan BDC.'
+        );
     }
 
     private function staffJourneyProgress(RsmUser $user): array

@@ -231,8 +231,12 @@ class CollabSourceService
      *      supaya hari yang sudah lewat window tidak ditulis ulang terus.
      *      null = ingest penuh (full sync harian & sync manual dari UI).
      */
-    public static function sync(?int $windowDays = null): array
+    public static function sync(?int $windowDays = null, ?string $onlyReport = null): array
     {
+        if ($onlyReport !== null && ! in_array($onlyReport, self::KNOWN_REPORTS, true)) {
+            throw new \InvalidArgumentException('Sumber Collab tidak dikenal: '.$onlyReport);
+        }
+
         $syncedAt = now()->format('Y-m-d H:i:s');
         $result = [
             'synced_at' => $syncedAt,
@@ -241,7 +245,8 @@ class CollabSourceService
             'errors' => [],
         ];
 
-        foreach (self::knownReports() as $reportName) {
+        $reportNames = $onlyReport !== null ? [$onlyReport] : self::knownReports();
+        foreach ($reportNames as $reportName) {
             // Absensi GGKlik has its own lightweight schedule because its
             // endpoint is daily and does not need the 30-minute full Collab cadence.
             if ($reportName === 'Absen Staff') {
@@ -278,6 +283,13 @@ class CollabSourceService
                 $result['reports'][$reportName] = $report;
             }
         }
+        if ($onlyReport !== null) {
+            foreach ((array) ($existing['errors'] ?? []) as $reportName => $error) {
+                if ($reportName !== $onlyReport) {
+                    $result['errors'][$reportName] = $error;
+                }
+            }
+        }
         self::cacheWrite($result);
         CollabUserDirectoryService::sync($result);
 
@@ -287,7 +299,7 @@ class CollabSourceService
     /** Sync only GGKlik attendance without fetching every Collab report. */
     public static function syncAttendance(?string $date = null): array
     {
-        $date ??= now()->toDateString();
+        $date ??= now('Asia/Jakarta')->toDateString();
         $report = self::attendanceReport($date);
         if ($report === []) {
             return ['date' => $date, 'rows' => 0, 'ok' => false];

@@ -52,7 +52,8 @@ class StaffJourneyServiceTest extends TestCase
         $this->assertNotContains($outsideRegionalStaff->id, $coordinatorStaff->pluck('id')->all());
 
         $unitStaff = collect(StaffJourneyService::build($staff, '2026-10-01')['staff']);
-        $this->assertEqualsCanonicalizing([$staff->id, $secondUnitStaff->id], $unitStaff->pluck('id')->all());
+        $this->assertSame([$staff->id], $unitStaff->pluck('id')->all());
+        $this->assertNotContains($secondUnitStaff->id, $unitStaff->pluck('id')->all());
         $this->assertNotContains($outsideRegionalStaff->id, $unitStaff->pluck('id')->all());
     }
 }

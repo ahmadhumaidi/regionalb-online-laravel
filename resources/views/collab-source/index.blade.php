@@ -32,17 +32,24 @@
             </div>
             <form method="POST" action="{{ route('sumber-collab.sync') }}">
                 @csrf
-                <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Segarkan Snapshot</button>
+                <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Sinkronkan Semua</button>
             </form>
         </div>
 
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap gap-2">
                 @foreach($reportNames as $name)
-                    <a
-                        href="{{ route('sumber-collab', ['report' => $name]) }}"
-                        class="rounded-full px-3 py-1.5 text-xs font-bold {{ $name === $activeReport ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700 hover:bg-brand-100' }}"
-                    >{{ $name }}</a>
+                    <div class="inline-flex overflow-hidden rounded-full border {{ $name === $activeReport ? 'border-brand-600' : 'border-brand-200' }}">
+                        <a
+                            href="{{ route('sumber-collab', ['report' => $name]) }}"
+                            class="px-3 py-1.5 text-xs font-bold {{ $name === $activeReport ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700 hover:bg-brand-100' }}"
+                        >{{ $name }}</a>
+                        <form method="POST" action="{{ route('sumber-collab.sync') }}" class="flex border-l {{ $name === $activeReport ? 'border-brand-500' : 'border-brand-200' }}">
+                            @csrf
+                            <input type="hidden" name="report" value="{{ $name }}">
+                            <button type="submit" class="px-2.5 text-[11px] font-black {{ $name === $activeReport ? 'bg-brand-700 text-white hover:bg-brand-800' : 'bg-white text-brand-700 hover:bg-brand-100' }}" title="Sinkronkan hanya {{ $name }}" aria-label="Sinkronkan hanya {{ $name }}">&#8635; Sinkron</button>
+                        </form>
+                    </div>
                 @endforeach
             </div>
             @if($monthOptions !== [])

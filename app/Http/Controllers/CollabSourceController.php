@@ -91,9 +91,18 @@ class CollabSourceController extends Controller
     public function sync(Request $request)
     {
         abort_unless(RsmRole::canSyncCollab($request->user()), 403);
-        SyncCollabSnapshot::dispatch();
+        $validated = $request->validate([
+            'report' => ['nullable', 'string', 'in:'.implode(',', CollabSourceService::knownReports())],
+        ]);
+        $reportName = $validated['report'] ?? null;
+        SyncCollabSnapshot::dispatch($reportName);
 
-        return redirect()->route('sumber-collab')->with('status', 'Penyegaran snapshot dimulai di background. Muat ulang halaman beberapa menit lagi untuk melihat hasil terbaru.');
+        if ($reportName !== null) {
+            return redirect()->route('sumber-collab', ['report' => $reportName])
+                ->with('status', 'Sinkronisasi '.$reportName.' dimulai di background. Aktivitas lain tidak ikut diproses.');
+        }
+
+        return redirect()->route('sumber-collab')->with('status', 'Sinkronisasi semua sumber dimulai di background. Muat ulang halaman beberapa menit lagi untuk melihat hasil terbaru.');
     }
 
     private function monthLabel(string $month): string
