@@ -14,13 +14,17 @@ use Illuminate\Support\Facades\Schema;
  */
 class ReferenceOptionsService
 {
-    /** @return array{regionals: list<string>, campuses: list<array{id: ?int, label: string}>, staff: list<array{id: int, name: string}>} */
+    /** @return array{regionals: list<string>, campuses: list<array{id: ?int, label: string, wilayah?: string}>, staff: list<array{id: int, name: string}>} */
     public static function build(string $area, RsmUser $user): array
     {
         if ($user->role === 'staff') {
             return [
                 'regionals' => array_filter([$user->regional]),
-                'campuses' => $user->campus_name ? [['id' => null, 'label' => $user->campus_name]] : [],
+                'campuses' => $user->campus_name ? [[
+                    'id' => null,
+                    'label' => $user->campus_name,
+                    'wilayah' => (string) ($user->regional ?? ''),
+                ]] : [],
                 'staff' => [['id' => $user->id, 'name' => $user->name]],
             ];
         }
