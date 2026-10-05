@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 
 class StaffJourneyService
 {
-    private const DAILY_KEYS = ['instagram', 'facebook', 'tiktok', 'live_day', 'story_ig', 'share_fb', 'fu_bdc', 'absen', 'laporan'];
+    private const DAILY_KEYS = ['absen', 'fu_bdc', 'instagram', 'facebook', 'tiktok', 'live_day', 'story_ig', 'share_fb', 'laporan'];
 
     /** @return array{date:string,total_daily:int,tracked_daily:int,staff:list<array>} */
     public static function build(RsmUser $viewer, ?string $date = null): array
@@ -78,15 +78,15 @@ class StaffJourneyService
             ?? collect();
 
         $activity = [
+            'absen' => self::activity($metric('Absen Staff') >= 1, $metric('Absen Staff'), 1, null, 'GGKlik v2 · Absen Masuk'),
+            'fu_bdc' => self::activity($metric('Follow Up BDC') >= 30, $metric('Follow Up BDC'), 30, null, 'Collab · Follow Up BDC'),
             'instagram' => self::activity($campusPosts->whereIn('media_type', ['feed', 'reels'])->isNotEmpty(), $campusPosts->whereIn('media_type', ['feed', 'reels'])->count(), 1, self::postTime($campusPosts->whereIn('media_type', ['feed', 'reels'])->first()), 'Upload Konten Sosmed · Instagram'),
             'facebook' => self::activity($campusPosts->where('media_type', 'facebook')->isNotEmpty(), $campusPosts->where('media_type', 'facebook')->count(), 1, self::postTime($campusPosts->where('media_type', 'facebook')->first()), 'Upload Konten Sosmed · Facebook'),
             'tiktok' => self::activity($campusPosts->where('media_type', 'tiktok')->isNotEmpty(), $campusPosts->where('media_type', 'tiktok')->count(), 1, self::postTime($campusPosts->where('media_type', 'tiktok')->first()), 'Upload Konten Sosmed · TikTok'),
             'live_day' => self::activity($metric('Live Streaming') >= 1, $metric('Live Streaming'), 1, null, 'Collab · Live Streaming'),
             'story_ig' => self::activity($campusPosts->where('media_type', 'story')->isNotEmpty(), $campusPosts->where('media_type', 'story')->count(), 1, self::postTime($campusPosts->where('media_type', 'story')->first()), 'Monitoring Konten'),
             'share_fb' => self::activity($metric('Share FB Group') >= 3, $metric('Share FB Group'), 3, null, 'Collab · Share FB Group'),
-            'fu_bdc' => self::activity($metric('Follow Up BDC') >= 30, $metric('Follow Up BDC'), 30, null, 'Collab · Follow Up BDC'),
-            'absen' => self::activity($metric('Absen Staff') >= 1, $metric('Absen Staff'), 1, null, 'GGKlik v2 · Absen Masuk'),
-            'laporan' => self::activity($staffReports->isNotEmpty(), $staffReports->count(), 1, optional($staffReports->sortByDesc('created_at')->first()?->created_at)->format('H:i'), 'Laporan Aktivitas'),
+            'laporan' => self::activity($staffReports->isNotEmpty(), $staffReports->count(), 1, optional($staffReports->sortByDesc('created_at')->first()?->created_at)->format('H:i'), 'Laporan Aktivitas Lain'),
         ];
         $completed = collect($activity)->where('done', true)->count();
         $avatarFallback = self::avatarFallback((string) $user->name);

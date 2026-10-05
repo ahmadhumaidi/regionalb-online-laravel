@@ -1,20 +1,20 @@
 <x-layouts.app title="Journey Staff Unit" active="staff-journey" eyebrow="Daily Team Race">
     @php
         $activities = [
+            ['key'=>'absen','title'=>'Absen Masuk','short'=>'Absen','target'=>'Ontime','category'=>'DAILY','icon'=>'calendar','report_notice'=>'Lapor melalui aplikasi absen'],
+            ['key'=>'fu_bdc','title'=>'FU BDC','short'=>'FU BDC','target'=>'30 FU/hari','category'=>'DAILY','icon'=>'chat','report_url'=>'https://daftarkuliah.my.id/bdcv2/','external'=>true],
             ['key'=>'instagram','title'=>'Konten Instagram','short'=>'Instagram','target'=>'1/hari','category'=>'DAILY','icon'=>'instagram','report_url'=>route('upload-konten-sosmed').'#input-aktivitas-konten'],
             ['key'=>'facebook','title'=>'Konten Facebook','short'=>'Facebook','target'=>'1/hari','category'=>'DAILY','icon'=>'facebook','report_url'=>route('upload-konten-sosmed').'#input-aktivitas-konten'],
             ['key'=>'tiktok','title'=>'TikTok','short'=>'TikTok','target'=>'1/hari','category'=>'DAILY','icon'=>'tiktok','report_url'=>route('upload-konten-sosmed').'#input-aktivitas-konten'],
             ['key'=>'live_day','title'=>'Live Streaming Day','short'=>'Live Day','target'=>'1 jam/hari','category'=>'DAILY','icon'=>'bolt','report_url'=>'https://cb.web.id/ggklikv2/','external'=>true],
-            ['key'=>'live_night','title'=>'Live Streaming Night','short'=>'Live Night','target'=>'1 jam/minggu','category'=>'WEEKLY','icon'=>'bolt','report_url'=>route('aktivitas.create',['activity'=>'Live Streaming Night'])],
             ['key'=>'story_ig','title'=>'Story Instagram','short'=>'Story IG','target'=>'1/hari','category'=>'DAILY','icon'=>'photo','report_url'=>route('upload-konten-sosmed').'#input-aktivitas-konten'],
+            ['key'=>'share_fb','title'=>'Share Konten Facebook','short'=>'Share FB','target'=>'3/hari','category'=>'DAILY','icon'=>'cloud','report_url'=>'https://cb.web.id/ggklikv2/','external'=>true],
+            ['key'=>'laporan','title'=>'Laporan Aktivitas Lain','short'=>'Aktivitas Lain','target'=>'1/hari','category'=>'DAILY','icon'=>'clipboard','report_url'=>route('aktivitas.create')],
+            ['key'=>'live_night','title'=>'Live Streaming Night','short'=>'Live Night','target'=>'1 jam/minggu','category'=>'WEEKLY','icon'=>'bolt','report_url'=>route('aktivitas.create',['activity'=>'Live Streaming Night'])],
             ['key'=>'affiliate','title'=>'Sapa Grup Affiliate','short'=>'Sapa Affiliate','target'=>'1/minggu','category'=>'WEEKLY','icon'=>'chat','report_url'=>route('aktivitas.create',['activity'=>'Sapa Grup Affiliate'])],
             ['key'=>'canvassing','title'=>'Canvassing','short'=>'Canvassing','target'=>'3/minggu','category'=>'WEEKLY','icon'=>'users','report_notice'=>'Lapor melalui aplikasi absen'],
             ['key'=>'brosur','title'=>'Sebar Brosur','short'=>'Sebar Brosur','target'=>'200/minggu','category'=>'WEEKLY','icon'=>'document','report_notice'=>'Lapor melalui aplikasi absen'],
             ['key'=>'spanduk','title'=>'Spanduk Kerjasama','short'=>'Spanduk','target'=>'6 pcs / 2 bulan','category'=>'PERIODIC','icon'=>'flag','report_url'=>route('aktivitas.create',['activity'=>'Spanduk Kerjasama'])],
-            ['key'=>'share_fb','title'=>'Share Konten Facebook','short'=>'Share FB','target'=>'3/hari','category'=>'DAILY','icon'=>'cloud','report_url'=>'https://cb.web.id/ggklikv2/','external'=>true],
-            ['key'=>'fu_bdc','title'=>'FU BDC','short'=>'FU BDC','target'=>'30 FU/hari','category'=>'DAILY','icon'=>'chat','report_url'=>'https://daftarkuliah.my.id/bdcv2/','external'=>true],
-            ['key'=>'absen','title'=>'Absen Masuk','short'=>'Absen','target'=>'Ontime','category'=>'DAILY','icon'=>'calendar','report_notice'=>'Lapor melalui aplikasi absen'],
-            ['key'=>'laporan','title'=>'Laporan Aktivitas','short'=>'Laporan','target'=>'1/hari','category'=>'DAILY','icon'=>'clipboard','report_url'=>route('aktivitas.create')],
         ];
     @endphp
     <div x-data="journeyDashboard(@js($journeyStaff), @js($activities), @js($journeyDate))" x-init="startClock()" class="space-y-5" @keydown.escape.window="selectedStaff = null; selectedActivity = null" @fullscreenchange.window="isFullscreen = document.fullscreenElement === $refs.journeyArena">
