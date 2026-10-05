@@ -33,7 +33,7 @@ class StaffJourneyServiceTest extends TestCase
         foreach (['feed', 'story', 'facebook', 'tiktok'] as $type) {
             RsmSocialPost::create(['account_id' => $account->id, 'area' => 'Regional B', 'post_date' => '2026-10-01', 'media_type' => $type]);
         }
-        foreach (['Follow Up BDC' => 30, 'Share FB Group' => 5, 'Live Streaming' => 1, 'Absen Staff' => 1] as $report => $value) {
+        foreach (['Follow Up BDC' => 30, 'Share FB Group' => 3, 'Live Streaming' => 1, 'Absen Staff' => 1] as $report => $value) {
             DB::table('rsm_collab_daily_metrics')->insert(['report_name' => $report, 'metric_date' => '2026-10-01', 'entity_key' => strtolower(str_replace(' ', '-', $report)), 'staff_name' => $staff->name, 'regional' => 'Regional 4', 'value' => $value]);
         }
         RsmReport::create(['area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER, 'report_date' => '2026-10-01', 'user_id' => $staff->id, 'wilayah' => 'Regional 4', 'unit_name' => 'Kampus Real', 'staff_name' => $staff->name, 'created_by_role' => 'staff', 'status' => 'Dikirim', 'title' => 'Laporan nyata']);

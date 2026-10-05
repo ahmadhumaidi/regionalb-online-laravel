@@ -83,7 +83,7 @@ class StaffJourneyService
             'tiktok' => self::activity($campusPosts->where('media_type', 'tiktok')->isNotEmpty(), $campusPosts->where('media_type', 'tiktok')->count(), 1, self::postTime($campusPosts->where('media_type', 'tiktok')->first()), 'Upload Konten Sosmed · TikTok'),
             'live_day' => self::activity($metric('Live Streaming') >= 1, $metric('Live Streaming'), 1, null, 'Collab · Live Streaming'),
             'story_ig' => self::activity($campusPosts->where('media_type', 'story')->isNotEmpty(), $campusPosts->where('media_type', 'story')->count(), 1, self::postTime($campusPosts->where('media_type', 'story')->first()), 'Monitoring Konten'),
-            'share_fb' => self::activity($metric('Share FB Group') >= 5, $metric('Share FB Group'), 5, null, 'Collab · Share FB Group'),
+            'share_fb' => self::activity($metric('Share FB Group') >= 3, $metric('Share FB Group'), 3, null, 'Collab · Share FB Group'),
             'fu_bdc' => self::activity($metric('Follow Up BDC') >= 30, $metric('Follow Up BDC'), 30, null, 'Collab · Follow Up BDC'),
             'absen' => self::activity($metric('Absen Staff') >= 1, $metric('Absen Staff'), 1, null, 'GGKlik v2 · Absen Masuk'),
             'laporan' => self::activity($staffReports->isNotEmpty(), $staffReports->count(), 1, optional($staffReports->sortByDesc('created_at')->first()?->created_at)->format('H:i'), 'Laporan Aktivitas'),

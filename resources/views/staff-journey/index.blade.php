@@ -11,7 +11,7 @@
             ['key'=>'canvassing','title'=>'Canvassing','short'=>'Canvassing','target'=>'3/minggu','category'=>'WEEKLY','icon'=>'users','report_notice'=>'Lapor melalui aplikasi absen'],
             ['key'=>'brosur','title'=>'Sebar Brosur','short'=>'Sebar Brosur','target'=>'200/minggu','category'=>'WEEKLY','icon'=>'document','report_notice'=>'Lapor melalui aplikasi absen'],
             ['key'=>'spanduk','title'=>'Spanduk Kerjasama','short'=>'Spanduk','target'=>'6 pcs / 2 bulan','category'=>'PERIODIC','icon'=>'flag','report_url'=>route('aktivitas.create',['activity'=>'Spanduk Kerjasama'])],
-            ['key'=>'share_fb','title'=>'Share Konten Facebook','short'=>'Share FB','target'=>'5/hari','category'=>'DAILY','icon'=>'cloud','report_url'=>'https://cb.web.id/ggklikv2/','external'=>true],
+            ['key'=>'share_fb','title'=>'Share Konten Facebook','short'=>'Share FB','target'=>'3/hari','category'=>'DAILY','icon'=>'cloud','report_url'=>'https://cb.web.id/ggklikv2/','external'=>true],
             ['key'=>'fu_bdc','title'=>'FU BDC','short'=>'FU BDC','target'=>'30 FU/hari','category'=>'DAILY','icon'=>'chat','report_url'=>'https://daftarkuliah.my.id/bdcv2/','external'=>true],
             ['key'=>'absen','title'=>'Absen Masuk','short'=>'Absen','target'=>'Ontime','category'=>'DAILY','icon'=>'calendar','report_notice'=>'Lapor melalui aplikasi absen'],
             ['key'=>'laporan','title'=>'Laporan Aktivitas','short'=>'Laporan','target'=>'1/hari','category'=>'DAILY','icon'=>'clipboard','report_url'=>route('aktivitas.create')],
