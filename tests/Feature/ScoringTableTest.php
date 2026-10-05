@@ -211,7 +211,7 @@ class ScoringTableTest extends TestCase
             ]);
         }
         \App\Models\RsmCollabDailyMetric::create([
-            'report_name' => 'Absen Staff', 'metric_date' => now()->toDateString(),
+            'report_name' => 'Absen Tepat Waktu', 'metric_date' => now()->toDateString(),
             'entity_key' => 'daily-activity-staff', 'staff_name' => 'Daily Activity Staff',
             'regional' => 'Regional 6', 'value' => 1,
         ]);
@@ -235,6 +235,8 @@ class ScoringTableTest extends TestCase
         $this->assertSame(1.0, $row['konten_facebook']);
         $this->assertSame(1.0, $row['konten_tiktok']);
         $this->assertSame(1.0, $row['story_instagram']);
+        $this->assertSame(5.0, $row['total_weight']);
+        $this->assertSame(0.24, $row['total_score']);
 
         $account->delete();
         $staff->delete();

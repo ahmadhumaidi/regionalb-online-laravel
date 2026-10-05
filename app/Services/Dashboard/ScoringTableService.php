@@ -43,7 +43,7 @@ class ScoringTableService
         $campusHerreg = self::campusIndex(CollabMetricsService::campusTotals($filters, $area, $user, 'Herreg Kampus Regional'));
         $shareFbByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Share FB Group');
         $liveStreamingByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Live Streaming');
-        $attendanceByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Absen Staff');
+        $attendanceByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Absen Tepat Waktu');
         $affMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Mahasiswa');
         $affNonMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Non Mahasiswa');
         $socialPosts = RsmSocialPost::query()
@@ -166,11 +166,17 @@ class ScoringTableService
             $metricKey = (string) ($meta['metric_key'] ?? '');
             $actual = (float) ($row[$metricKey] ?? 0);
             $hasTargetRow = array_key_exists($key, $targetRows);
-            $targetValue = $hasTargetRow ? (float) ($targetRows[$key]['target'] ?? 0) : 0.0;
-            $weight = $hasTargetRow ? (float) ($targetRows[$key]['weight'] ?? $meta['default_weight'] ?? 0) : 0.0;
+            $usesDefault = $target === null && ! $hasTargetRow && (bool) ($meta['score_by_default'] ?? false);
+            $hasScoringRule = $hasTargetRow || $usesDefault;
+            $targetValue = $hasTargetRow
+                ? (float) ($targetRows[$key]['target'] ?? 0)
+                : ($usesDefault ? (float) ($meta['default_target'] ?? 0) : 0.0);
+            $weight = $hasTargetRow
+                ? (float) ($targetRows[$key]['weight'] ?? $meta['default_weight'] ?? 0)
+                : ($usesDefault ? (float) ($meta['default_weight'] ?? 0) : 0.0);
             $direction = (string) ($meta['direction'] ?? 'higher');
             $score = match (true) {
-                in_array($key, ['cpm_cpl', 'closing_iklan'], true) && $hasTargetRow && $targetValue <= 0 && $weight > 0 => $weight,
+                in_array($key, ['cpm_cpl', 'closing_iklan'], true) && $hasScoringRule && $targetValue <= 0 && $weight > 0 => $weight,
                 $direction === 'lower' && $targetValue > 0 && $actual > 0 && $weight > 0 => min($targetValue / $actual, 1.0) * $weight,
                 // "Higher is better" indicators are NOT capped at 100% of
                 // target - exceeding it earns proportional bonus points

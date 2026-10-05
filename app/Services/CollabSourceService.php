@@ -231,12 +231,8 @@ class CollabSourceService
      *      supaya hari yang sudah lewat window tidak ditulis ulang terus.
      *      null = ingest penuh (full sync harian & sync manual dari UI).
      */
-    public static function sync(?int $windowDays = null, ?string $onlyReport = null): array
+    public static function sync(?int $windowDays = null): array
     {
-        if ($onlyReport !== null && ! in_array($onlyReport, self::KNOWN_REPORTS, true)) {
-            throw new \InvalidArgumentException('Sumber Collab tidak dikenal: '.$onlyReport);
-        }
-
         $syncedAt = now()->format('Y-m-d H:i:s');
         $result = [
             'synced_at' => $syncedAt,
@@ -245,8 +241,7 @@ class CollabSourceService
             'errors' => [],
         ];
 
-        $reportNames = $onlyReport !== null ? [$onlyReport] : self::knownReports();
-        foreach ($reportNames as $reportName) {
+        foreach (self::knownReports() as $reportName) {
             // Absensi GGKlik has its own lightweight schedule because its
             // endpoint is daily and does not need the 30-minute full Collab cadence.
             if ($reportName === 'Absen Staff') {
@@ -281,13 +276,6 @@ class CollabSourceService
         foreach ((array) ($existing['reports'] ?? []) as $reportName => $report) {
             if (! isset($result['reports'][$reportName]) && is_array($report)) {
                 $result['reports'][$reportName] = $report;
-            }
-        }
-        if ($onlyReport !== null) {
-            foreach ((array) ($existing['errors'] ?? []) as $reportName => $error) {
-                if ($reportName !== $onlyReport) {
-                    $result['errors'][$reportName] = $error;
-                }
             }
         }
         self::cacheWrite($result);
@@ -1055,6 +1043,7 @@ class CollabSourceService
 
         $now = now();
         $records = [];
+        $onTimeRecords = [];
         foreach ($attendance as $row) {
             if (! is_array($row) || empty($row['present'])) {
                 continue;
@@ -1064,7 +1053,7 @@ class CollabSourceService
             if ($nik === '' || $name === '') {
                 continue;
             }
-            $records[] = [
+            $record = [
                 'report_name' => 'Absen Staff',
                 'metric_date' => $date,
                 'entity_key' => self::usernameFromNikOrName($nik, $name),
@@ -1075,15 +1064,36 @@ class CollabSourceService
                 'value' => 1,
                 'synced_at' => $now,
             ];
+            $records[] = $record;
+
+            if (self::attendanceIsOnTime((string) ($row['clockIn'] ?? ''))) {
+                $onTimeRecords[] = array_merge($record, ['report_name' => 'Absen Tepat Waktu']);
+            }
         }
 
-        foreach (array_chunk($records, 500) as $chunk) {
-            DB::table('rsm_collab_daily_metrics')->upsert(
-                $chunk,
-                ['report_name', 'metric_date', 'entity_key'],
-                ['staff_nik', 'staff_name', 'regional', 'campus_name', 'value', 'synced_at']
-            );
+        DB::transaction(function () use ($date, $records, $onTimeRecords): void {
+            DB::table('rsm_collab_daily_metrics')
+                ->where('report_name', 'Absen Tepat Waktu')
+                ->whereDate('metric_date', $date)
+                ->delete();
+
+            foreach (array_chunk(array_merge($records, $onTimeRecords), 500) as $chunk) {
+                DB::table('rsm_collab_daily_metrics')->upsert(
+                    $chunk,
+                    ['report_name', 'metric_date', 'entity_key'],
+                    ['staff_nik', 'staff_name', 'regional', 'campus_name', 'value', 'synced_at']
+                );
+            }
+        });
+    }
+
+    private static function attendanceIsOnTime(string $clockIn): bool
+    {
+        if (! preg_match('/(?:^|\s)([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?(?:\s|$)/', trim($clockIn), $matches)) {
+            return false;
         }
+
+        return (((int) $matches[1]) * 60) + (int) $matches[2] <= 9 * 60;
     }
 
     private static function usernameFromNikOrName(?string $nik, string $name): string
