@@ -109,8 +109,7 @@ class GamificationService
         [, $scoredRows] = self::scoredRows($area, $filters, $user);
         $badgesByName = $scoredRows->keyBy(fn (array $row) => mb_strtolower(trim((string) $row['name'])));
         $scoringRows = collect(ScoringTableService::build($area, $filters, $user)['rows'])
-            ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-')
-            ->filter(fn (array $row) => (float) ($row['total_weight'] ?? 0) > 0);
+            ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-');
         $userIds = $scoringRows->pluck('user_id')->filter()->unique()->values();
         $xpByUserId = self::lifetimeXpByUserId($userIds);
         $seasonXpByUserId = XpService::seasonXpByUserId($userIds);

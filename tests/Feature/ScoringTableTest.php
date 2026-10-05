@@ -21,6 +21,8 @@ class ScoringTableTest extends TestCase
             'database/migrations/2026_08_09_120000_add_insight_attachment_path_to_rsm_reports_table.php',
             'database/migrations/2026_08_05_105956_create_rsm_ad_budget_limits_table.php',
             'database/migrations/2026_08_05_105959_create_rsm_ad_leads_table.php',
+            'database/migrations/2026_08_05_105957_create_rsm_social_accounts_table.php',
+            'database/migrations/2026_08_05_105958_create_rsm_social_posts_table.php',
             'database/migrations/2026_08_05_110006_create_rsm_activity_logs_table.php',
             'database/migrations/2026_08_05_110009_create_rsm_collab_daily_metrics_table.php',
             'database/migrations/2026_08_05_110000_create_rsm_monthly_targets_table.php',
@@ -146,6 +148,96 @@ class ScoringTableTest extends TestCase
         $response->assertDontSee('Nonaktif Staff');
 
         $inactiveStaff->delete();
+        $senior->delete();
+    }
+
+    public function test_arena_shows_scoring_roster_without_monthly_targets(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900061, 'name' => 'Arena Senior No Target', 'username' => 'arena_senior_no_target',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900062, 'name' => 'Arena Staff No Target', 'username' => 'arena_staff_no_target',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'Kampus Arena', 'is_active' => true,
+        ]);
+
+        $arena = \App\Services\Dashboard\GamificationService::build(
+            'Regional B',
+            [
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+                'wilayah' => '',
+                'unit_name' => '',
+                'staff_name' => '',
+            ],
+            $senior->fresh()
+        );
+
+        $row = collect($arena['all_leaderboard'])->firstWhere('name', 'Arena Staff No Target');
+        $this->assertNotNull($row);
+        $this->assertSame(0.0, $row['points']);
+
+        $staff->delete();
+        $senior->delete();
+    }
+
+    public function test_new_daily_activities_are_available_as_scoring_indicators(): void
+    {
+        $this->migrate();
+
+        $senior = RsmUser::create([
+            'id' => 900063, 'name' => 'Daily Senior', 'username' => 'daily_senior_scoring',
+            'password_hash' => 'x', 'role' => 'senior', 'jabatan' => 'Senior Manager',
+            'area' => 'Regional B', 'is_active' => true,
+        ]);
+        $staff = RsmUser::create([
+            'id' => 900064, 'name' => 'Daily Activity Staff', 'username' => 'daily_activity_staff',
+            'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
+            'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'Kampus Daily', 'is_active' => true,
+        ]);
+        $account = \App\Models\RsmSocialAccount::create([
+            'area' => 'Regional B', 'wilayah' => 'Regional 6', 'unit_name' => 'Kampus Daily',
+            'instagram_username' => 'kampus_daily_test',
+        ]);
+        foreach (['feed', 'reels', 'facebook', 'tiktok', 'story'] as $mediaType) {
+            \App\Models\RsmSocialPost::create([
+                'account_id' => $account->id, 'area' => 'Regional B', 'post_date' => now()->toDateString(),
+                'media_type' => $mediaType,
+            ]);
+        }
+        \App\Models\RsmCollabDailyMetric::create([
+            'report_name' => 'Absen Staff', 'metric_date' => now()->toDateString(),
+            'entity_key' => 'daily-activity-staff', 'staff_name' => 'Daily Activity Staff',
+            'regional' => 'Regional 6', 'value' => 1,
+        ]);
+
+        $table = \App\Services\Dashboard\ScoringTableService::build(
+            'Regional B',
+            [
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+                'wilayah' => '',
+                'unit_name' => '',
+                'staff_name' => '',
+            ],
+            $senior->fresh()
+        );
+
+        $row = collect($table['rows'])->firstWhere('name', 'Daily Activity Staff');
+        $this->assertNotNull($row);
+        $this->assertSame(1.0, $row['absen_masuk']);
+        $this->assertSame(2.0, $row['konten_instagram']);
+        $this->assertSame(1.0, $row['konten_facebook']);
+        $this->assertSame(1.0, $row['konten_tiktok']);
+        $this->assertSame(1.0, $row['story_instagram']);
+
+        $account->delete();
+        $staff->delete();
         $senior->delete();
     }
 

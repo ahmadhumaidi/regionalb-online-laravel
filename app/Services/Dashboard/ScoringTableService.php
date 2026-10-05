@@ -3,6 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Models\RsmMonthlyTarget;
+use App\Models\RsmSocialPost;
 use App\Models\RsmUser;
 use App\Support\CampusMatcher;
 use Illuminate\Support\Collection;
@@ -42,16 +43,25 @@ class ScoringTableService
         $campusHerreg = self::campusIndex(CollabMetricsService::campusTotals($filters, $area, $user, 'Herreg Kampus Regional'));
         $shareFbByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Share FB Group');
         $liveStreamingByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Live Streaming');
+        $attendanceByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Absen Staff');
         $affMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Mahasiswa');
         $affNonMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Non Mahasiswa');
+        $socialPosts = RsmSocialPost::query()
+            ->with('account:id,unit_name')
+            ->where('area', $area)
+            ->when($filters['date_from'] !== '', fn ($query) => $query->whereDate('post_date', '>=', $filters['date_from']))
+            ->when($filters['date_to'] !== '', fn ($query) => $query->whereDate('post_date', '<=', $filters['date_to']))
+            ->where('media_type', '!=', 'no_post')
+            ->get(['id', 'account_id', 'media_type']);
 
         $rows = $roster
-            ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg, $shareFbByName, $liveStreamingByName, $affMhsByName, $affNonMhsByName, $indicators, $targetsByName) {
+            ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg, $shareFbByName, $liveStreamingByName, $attendanceByName, $affMhsByName, $affNonMhsByName, $socialPosts, $indicators, $targetsByName) {
                 $nameKey = mb_strtolower(trim((string) $staff->name));
                 $indicator = $indicatorByName->get($nameKey);
                 $personal = $personalByName->get($nameKey);
                 $unitName = (string) ($indicator['unit_name'] ?? $staff->campus_name ?? '');
                 $wilayah = (string) ($indicator['wilayah'] ?? $staff->regional ?? '');
+                $campusPosts = $socialPosts->filter(fn (RsmSocialPost $post): bool => CampusMatcher::matches((string) ($post->account?->unit_name ?? ''), $unitName));
 
                 $row = [
                     'user_id' => $staff->id,
@@ -72,6 +82,11 @@ class ScoringTableService
                     'hari_aktif' => (int) ($indicator['report_days'] ?? 0),
                     'share_fb_group' => (float) ($shareFbByName->get($nameKey) ?? 0),
                     'live_streaming' => (float) ($liveStreamingByName->get($nameKey) ?? 0),
+                    'absen_masuk' => (float) ($attendanceByName->get($nameKey) ?? 0),
+                    'konten_instagram' => (float) $campusPosts->whereIn('media_type', ['feed', 'reels'])->count(),
+                    'konten_facebook' => (float) $campusPosts->where('media_type', 'facebook')->count(),
+                    'konten_tiktok' => (float) $campusPosts->where('media_type', 'tiktok')->count(),
+                    'story_instagram' => (float) $campusPosts->where('media_type', 'story')->count(),
                     'affiliator_mahasiswa' => (float) ($affMhsByName->get($nameKey) ?? 0),
                     'affiliator_non_mahasiswa' => (float) ($affNonMhsByName->get($nameKey) ?? 0),
                 ];

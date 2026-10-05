@@ -60,6 +60,36 @@ return [
             'default_weight' => 5,
             'metric_key' => 'hari_aktif',
         ],
+        'absen' => [
+            'label' => 'Absen Masuk',
+            'group' => 'Aktivitas',
+            'default_weight' => 0,
+            'metric_key' => 'absen_masuk',
+        ],
+        'konten_instagram' => [
+            'label' => 'Konten Instagram',
+            'group' => 'Digital',
+            'default_weight' => 0,
+            'metric_key' => 'konten_instagram',
+        ],
+        'konten_facebook' => [
+            'label' => 'Konten Facebook',
+            'group' => 'Digital',
+            'default_weight' => 0,
+            'metric_key' => 'konten_facebook',
+        ],
+        'konten_tiktok' => [
+            'label' => 'Konten TikTok',
+            'group' => 'Digital',
+            'default_weight' => 0,
+            'metric_key' => 'konten_tiktok',
+        ],
+        'story_instagram' => [
+            'label' => 'Story Instagram',
+            'group' => 'Digital',
+            'default_weight' => 0,
+            'metric_key' => 'story_instagram',
+        ],
         'share_fb' => [
             'label' => 'Share FB',
             'group' => 'Digital',
