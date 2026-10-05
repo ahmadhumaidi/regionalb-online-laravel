@@ -59,9 +59,13 @@ class XpRealtimeEventTest extends TestCase
             'category' => 'Meeting internal',
         ], null, $staff);
 
-        $this->assertSame(5, XpService::getLifetimeXp($staff));
+        $this->assertSame('Disetujui', $report->status);
+        $this->assertSame(15, XpService::getLifetimeXp($staff));
         $this->assertDatabaseHas('rsm_gamification_transactions', [
             'user_id' => $staff->id, 'event_type' => 'report_created', 'source_type' => 'report', 'source_id' => $report->id, 'xp' => 5,
+        ]);
+        $this->assertDatabaseHas('rsm_gamification_transactions', [
+            'user_id' => $staff->id, 'event_type' => 'report_approved', 'source_type' => 'report', 'source_id' => $report->id, 'xp' => 10,
         ]);
 
         $report->delete();

@@ -19,7 +19,7 @@ class AuthorizationTest extends TestCase
     {
         return [
             'users' => ['/users'],
-            'targets' => ['/targets'],
+            'scoring-targets' => ['/scoring/targets'],
             'personalia' => ['/jadwal-personalia'],
             'collab-source' => ['/sumber-collab'],
         ];
@@ -231,7 +231,7 @@ class AuthorizationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($superUser)->post('/targets', [
+        $response = $this->actingAs($superUser)->post('/scoring/targets', [
             'target_month' => '2026-08',
             'scope_type' => 'staff',
             'staff_name' => 'Baharuddin Muslim',
@@ -279,7 +279,7 @@ class AuthorizationTest extends TestCase
             ['budget_limit' => 1500000, 'created_by_user_id' => $superUser->id, 'created_by_name' => $superUser->name]
         );
 
-        $response = $this->actingAs($superUser)->post('/targets', [
+        $response = $this->actingAs($superUser)->post('/scoring/targets', [
             'target_month' => '2026-08',
             'scope_type' => 'staff',
             'staff_name' => 'Test Staff Indicator',
@@ -362,7 +362,7 @@ class AuthorizationTest extends TestCase
             ->all();
         $indicatorTargets['reg']['weight'] = 11;
 
-        $response = $this->actingAs($superUser)->post('/targets', [
+        $response = $this->actingAs($superUser)->post('/scoring/targets', [
             'target_month' => '2026-08',
             'scope_type' => 'staff',
             'staff_name' => 'Test Staff Weight',

@@ -31,7 +31,7 @@ class ExampleTest extends TestCase
             'aktivitas' => ['/aktivitas'],
             'rekap' => ['/rekap'],
             'rekap-export' => ['/rekap/export'],
-            'targets' => ['/targets'],
+            'scoring-targets' => ['/scoring/targets'],
             'users' => ['/users'],
             'jadwal-koordinator' => ['/jadwal-koordinator'],
             'jadwal-personalia' => ['/jadwal-personalia'],

@@ -30,9 +30,12 @@
                 <h2 class="text-base font-semibold text-ink">Sumber Data Collab (cb.web.id)</h2>
                 <p class="text-sm text-ink-muted">Snapshot cache terakhir tersinkron{{ $syncedAt !== '' ? ' - ' . $syncedAt . ' WIB' : ' - belum ada sinkronisasi' }}</p>
             </div>
-            <form method="POST" action="{{ route('sumber-collab.sync') }}">
+            <form method="POST" action="{{ route('sources.sync') }}" onsubmit="const button=this.querySelector('button'); button.disabled=true; button.querySelector('[data-label]').textContent='Sinkron…';">
                 @csrf
-                <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Sinkronkan Semua</button>
+                <button class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-wait disabled:opacity-70" title="Sinkronkan Personalia, Collab, Absensi, dan BDC">
+                    <x-icon name="calendar" class="h-4 w-4" />
+                    <span data-label>Sinkron Semua</span>
+                </button>
             </form>
         </div>
 

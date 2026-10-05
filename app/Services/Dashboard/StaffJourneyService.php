@@ -53,14 +53,10 @@ class StaffJourneyService
         return RsmUser::query()
             ->where('role', RsmUser::ROLE_STAFF)
             ->where('is_active', true)
-            ->when(
-                $viewer->role === RsmUser::ROLE_STAFF,
-                fn ($query) => $query->whereKey($viewer->id),
-            )
             ->when($viewer->role !== RsmUser::ROLE_SUPER_USER, function ($query) use ($viewer): void {
                 $query->where('area', $viewer->area);
 
-                if ($viewer->role === RsmUser::ROLE_KOORDINATOR) {
+                if (in_array($viewer->role, [RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_STAFF], true)) {
                     $query->when(
                         trim((string) $viewer->regional) !== '',
                         fn ($regionalQuery) => $regionalQuery->where('regional', $viewer->regional),
@@ -98,6 +94,7 @@ class StaffJourneyService
         return [
             'id' => $user->id,
             'name' => (string) $user->name,
+            'area' => (string) ($user->area ?: '-'),
             'unit' => (string) ($user->campus_name ?: 'Unit belum diatur'),
             'campus' => (string) ($user->campus_name ?: 'Kampus belum diatur'),
             'regional' => (string) ($user->regional ?: '-'),

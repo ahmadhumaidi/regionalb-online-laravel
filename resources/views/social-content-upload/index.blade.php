@@ -27,69 +27,6 @@
         </div>
     </section>
 
-    <section class="mb-6 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-            <div>
-                <h2 class="font-semibold text-ink">Rekap Aktivitas September</h2>
-                <p class="mt-0.5 text-xs text-ink-muted">Regional 4–7 · aktivitas Feed dan Story lengkap tanggal 1–30 September.</p>
-            </div>
-            @if ($spreadsheetRecap['synced_at'])
-                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Diperbarui {{ \Carbon\Carbon::parse($spreadsheetRecap['synced_at'])->timezone('Asia/Jakarta')->format('d/m/Y H:i') }} WIB</span>
-            @endif
-        </div>
-        @if ($spreadsheetRecap['error'])
-            <div class="m-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{{ $spreadsheetRecap['error'] }}</div>
-        @elseif (empty($spreadsheetRecap['rows']))
-            <div class="px-5 py-10 text-center text-sm text-ink-muted">Belum ada data rekap yang dapat ditampilkan.</div>
-        @else
-            <div class="border-b border-border bg-cyan-50/60 px-5 py-2 text-xs text-cyan-800">Geser tabel ke kanan untuk melihat tanggal 1–30. <strong>F</strong> = Feed, <strong>S</strong> = Story.</div>
-            <div class="max-h-[70vh] overflow-auto overscroll-contain">
-                <table class="w-max min-w-full border-separate border-spacing-0 text-left text-sm">
-                    <thead class="text-xs text-ink-muted">
-                        <tr class="bg-surface-muted">
-                            <th rowspan="2" class="sticky top-0 left-0 z-[15] w-40 min-w-40 border-r border-b border-border bg-surface-muted px-3 py-3 font-semibold shadow-[3px_0_8px_rgba(15,23,42,0.10)] sm:w-48 sm:min-w-48 sm:px-4">Staff Unit</th>
-                            <th rowspan="2" class="sticky top-0 z-10 w-24 min-w-24 border-r border-b border-border bg-surface-muted px-3 py-3 font-semibold">Regional</th>
-                            <th rowspan="2" class="sticky top-0 z-10 w-64 min-w-64 border-r border-b border-border bg-surface-muted px-4 py-3 font-semibold">Nama Kampus</th>
-                            <th rowspan="2" class="sticky top-0 z-10 min-w-32 border-r border-b border-border bg-surface-muted px-4 py-3 font-semibold">Profil</th>
-                            @for ($day = 1; $day <= 30; $day++)
-                                <th colspan="2" class="sticky top-0 z-10 border-r border-b border-border bg-surface-muted px-2 py-2 text-center font-bold text-ink">{{ $day }}</th>
-                            @endfor
-                            <th colspan="3" class="sticky top-0 z-10 border-b border-border bg-brand-50 px-3 py-2 text-center font-bold text-brand-700">Total September</th>
-                        </tr>
-                        <tr class="bg-surface-muted/80">
-                            @for ($day = 1; $day <= 30; $day++)
-                                <th class="sticky top-8 z-10 w-10 min-w-10 border-r border-b border-border bg-surface-muted px-1 py-1.5 text-center font-semibold text-cyan-700">F</th>
-                                <th class="sticky top-8 z-10 w-10 min-w-10 border-r border-b border-border bg-surface-muted px-1 py-1.5 text-center font-semibold text-purple-700">S</th>
-                            @endfor
-                            <th class="sticky top-8 z-10 w-14 min-w-14 border-r border-b border-border bg-brand-50 px-2 py-1.5 text-center font-semibold text-cyan-700">Feed</th>
-                            <th class="sticky top-8 z-10 w-14 min-w-14 border-r border-b border-border bg-brand-50 px-2 py-1.5 text-center font-semibold text-purple-700">Story</th>
-                            <th class="sticky top-8 z-10 w-14 min-w-14 border-b border-border bg-brand-50 px-2 py-1.5 text-center font-semibold text-emerald-700">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border">
-                        @foreach ($spreadsheetRecap['rows'] as $row)
-                            <tr class="hover:bg-surface-muted/60">
-                                <td class="sticky left-0 z-[5] max-w-40 border-r border-b border-border bg-white px-3 py-2.5 font-medium text-ink shadow-[3px_0_8px_rgba(15,23,42,0.08)] sm:max-w-48 sm:px-4">{{ $row['staff'] ?: '—' }}</td>
-                                <td class="whitespace-nowrap border-r border-b border-border bg-white px-3 py-2.5"><span class="rounded-full bg-brand-50 px-2 py-1 text-[11px] font-semibold text-brand-700">{{ str_replace('Regional ', 'R', $row['regional']) }}</span></td>
-                                <td class="border-r border-b border-border bg-white px-4 py-2.5 font-medium text-ink">{{ $row['campus'] }}</td>
-                                <td class="border-r border-b border-border px-4 py-2.5">@if ($row['profile_url'])<a href="{{ $row['profile_url'] }}" target="_blank" rel="noopener noreferrer" class="whitespace-nowrap font-medium text-brand-600 hover:underline">Buka ↗</a>@else<span class="text-ink-muted">—</span>@endif</td>
-                                @for ($day = 1; $day <= 30; $day++)
-                                    @php($feedValue = $row['feed_days'][$day] ?? 0)
-                                    @php($storyValue = $row['story_days'][$day] ?? 0)
-                                    <td class="border-r border-b border-border px-1 py-2 text-center text-xs font-semibold {{ $feedValue > 0 ? 'bg-cyan-50 text-cyan-700' : 'text-ink-muted' }}">{{ $feedValue }}</td>
-                                    <td class="border-r border-b border-border px-1 py-2 text-center text-xs font-semibold {{ $storyValue > 0 ? 'bg-purple-50 text-purple-700' : 'text-ink-muted' }}">{{ $storyValue }}</td>
-                                @endfor
-                                <td class="border-r border-b border-border bg-brand-50/50 px-2 py-2 text-center font-bold text-cyan-700">{{ $row['feed_total'] }}</td>
-                                <td class="border-r border-b border-border bg-brand-50/50 px-2 py-2 text-center font-bold text-purple-700">{{ $row['story_total'] }}</td>
-                                <td class="border-b border-border bg-emerald-50 px-2 py-2 text-center font-bold text-emerald-700">{{ $row['feed_total'] + $row['story_total'] }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </section>
-
     <section id="input-aktivitas-konten" class="mb-6 scroll-mt-6 rounded-2xl border border-border bg-surface p-5 shadow-sm">
         <div class="mb-4">
             <h2 class="text-base font-semibold text-ink">Input aktivitas konten</h2>

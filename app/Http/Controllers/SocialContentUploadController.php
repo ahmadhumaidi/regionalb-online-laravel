@@ -6,7 +6,6 @@ use App\Models\PartnerCampus;
 use App\Models\RsmSocialAccount;
 use App\Models\RsmSocialPost;
 use App\Models\RsmUser;
-use App\Services\Content\SocialContentSpreadsheetService;
 use App\Services\Content\SocialScope;
 use App\Services\Dashboard\ReferenceOptionsService;
 use App\Support\AreaRegionals;
@@ -67,8 +66,6 @@ class SocialContentUploadController extends Controller
             ->withQueryString();
 
         $referenceOptions = ReferenceOptionsService::build($area, $user);
-        $spreadsheetRecap = SocialContentSpreadsheetService::septemberRecap($user);
-        $spreadsheetProfiles = collect($spreadsheetRecap['rows'] ?? [])->filter(fn (array $row): bool => filled($row['profile_url'] ?? null));
         $campusProfiles = PartnerCampus::query()
             ->whereIn('wilayah', AreaRegionals::forArea($area))
             ->get(['id', 'name', 'display_name', 'wilayah', 'instagram_username', 'instagram_url'])
@@ -79,19 +76,7 @@ class SocialContentUploadController extends Controller
                 'wilayah' => $campus->wilayah ?: '',
                 'username' => $campus->instagram_username ?: '',
                 'url' => $campus->instagram_url ?: '',
-            ])->map(function (array $campus) use ($spreadsheetProfiles): array {
-                if ($campus['username'] !== '' || $campus['url'] !== '') {
-                    return $campus;
-                }
-                $sheetProfile = $spreadsheetProfiles->first(fn (array $row): bool =>
-                    CampusMatcher::matches($campus['name'], (string) ($row['campus'] ?? ''))
-                    || CampusMatcher::matches($campus['label'], (string) ($row['campus'] ?? ''))
-                );
-                $url = trim((string) ($sheetProfile['profile_url'] ?? ''));
-                $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
-
-                return array_merge($campus, ['username' => $path !== '' ? explode('/', $path)[0] : '', 'url' => $url]);
-            });
+            ]);
         $referenceOptions['campuses'] = collect($referenceOptions['campuses'])->map(function (array $option) use ($campusProfiles): array {
             $profile = $campusProfiles->first(fn (array $campus): bool => ($option['id'] && (int) $option['id'] === (int) $campus['id'])
                 || CampusMatcher::matches($option['label'], $campus['label'])
@@ -122,7 +107,6 @@ class SocialContentUploadController extends Controller
                 ['label' => 'TikTok', 'value' => (int) $counts->get('tiktok', 0), 'tone' => 'green', 'note' => 'Konten TikTok tercatat'],
             ],
             'filters' => compact('dateFrom', 'dateTo', 'wilayah', 'unitName'),
-            'spreadsheetRecap' => $spreadsheetRecap,
         ]);
     }
 

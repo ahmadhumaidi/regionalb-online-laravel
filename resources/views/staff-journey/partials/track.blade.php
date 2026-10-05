@@ -13,7 +13,12 @@
     ];
 @endphp
 
-<section class="journey-arena relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 text-slate-900 shadow-xl shadow-blue-950/5 backdrop-blur">
+<style>
+    .journey-arena:fullscreen { display: flex; height: 100vh; flex-direction: column; overflow: hidden; border-radius: 0; background: #fff; }
+    .journey-arena:fullscreen .journey-map-scroll { flex: 1 1 auto; }
+    .journey-arena::backdrop { background: #0f172a; }
+</style>
+<section x-ref="journeyArena" class="journey-arena relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 text-slate-900 shadow-xl shadow-blue-950/5 backdrop-blur">
     <div class="journey-arena-grid pointer-events-none absolute inset-0"></div>
     <div class="pointer-events-none absolute -left-24 top-12 h-72 w-72 rounded-full bg-blue-300/20 blur-3xl"></div>
     <div class="pointer-events-none absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-cyan-200/20 blur-3xl"></div>
@@ -24,10 +29,16 @@
             <h2 class="mt-1 text-xl font-black sm:text-2xl">Perjalanan tim hari ini</h2>
             <p class="mt-1 text-sm text-slate-500">Klik pemain untuk melihat misi yang sudah ditaklukkan.</p>
         </div>
-        <div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-            <div><span class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Progress tim</span><strong class="text-lg text-slate-900" x-text="teamProgress+'%'"></strong></div>
-            <div class="h-9 w-px bg-slate-200"></div>
-            <div class="w-32 sm:w-44"><div class="mb-1 flex justify-between text-[10px] text-slate-500"><span>Misi selesai</span><span x-text="completedMissions+'/'+totalMissions"></span></div><div class="h-2 overflow-hidden rounded-full bg-slate-200"><div class="journey-team-progress h-full rounded-full" :style="`width:${teamProgress}%`"></div></div></div>
+        <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+            <button type="button" @click="toggleJourneyFullscreen()" class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700" :title="isFullscreen ? 'Keluar dari layar penuh' : 'Tampilkan perjalanan tim dalam layar penuh'">
+                <span class="text-lg leading-none" aria-hidden="true" x-text="isFullscreen ? '⊟' : '⛶'"></span>
+                <span x-text="isFullscreen ? 'Keluar' : 'Layar Penuh'"></span>
+            </button>
+            <div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                <div><span class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Progress tim</span><strong class="text-lg text-slate-900" x-text="teamProgress+'%'"></strong></div>
+                <div class="h-9 w-px bg-slate-200"></div>
+                <div class="w-32 sm:w-44"><div class="mb-1 flex justify-between text-[10px] text-slate-500"><span>Misi selesai</span><span x-text="completedMissions+'/'+totalMissions"></span></div><div class="h-2 overflow-hidden rounded-full bg-slate-200"><div class="journey-team-progress h-full rounded-full" :style="`width:${teamProgress}%`"></div></div></div>
+            </div>
         </div>
     </div>
 

@@ -87,7 +87,6 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
 
     Route::get('/konten', [ContentController::class, 'index'])->name('konten');
     Route::post('/konten/accounts', [ContentController::class, 'storeAccount'])->name('konten.accounts.store');
-    Route::post('/konten/posts', [ContentController::class, 'storePost'])->name('konten.posts.store');
     Route::get('/upload-konten-sosmed', [SocialContentUploadController::class, 'index'])->name('upload-konten-sosmed');
     Route::post('/upload-konten-sosmed', [SocialContentUploadController::class, 'store'])->name('upload-konten-sosmed.store');
     Route::patch('/upload-konten-sosmed/{post}', [SocialContentUploadController::class, 'update'])->name('upload-konten-sosmed.update');
@@ -103,8 +102,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/rekap', [ReportRecapController::class, 'index'])->name('rekap');
     Route::get('/rekap/export', [ReportRecapController::class, 'export'])->name('rekap.export');
     Route::post('/rekap/whatsapp', [ReportRecapController::class, 'generateWhatsapp'])->name('rekap.whatsapp');
-    Route::get('/targets', [TargetController::class, 'index'])->name('targets');
-    Route::post('/targets', [TargetController::class, 'store'])->name('targets.store');
+    Route::get('/targets', fn () => redirect()->route('scoring.targets'));
     Route::get('/jadwal-personalia', [PersonnelScheduleController::class, 'index'])->name('jadwal-personalia');
     Route::post('/jadwal-personalia/sync', [PersonnelScheduleController::class, 'sync'])->name('jadwal-personalia.sync');
     Route::get('/users', [UserManagementController::class, 'index'])->name('users');

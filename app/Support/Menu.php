@@ -19,14 +19,14 @@ class Menu
     public static function sections(RsmUser $user): array
     {
         $sections = [
-            ['key' => 'utama', 'title' => 'Utama', 'items' => [
+            ['key' => 'utama', 'title' => 'Utama', 'items' => array_values(array_filter([
                 ['key' => 'dashboard', 'label' => 'Dashboard Utama', 'icon' => 'home'],
-                ['key' => 'forum', 'label' => 'Forum Diskusi', 'icon' => 'chat'],
-            ]],
-            ['key' => 'pekerjaan', 'title' => 'Pekerjaan Saya', 'items' => array_values(array_filter([
                 in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true)
                     ? ['key' => 'staff-journey', 'label' => 'Journey Staff', 'icon' => 'flag']
                     : null,
+                ['key' => 'forum', 'label' => 'Forum Diskusi', 'icon' => 'chat'],
+            ]))],
+            ['key' => 'pekerjaan', 'title' => 'Pekerjaan Saya', 'items' => array_values(array_filter([
                 ['key' => 'crm', 'label' => 'CRM Leads', 'icon' => 'users'],
                 ['key' => 'kegiatan', 'label' => 'Kegiatan Marketing', 'icon' => 'briefcase'],
                 ['key' => 'aktivitas', 'label' => 'Aktivitas Lain', 'icon' => 'bolt'],
@@ -38,10 +38,8 @@ class Menu
                 RsmRole::canViewScoringTable($user) ? ['key' => 'scoring', 'label' => 'Scoring Tim', 'icon' => 'chart-bar'] : null,
                 ['key' => 'badges', 'label' => 'League & Badge', 'icon' => 'trophy'],
                 ['key' => 'konten', 'label' => 'Monitoring Konten', 'icon' => 'photo'],
-                ['key' => 'bdc-users', 'label' => 'BDC Marketing', 'icon' => 'users'],
             ]))],
             ['key' => 'perencanaan', 'title' => 'Perencanaan Tim', 'items' => array_values(array_filter([
-                RsmRole::canManageTargets($user) ? ['key' => 'targets', 'label' => 'Target Bulanan', 'icon' => 'target'] : null,
                 $user->role === RsmUser::ROLE_SUPER_USER ? ['key' => 'closing-target-simulation', 'label' => 'Simulasi Target', 'icon' => 'target'] : null,
                 RsmRole::canViewJadwalKoordinator($user) ? ['key' => 'jadwal-koordinator', 'label' => 'Jadwal Koordinator', 'icon' => 'calendar'] : null,
                 RsmRole::canManageTargets($user) ? ['key' => 'jadwal-personalia', 'label' => 'Jadwal Personalia', 'icon' => 'clipboard'] : null,
@@ -90,7 +88,6 @@ class Menu
             'role' => 'Peran & Log Aktivitas',
             'password' => 'Ganti Password',
             'profile' => 'Profil Saya',
-            'targets' => 'Target Bulanan',
             'users' => 'Kelola User',
             'sumber-collab' => 'Sumber Data Collab',
             'jadwal-personalia' => 'Jadwal Personalia',
@@ -101,17 +98,17 @@ class Menu
         ];
     }
 
-    /** Keys gated to the same role list as Target Bulanan / Kelola User / Sumber Data Collab (dashboard.php:568-579). */
+    /** Keys gated to privileged management roles. */
     public static function isRestricted(string $key): bool
     {
-        return in_array($key, ['targets', 'users', 'sumber-collab', 'jadwal-personalia', 'closing-target-simulation'], true);
+        return in_array($key, ['users', 'sumber-collab', 'jadwal-personalia', 'closing-target-simulation'], true);
     }
 
     public static function isAllowed(string $key, RsmUser $user): bool
     {
         return match ($key) {
             'jadwal-koordinator' => RsmRole::canViewJadwalKoordinator($user),
-            'targets', 'jadwal-personalia' => RsmRole::canManageTargets($user),
+            'jadwal-personalia' => RsmRole::canManageTargets($user),
             'users' => RsmRole::canViewUsersPage($user),
             'sumber-collab' => RsmRole::canSyncCollab($user),
             'scoring' => RsmRole::canViewScoringTable($user),
@@ -136,7 +133,6 @@ class Menu
             'aktivitas' => route('aktivitas'),
             'crm' => route('crm'),
             'rekap' => route('rekap'),
-            'targets' => route('targets'),
             'jadwal-personalia' => route('jadwal-personalia'),
             'users' => route('users'),
             'jadwal-koordinator' => route('jadwal-koordinator'),

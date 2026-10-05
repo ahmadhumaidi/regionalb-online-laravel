@@ -40,6 +40,7 @@ class StaffJourneyServiceTest extends TestCase
 
         $row = collect(StaffJourneyService::build($viewer, '2026-10-01')['staff'])->firstWhere('id', $staff->id);
 
+        $this->assertSame('Regional B', $row['area']);
         $this->assertSame(9, $row['completed_daily']);
         $this->assertTrue($row['activities']['fu_bdc']['done']);
         $this->assertTrue($row['activities']['tiktok']['tracked']);
@@ -52,8 +53,7 @@ class StaffJourneyServiceTest extends TestCase
         $this->assertNotContains($outsideRegionalStaff->id, $coordinatorStaff->pluck('id')->all());
 
         $unitStaff = collect(StaffJourneyService::build($staff, '2026-10-01')['staff']);
-        $this->assertSame([$staff->id], $unitStaff->pluck('id')->all());
-        $this->assertNotContains($secondUnitStaff->id, $unitStaff->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$staff->id, $secondUnitStaff->id], $unitStaff->pluck('id')->all());
         $this->assertNotContains($outsideRegionalStaff->id, $unitStaff->pluck('id')->all());
     }
 }

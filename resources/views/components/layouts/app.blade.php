@@ -130,19 +130,6 @@
                         </form>
                     @endif
 
-                    <form method="POST" action="{{ route('sources.sync') }}" onsubmit="const button=this.querySelector('button'); button.disabled=true; button.querySelector('[data-label]').textContent='Sinkron…';">
-                        @csrf
-                        <button type="submit" class="flex items-center gap-1.5 rounded-xl border border-cyan-300/30 bg-cyan-400/15 px-3 py-2.5 text-sm font-semibold text-cyan-100 shadow-sm transition hover:bg-cyan-400/25 disabled:cursor-wait disabled:opacity-70" title="Sinkronkan Personalia, Collab, Absensi, dan BDC">
-                            <x-icon name="calendar" class="h-4 w-4" />
-                            <span data-label class="hidden md:inline">Sinkron Semua</span>
-                        </button>
-                    </form>
-
-                    <div class="hidden items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-right shadow-sm sm:flex">
-                        <span class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-sky-400 to-indigo-500 text-xs font-bold text-white">{{ strtoupper(mb_substr($user->name ?: 'U', 0, 1)) }}</span>
-                        <span><p class="text-sm font-semibold leading-tight text-white">{{ $user->name }}</p><p class="mt-0.5 text-[11px] text-slate-300">{{ $user->username }} · {{ preg_replace('/^(?:Regional )?Senior Manager(?: B)?$/', 'RSM B', (string) ($user->jabatan ?: \App\Support\RsmRole::label($user->role))) }}</p></span>
-                    </div>
-
                     <div x-data="{ open: false }" class="relative">
                         <button type="button" @click="open = ! open" class="relative rounded-xl border border-white/15 bg-white/10 p-2.5 text-slate-300 shadow-sm transition hover:bg-white/15 hover:text-white" title="Notifikasi">
                             <x-icon name="bell" class="h-5 w-5" />

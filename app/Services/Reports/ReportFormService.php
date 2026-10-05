@@ -33,7 +33,7 @@ class ReportFormService
                 'title' => 'Aktivitas Lain',
                 'label' => 'aktivitas',
                 'options' => ['Meeting internal', 'Briefing', 'Training', 'Koordinasi kampus', 'Koordinasi mitra', 'Pelayanan calon mahasiswa', 'Administrasi PMB', 'Follow up pembayaran', 'Sapa Grup Affiliate', 'Spanduk Kerjasama', 'Live Streaming Night', 'Lainnya'],
-                'statuses' => ['Draft', 'Dikirim'],
+                'statuses' => ['Disetujui'],
                 'fields' => ['report_date', 'wilayah', 'unit_name', 'staff_name', 'category', 'title', 'result_text', 'obstacle_text', 'follow_up_text', 'attachment_path'],
             ],
             RsmReport::TYPE_ADS => [
@@ -211,9 +211,14 @@ class ReportFormService
             }
         }
 
-        $status = $type === RsmReport::TYPE_ADS ? 'Pengajuan' : ($existing?->status ?? 'Dikirim');
+        $status = match (true) {
+            $type === RsmReport::TYPE_ADS => 'Pengajuan',
+            $type === RsmReport::TYPE_OTHER && $existing === null => 'Disetujui',
+            default => $existing?->status ?? 'Dikirim',
+        };
 
-        // "Aktivitas Lain" dengan Kendala terisi otomatis masuk antrian
+        // Aktivitas Lain biasa langsung disetujui. Jika Kendala terisi,
+        // laporan tetap masuk antrian
         // tindak lanjut korwil/Senior Manager begitu disimpan - staff tidak
         // perlu (dan tidak bisa) memilih status manual untuk kasus ini.
         // Guard ke Draft/Dikirim saja supaya laporan yang sudah masuk alur
