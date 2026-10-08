@@ -28,6 +28,9 @@ class Menu
             ]))],
             ['key' => 'pekerjaan', 'title' => 'Pekerjaan Saya', 'items' => array_values(array_filter([
                 ['key' => 'aktivitas', 'label' => 'Laporan', 'icon' => 'document'],
+                in_array($user->role, [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER], true)
+                    ? ['key' => 'laporan-senior', 'label' => 'Laporan Kunjungan & Rapat', 'icon' => 'briefcase']
+                    : null,
             ]))],
             ['key' => 'kinerja', 'title' => 'Kinerja', 'items' => array_values(array_filter([
                 ['key' => 'pencapaian', 'label' => 'Pencapaian Staff', 'icon' => 'chart-bar'],
@@ -47,12 +50,15 @@ class Menu
             ]],
             ['key' => 'administrasi', 'title' => 'Administrasi', 'items' => array_values(array_filter([
                 RsmRole::canViewUsersPage($user) ? ['key' => 'users', 'label' => 'Kelola User', 'icon' => 'user-group'] : null,
-                RsmRole::canSyncCollab($user) ? ['key' => 'sumber-collab', 'label' => 'Sumber Data Collab', 'icon' => 'cloud'] : null,
+                RsmRole::canViewCollab($user) ? ['key' => 'sumber-collab', 'label' => 'Sumber Data Collab', 'icon' => 'cloud'] : null,
                 $user->role !== RsmUser::ROLE_STAFF ? ['key' => 'role', 'label' => 'Peran & Log Aktivitas', 'icon' => 'shield'] : null,
             ]))],
             ['key' => 'akun', 'title' => 'Akun', 'items' => [
                 ['key' => 'profile', 'label' => 'Profil Saya', 'icon' => 'user'],
                 ['key' => 'password', 'label' => 'Ganti Password', 'icon' => 'lock'],
+                ...($user->role === RsmUser::ROLE_SUPER_USER
+                    ? [['key' => 'about-application', 'label' => 'Tentang Aplikasi', 'icon' => 'document']]
+                    : []),
             ]],
         ];
 
@@ -93,6 +99,8 @@ class Menu
             'targets' => 'Target & Bobot Scoring',
             'scoring' => 'Scoring',
             'badges' => 'League Season & Badge',
+            'laporan-senior' => 'Laporan Kunjungan & Rapat',
+            'about-application' => 'Tentang Aplikasi',
         ];
     }
 
@@ -108,11 +116,13 @@ class Menu
             'jadwal-koordinator' => RsmRole::canViewJadwalKoordinator($user),
             'jadwal-personalia' => RsmRole::canManageTargets($user),
             'users' => RsmRole::canViewUsersPage($user),
-            'sumber-collab' => RsmRole::canSyncCollab($user),
+            'sumber-collab' => RsmRole::canViewCollab($user),
             'scoring' => RsmRole::canViewScoringTable($user),
             'targets' => RsmRole::canManageTargets($user),
             'closing-target-simulation' => $user->role === RsmUser::ROLE_SUPER_USER,
+            'about-application' => $user->role === RsmUser::ROLE_SUPER_USER,
             'staff-journey' => in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true),
+            'laporan-senior' => in_array($user->role, [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER], true),
             default => true,
         };
     }
@@ -143,6 +153,8 @@ class Menu
             'scoring' => route('scoring'),
             'targets' => route('scoring.targets'),
             'badges' => route('badges'),
+            'laporan-senior' => route('laporan-senior.index'),
+            'about-application' => route('about-application.index'),
             'profile' => route('profile'),
             'password' => route('password.edit'),
             default => route('placeholder', $key),

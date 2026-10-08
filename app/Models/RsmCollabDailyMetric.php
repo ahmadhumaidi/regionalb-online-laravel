@@ -26,6 +26,7 @@ class RsmCollabDailyMetric extends Model
         return [
             'metric_date' => 'date',
             'value' => 'decimal:2',
+            'synced_at' => 'datetime',
         ];
     }
 }

@@ -70,6 +70,16 @@ class RsmRole
         return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior', 'mentor'], true);
     }
 
+    public static function canViewCollab(?RsmUser $user): bool
+    {
+        return $user !== null && in_array($user->role, array_keys(self::ROLE_LABELS), true);
+    }
+
+    public static function canSyncCollabActivity(?RsmUser $user): bool
+    {
+        return self::canViewCollab($user);
+    }
+
     public static function canManageAdBudget(?RsmUser $user): bool
     {
         return in_array($user?->role, ['super_user', 'senior'], true);
@@ -168,6 +178,7 @@ class RsmRole
     public static function escalationTargetsFor(string $role): array
     {
         return match (true) {
+            $role === 'staff' => ['koordinator'],
             $role === 'koordinator' => ['senior'],
             $role === 'senior' => ['mentor', 'executive_director', 'director'],
             in_array($role, ['super_user', 'executive_director', 'director'], true) => ['senior', 'mentor', 'executive_director', 'director'],

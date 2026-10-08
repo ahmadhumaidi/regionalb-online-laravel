@@ -25,6 +25,7 @@ class RsmReport extends Model
         'created_by_name',
         'created_by_role',
         'status',
+        'escalated_to_role',
         'title',
         'activity_kind',
         'location_name',

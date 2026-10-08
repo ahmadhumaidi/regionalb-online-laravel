@@ -6,7 +6,6 @@ use App\Jobs\SyncCollabSnapshot;
 use App\Services\CollabSourceService;
 use App\Support\CollabTableRenderer;
 use App\Support\RsmRole;
-use App\Support\SyncHealth;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -34,7 +33,7 @@ class CollabSourceController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless(RsmRole::canSyncCollab($request->user()), 403);
+        abort_unless(RsmRole::canViewCollab($request->user()), 403);
 
         $snapshot = CollabSourceService::snapshot();
         $reportNames = array_keys($snapshot['reports']);
@@ -58,11 +57,10 @@ class CollabSourceController extends Controller
             ]);
 
         $rows = (array) ($activeReportData['rows'] ?? []);
-        $headerRowCount = 2;
-        if ($rows !== []) {
-            $layout = CollabSourceService::layout($rows);
-            $headerRowCount = max(1, min((int) ($layout['data_start_index'] ?? 2), count($rows)));
-        }
+        // Every raw Collab report exposes two heading rows. Do not infer this
+        // from numeric body values: PMB rows such as campus #1/#2 contain many
+        // numbers and were previously mistaken for extra date headers.
+        $headerRowCount = min(2, count($rows));
 
         $dataWidth = (int) ($activeReportData['column_count'] ?? 0);
         $headerRows = array_map(
@@ -84,25 +82,22 @@ class CollabSourceController extends Controller
             'modeLabel' => self::MODE_LABELS[$modeRaw] ?? ($modeRaw !== '' ? $modeRaw : '-'),
             'headerRowsHtml' => CollabTableRenderer::headerRowsHtml($headerRows),
             'dataRowsHtml' => CollabTableRenderer::dataRowsHtml($dataRows),
-            'syncHealth' => SyncHealth::status(),
+            'canSync' => RsmRole::canSyncCollab($request->user()),
+            'canSyncSelected' => RsmRole::canSyncCollabActivity($request->user()),
         ]);
     }
 
     public function sync(Request $request)
     {
-        abort_unless(RsmRole::canSyncCollab($request->user()), 403);
+        abort_unless(RsmRole::canSyncCollabActivity($request->user()), 403);
         $validated = $request->validate([
-            'report' => ['nullable', 'string', 'in:'.implode(',', CollabSourceService::knownReports())],
+            'report' => ['required', 'string', 'in:'.implode(',', CollabSourceService::knownReports())],
         ]);
-        $reportName = $validated['report'] ?? null;
+        $reportName = $validated['report'];
         SyncCollabSnapshot::dispatch($reportName);
 
-        if ($reportName !== null) {
-            return redirect()->route('sumber-collab', ['report' => $reportName])
-                ->with('status', 'Sinkronisasi '.$reportName.' dimulai di background. Aktivitas lain tidak ikut diproses.');
-        }
-
-        return redirect()->route('sumber-collab')->with('status', 'Sinkronisasi semua sumber dimulai di background. Muat ulang halaman beberapa menit lagi untuk melihat hasil terbaru.');
+        return redirect()->route('sumber-collab', ['report' => $reportName])
+            ->with('status', 'Sinkronisasi '.$reportName.' dimulai di background. Aktivitas lain tidak ikut diproses.');
     }
 
     private function monthLabel(string $month): string

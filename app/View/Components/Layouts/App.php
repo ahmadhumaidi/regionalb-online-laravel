@@ -3,7 +3,9 @@
 namespace App\View\Components\Layouts;
 
 use App\Models\RsmNotification;
+use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Services\Reports\ReportListService;
 use App\Support\Menu;
 use App\Support\RsmRole;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +24,7 @@ class App extends Component
     public RsmUser $user;
 
     public int $unreadNotificationCount;
+    public int $pendingReportCount = 0;
 
     /** @var \Illuminate\Support\Collection<int, RsmNotification> */
     public $recentNotifications;
@@ -37,8 +40,15 @@ class App extends Component
         $impersonationActor = $originalId > 0 ? RsmUser::find($originalId) : $user;
 
         $this->user = $user;
-        $this->eyebrow = str_replace('Regional B', 'RSM B', $eyebrow !== '' ? $eyebrow : ($user->area ?: 'Regional B'));
+        $this->eyebrow = $eyebrow;
         $this->menuSections = Menu::sections($user);
+        if (Schema::hasTable('rsm_reports')) {
+            $this->pendingReportCount = collect(ReportListService::build(
+                [RsmReport::TYPE_MARKETING, RsmReport::TYPE_OTHER],
+                $user->area ?: 'Regional B',
+                $user,
+            ))->where('needs_action', true)->count();
+        }
         $this->impersonationUsers = RsmRole::canImpersonate($impersonationActor)
             ? RsmUser::where('is_active', true)
                 ->when(

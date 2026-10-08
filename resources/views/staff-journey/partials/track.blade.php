@@ -98,7 +98,7 @@
                     <template x-for="person in checkpointPeople()" :key="person.id">
                         <button type="button" @click="openStaffFromCheckpoint(person)" class="flex w-full items-center gap-3 rounded-2xl border border-slate-200 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50/60">
                             <img :src="person.avatar" :alt="person.name" x-on:error="$event.target.onerror=null; $event.target.src=person.avatar_fallback" class="h-12 w-12 shrink-0 rounded-full object-cover shadow-sm">
-                            <span class="min-w-0 flex-1"><b class="block truncate text-sm text-slate-900" x-text="person.name"></b><small class="block truncate text-slate-500" x-text="person.unit+' · '+person.regional"></small><span class="mt-1 block text-[11px] font-bold text-blue-600" x-text="person.completed_daily+' / '+person.total_daily+' aktivitas selesai'"></span></span>
+                            <span class="min-w-0 flex-1"><b class="block truncate text-sm text-slate-900" x-text="person.name"></b><small class="block truncate text-slate-500" x-text="person.unit+' · '+person.regional"></small><span class="mt-1 block text-[11px] font-bold text-blue-600" x-text="person.completed_daily+' / '+person.total_daily+' aktivitas selesai'"></span><span x-show="selectedCheckpoint?.step > 0" class="mt-0.5 block text-[11px] font-semibold text-emerald-600" x-text="checkpointFinishLabel(person, selectedCheckpoint?.step)"></span></span>
                             <span class="text-xs font-bold text-slate-400">Profil →</span>
                         </button>
                     </template>

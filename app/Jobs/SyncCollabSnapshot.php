@@ -11,29 +11,21 @@ class SyncCollabSnapshot implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public ?string $reportName = null)
-    {
-    }
-
     public int $timeout = 600;
 
     public int $tries = 1;
 
     public int $uniqueFor = 600;
 
-    public function uniqueId(): string
-    {
-        return $this->reportName ?: 'all';
-    }
+    public function __construct(public readonly string $reportName) {}
 
     public function handle(): void
     {
-        if ($this->reportName === 'Absen Staff') {
-            CollabSourceService::syncAttendance();
+        CollabSourceService::syncReport($this->reportName);
+    }
 
-            return;
-        }
-
-        CollabSourceService::sync(null, $this->reportName);
+    public function uniqueId(): string
+    {
+        return $this->reportName;
     }
 }

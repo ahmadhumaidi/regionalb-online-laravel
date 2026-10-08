@@ -255,6 +255,11 @@ class ReportFormService
             'created_by_name' => $existing?->created_by_name ?: $user->name,
             'created_by_role' => $existing?->created_by_role ?: $user->role,
             'status' => $status,
+            'escalated_to_role' => $type === RsmReport::TYPE_OTHER
+                && trim((string) ($data['obstacle_text'] ?? $existing?->obstacle_text ?? '')) !== ''
+                && array_key_exists('eskalasi_ke', $data)
+                    ? ($data['eskalasi_ke'] === RsmUser::ROLE_STAFF ? RsmUser::ROLE_STAFF : null)
+                    : $existing?->escalated_to_role,
             'title' => $type === RsmReport::TYPE_ADS ? (trim((string) ($data['campaign_name'] ?? '')) ?: '-') : (trim((string) ($data['title'] ?? '')) ?: 'Laporan RSM'),
             'activity_kind' => $data['activity_kind'] ?? null,
             'location_name' => $data['location_name'] ?? null,
@@ -474,6 +479,9 @@ class ReportFormService
             return;
         }
         if (trim((string) $report->obstacle_text) === '') {
+            return;
+        }
+        if ($report->escalated_to_role === RsmUser::ROLE_STAFF) {
             return;
         }
 

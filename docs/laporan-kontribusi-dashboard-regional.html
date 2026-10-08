@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Laporan Kontribusi Dashboard Regional — Ahmad Humaidi</title>
+<style>
+@page { size: A4; margin: 13mm 14mm 14mm; }
+* { box-sizing: border-box; }
+body { margin: 0; color: #17212b; font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; line-height: 1.55; }
+.page { min-height: 267mm; position: relative; page-break-after: always; padding-bottom: 12mm; }
+.page:last-child { page-break-after: auto; }
+.eyebrow { color: #de6c2f; font-size: 9pt; font-weight: bold; letter-spacing: 1.6px; text-transform: uppercase; }
+h1 { color: #12273b; font-size: 31pt; line-height: 1.08; margin: 12mm 0 5mm; letter-spacing: -1px; }
+h2 { color: #12273b; font-size: 20pt; line-height: 1.2; margin: 3mm 0 5mm; }
+h3 { color: #183c56; font-size: 12.5pt; margin: 4mm 0 1.5mm; }
+p { margin: 0 0 3.2mm; }
+.muted { color: #647382; }
+.lead { color: #33495c; font-size: 13pt; line-height: 1.6; }
+.accent-line { width: 28mm; height: 4px; background: #de6c2f; margin: 5mm 0 8mm; }
+.hero { margin: -13mm -14mm 0; height: 90mm; padding: 20mm 18mm; color: white; background: #102b40; }
+.hero .eyebrow { color: #f5a26f; }
+.hero h1 { color: white; margin: 8mm 0 4mm; }
+.hero p { color: #d8e4eb; font-size: 12pt; max-width: 142mm; }
+.cover-meta { margin-top: 16mm; padding: 8mm; background: #f2f6f8; border-left: 5px solid #de6c2f; }
+.cover-meta td { padding: 1.4mm 6mm 1.4mm 0; vertical-align: top; }
+.cover-meta td:first-child { color: #647382; width: 40mm; }
+.footer { position: absolute; bottom: 0; left: 0; right: 0; color: #7b8791; font-size: 8.5pt; border-top: 1px solid #dce4e9; padding-top: 2mm; }
+.footer span { float: right; }
+.summary { background: #eef4f6; padding: 7mm; border-radius: 3px; margin: 5mm 0; }
+.grid2 { width: 100%; border-collapse: separate; border-spacing: 4mm; margin: 0 -4mm; }
+.grid2 td { width: 50%; vertical-align: top; }
+.card { background: #f6f8f9; border-top: 3px solid #de6c2f; padding: 5mm; min-height: 39mm; }
+.card h3 { margin-top: 0; }
+.num { color: #de6c2f; font-size: 23pt; font-weight: bold; line-height: 1; }
+.metric-table { width: 100%; border-collapse: collapse; margin-top: 5mm; }
+.metric-table th { background: #133149; color: white; text-align: left; padding: 3mm; font-size: 9pt; }
+.metric-table td { border-bottom: 1px solid #dce4e9; padding: 3mm; vertical-align: top; }
+.metric-table td:first-child { font-weight: bold; color: #183c56; }
+.pill { display: inline-block; padding: 1mm 3mm; margin: 0 1mm 1.5mm 0; color: #16374e; background: #e6eef2; border-radius: 10px; font-size: 8.5pt; }
+.quote { margin: 7mm 0; padding: 7mm 8mm; color: #183c56; font-size: 14pt; line-height: 1.55; border-left: 5px solid #de6c2f; background: #f7f3ef; }
+.flow { width: 100%; border-collapse: collapse; margin: 6mm 0; }
+.flow td { text-align: center; vertical-align: middle; }
+.flow .box { padding: 5mm 2mm; background: #14364f; color: white; border-radius: 3px; font-weight: bold; }
+.flow .arrow { width: 8mm; color: #de6c2f; font-size: 18pt; }
+ul { margin: 2mm 0 4mm; padding-left: 5mm; }
+li { margin-bottom: 1.8mm; }
+.check { list-style: none; padding-left: 0; }
+.check li:before { content: "✓"; color: #de6c2f; font-weight: bold; margin-right: 3mm; }
+.callout { background: #14364f; color: white; padding: 6mm; margin: 5mm 0; }
+.callout h3 { color: #f3a071; margin-top: 0; }
+.small { font-size: 8.7pt; }
+.sign { margin-top: 14mm; width: 65mm; float: right; }
+.sign .line { margin-top: 18mm; border-top: 1px solid #667; padding-top: 2mm; }
+</style>
+</head>
+<body>
+
+<section class="page">
+  <div class="hero">
+    <div class="eyebrow">Laporan kontribusi &amp; hasil pengembangan</div>
+    <h1>Dashboard Regional B</h1>
+    <p>Sistem kerja terintegrasi untuk mempermudah staf unit, koordinator wilayah, manajemen regional, dan pimpinan dalam menjalankan, memantau, serta mengevaluasi aktivitas operasional.</p>
+  </div>
+  <div class="cover-meta">
+    <table>
+      <tr><td>Disusun oleh</td><td><strong>Ahmad Humaidi</strong></td></tr>
+      <tr><td>Periode dokumen</td><td>Oktober 2026</td></tr>
+      <tr><td>Ruang lingkup</td><td>Perancangan, pengembangan, integrasi, pemeliharaan, dan pengembangan berkelanjutan sistem</td></tr>
+      <tr><td>Tujuan dokumen</td><td>Bahan evaluasi kontribusi, tanggung jawab, serta penyesuaian kompensasi</td></tr>
+    </table>
+  </div>
+  <div class="quote">“Dashboard ini dibangun untuk mengubah pekerjaan yang tersebar menjadi alur kerja yang lebih terarah, transparan, dan mudah dipantau bersama.”</div>
+  <p class="muted">Dokumen ini merangkum nilai yang telah dihasilkan oleh sistem berdasarkan fungsi yang tersedia di aplikasi dan jejak pengembangannya. Klaim efisiensi kuantitatif disajikan sebagai indikator pengukuran lanjutan apabila data pembanding tersedia.</p>
+  <div class="footer">Laporan Kontribusi Dashboard Regional B <span>1</span></div>
+</section>
+
+<section class="page">
+  <div class="eyebrow">01 — Ringkasan Eksekutif</div>
+  <h2>Dari kebutuhan internal menjadi aset kerja lintas peran</h2>
+  <div class="accent-line"></div>
+  <p class="lead">Dashboard Regional B bukan hanya halaman pemantauan. Sistem ini menyatukan proses pelaporan, persetujuan, pencapaian, target, anggaran, CRM, jadwal, kolaborasi, dan administrasi pengguna dalam satu lingkungan kerja.</p>
+  <div class="summary">
+    <strong>Nilai utama sistem</strong><br>
+    Informasi menjadi lebih mudah ditemukan, status pekerjaan lebih terlihat, koordinasi lebih cepat, dan pimpinan memperoleh bahan evaluasi yang lebih konsisten. Akses berbasis peran juga memungkinkan kebutuhan staf, korwil, senior, dan pimpinan dilayani tanpa mengorbankan batas kewenangan.
+  </div>
+  <table class="grid2">
+    <tr>
+      <td><div class="card"><div class="num">1</div><h3>Pusat kerja terintegrasi</h3><p>Mengurangi ketergantungan pada catatan, file, dan komunikasi yang terpencar.</p></div></td>
+      <td><div class="card"><div class="num">4+</div><h3>Kelompok pengguna</h3><p>Staf unit, koordinator, manajemen regional, dan pimpinan mendapatkan tampilan sesuai kebutuhan.</p></div></td>
+    </tr>
+    <tr>
+      <td><div class="card"><div class="num">213</div><h3>Commit pengembangan</h3><p>Jejak kontribusi atas nama Ahmad Humaidi pada repositori hingga dokumen ini disusun.</p></div></td>
+      <td><div class="card"><div class="num">226</div><h3>Artefak inti</h3><p>116 berkas aplikasi, 61 tampilan, dan 49 migrasi basis data sebagai gambaran skala implementasi.</p></div></td>
+    </tr>
+  </table>
+  <div class="callout"><h3>Kesimpulan eksekutif</h3><p>Kontribusi yang diberikan melampaui pembuatan fitur. Pekerjaan ini mencakup pemahaman proses bisnis, penerjemahan kebutuhan pengguna, arsitektur data, keamanan akses, otomasi, penyajian informasi, pengujian, deployment, dan pemeliharaan.</p></div>
+  <div class="footer">Laporan Kontribusi Dashboard Regional B <span>2</span></div>
+</section>
+
+<section class="page">
+  <div class="eyebrow">02 — Tujuan Pengembangan</div>
+  <h2>Masalah yang diselesaikan oleh sistem</h2>
+  <div class="accent-line"></div>
+  <table class="metric-table">
+    <tr><th>Kebutuhan</th><th>Tujuan sistem</th><th>Hasil yang diharapkan</th></tr>
+    <tr><td>Data tersebar</td><td>Menyatukan data dan aktivitas penting pada satu dashboard.</td><td>Pencarian informasi lebih cepat dan versi data lebih konsisten.</td></tr>
+    <tr><td>Status sulit dipantau</td><td>Menyediakan alur status, verifikasi, persetujuan, revisi, dan tindak lanjut.</td><td>Akuntabilitas meningkat dan pekerjaan tertunda lebih mudah terlihat.</td></tr>
+    <tr><td>Evaluasi manual</td><td>Menyajikan pencapaian, scoring, target, closing, dan rekap secara terstruktur.</td><td>Pimpinan memiliki dasar evaluasi yang lebih objektif.</td></tr>
+    <tr><td>Koordinasi berulang</td><td>Menyediakan forum, notifikasi, jadwal, serta ringkasan siap WhatsApp.</td><td>Koordinasi rutin menjadi lebih ringkas dan terdokumentasi.</td></tr>
+    <tr><td>Akses tidak seragam</td><td>Menerapkan akses berbasis peran dan cakupan wilayah.</td><td>Informasi tersedia bagi pihak yang tepat sesuai kewenangannya.</td></tr>
+    <tr><td>Sumber eksternal</td><td>Menyinkronkan data Collab, BDC, dan personalia dengan mekanisme fallback.</td><td>Data tetap tersedia ketika sumber sementara bermasalah.</td></tr>
+  </table>
+  <h3>Alur nilai yang dibangun</h3>
+  <table class="flow"><tr>
+    <td class="box">Input<br>terstruktur</td><td class="arrow">›</td>
+    <td class="box">Validasi &amp;<br>otorisasi</td><td class="arrow">›</td>
+    <td class="box">Monitoring<br>terpusat</td><td class="arrow">›</td>
+    <td class="box">Keputusan &amp;<br>tindak lanjut</td>
+  </tr></table>
+  <p>Sistem membantu organisasi bergerak dari sekadar mengumpulkan laporan menuju pengelolaan kinerja yang dapat ditelusuri dari input hingga tindak lanjut.</p>
+  <div class="footer">Laporan Kontribusi Dashboard Regional B <span>3</span></div>
+</section>
+
+<section class="page">
+  <div class="eyebrow">03 — Cakupan &amp; Kegunaan</div>
+  <h2>Fungsi nyata yang tersedia</h2>
+  <div class="accent-line"></div>
+  <table class="grid2">
+    <tr>
+      <td><div class="card"><h3>Pelaporan &amp; persetujuan</h3><p>Laporan aktivitas, kegiatan marketing, kunjungan/rapat, lampiran, verifikasi, persetujuan, penolakan, revisi, kendala, dan tindak lanjut.</p></div></td>
+      <td><div class="card"><h3>Kinerja &amp; pencapaian</h3><p>Pencapaian staf dan kampus, scoring tim, target dan bobot, journey staf, league, badge, serta simulasi target closing.</p></div></td>
+    </tr>
+    <tr>
+      <td><div class="card"><h3>Leads, CRM &amp; anggaran</h3><p>Pengelolaan leads, perubahan status, anggaran iklan, realisasi, upload data, plafon, dan proses persetujuan anggaran.</p></div></td>
+      <td><div class="card"><h3>Perencanaan &amp; koordinasi</h3><p>Jadwal koordinator, generate agenda bulanan, checklist, dokumentasi, jadwal personalia, forum diskusi, dan ringkasan WhatsApp.</p></div></td>
+    </tr>
+    <tr>
+      <td><div class="card"><h3>Data &amp; integrasi</h3><p>Sinkronisasi sumber Collab, BDC, dan personalia, snapshot, cache/fallback, serta sinkronisasi terjadwal untuk menjaga ketersediaan informasi.</p></div></td>
+      <td><div class="card"><h3>Administrasi &amp; keamanan</h3><p>Kelola pengguna, aktivasi akun, reset sandi, role, cakupan area/regional, log aktivitas, notifikasi, dan akses sesuai kewenangan.</p></div></td>
+    </tr>
+  </table>
+  <h3>Pengguna dan manfaat langsung</h3>
+  <p><span class="pill">Staf unit</span> input laporan, memantau perjalanan dan pencapaian, mengelola leads, serta melihat tindak lanjut.</p>
+  <p><span class="pill">Koordinator wilayah</span> memonitor tim dan unit, mengelola agenda, memeriksa laporan, dan menyusun rekap.</p>
+  <p><span class="pill">Manajemen regional</span> membandingkan kinerja, menetapkan target, mengawasi anggaran, dan mengidentifikasi hambatan.</p>
+  <p><span class="pill">Pimpinan / regional lain</span> memperoleh visibilitas lintas area sesuai hak akses untuk pembelajaran dan pengambilan keputusan.</p>
+  <div class="footer">Laporan Kontribusi Dashboard Regional B <span>4</span></div>
+</section>
+
+<section class="page">
+  <div class="eyebrow">04 — Manfaat &amp; Keunggulan</div>
+  <h2>Dampak terhadap cara kerja organisasi</h2>
+  <div class="accent-line"></div>
+  <table class="metric-table">
+    <tr><th>Manfaat</th><th>Nilai operasional</th><th>Nilai bagi pimpinan</th></tr>
+    <tr><td>Efisiensi waktu</td><td>Form, filter, rekap, export, dan template mengurangi pekerjaan berulang.</td><td>Informasi penting dapat ditinjau tanpa meminta rekap manual berulang kali.</td></tr>
+    <tr><td>Transparansi</td><td>Status dan tindak lanjut terlihat oleh pihak berwenang.</td><td>Hambatan, progres, dan tanggung jawab lebih mudah dievaluasi.</td></tr>
+    <tr><td>Konsistensi data</td><td>Input dan kategori distandardisasi dalam sistem.</td><td>Perbandingan antarstaf, unit, dan periode menjadi lebih dapat dipercaya.</td></tr>
+    <tr><td>Kecepatan respons</td><td>Notifikasi dan pusat tindakan membantu menentukan prioritas.</td><td>Isu penting dapat diketahui dan ditindaklanjuti lebih awal.</td></tr>
+    <tr><td>Skalabilitas</td><td>Role dan cakupan area mendukung pertumbuhan jumlah pengguna.</td><td>Sistem dapat diperluas untuk regional/pimpinan lain tanpa membangun ulang dari nol.</td></tr>
+    <tr><td>Ketahanan operasional</td><td>Snapshot dan fallback menjaga akses ketika sumber luar terganggu.</td><td>Kontinuitas monitoring lebih terjaga.</td></tr>
+  </table>
+  <h3>Keunggulan khusus</h3>
+  <ul class="check">
+    <li>Dibangun dari pemahaman langsung terhadap kebutuhan lapangan dan pola kerja pengguna.</li>
+    <li>Menghubungkan pelaksanaan harian dengan target, pencapaian, dan evaluasi manajemen.</li>
+    <li>Memadukan fungsi operasional, analitik, komunikasi, dan administrasi dalam satu produk.</li>
+    <li>Mendukung adopsi bertahap: dapat dipakai Regional B sekaligus dibuka bagi Regional A dan pimpinan lain sesuai kewenangan.</li>
+    <li>Memiliki fondasi pemeliharaan: migrasi data, service terpisah, pengujian, log, scheduler, dan mekanisme fallback.</li>
+  </ul>
+  <div class="footer">Laporan Kontribusi Dashboard Regional B <span>5</span></div>
+</section>
+
+<section class="page">
+  <div class="eyebrow">05 — Nilai Kontribusi Individu</div>
+  <h2>Tanggung jawab yang dijalankan</h2>
+  <div class="accent-line"></div>
+  <p class="lead">Pembuatan dashboard ini menunjukkan kontribusi lintas fungsi yang biasanya terbagi ke beberapa peran: analis proses, perancang produk, pengembang aplikasi, pengelola data, penguji, dan pemelihara sistem.</p>
+  <table class="grid2">
+    <tr>
+      <td><div class="card"><h3>Analisis kebutuhan</h3><p>Mengidentifikasi hambatan kerja dan menerjemahkannya menjadi alur serta fitur yang dapat digunakan.</p></div></td>
+      <td><div class="card"><h3>Pengembangan end-to-end</h3><p>Membangun basis data, logika bisnis, antarmuka, akses pengguna, integrasi, dan otomasi.</p></div></td>
+    </tr>
+    <tr>
+      <td><div class="card"><h3>Adopsi lintas peran</h3><p>Menyesuaikan pengalaman staf, korwil, senior, manajemen, dan pimpinan dalam sistem yang sama.</p></div></td>
+      <td><div class="card"><h3>Keberlanjutan sistem</h3><p>Menangani deployment, perbaikan, keamanan akses, sinkronisasi, dan pengembangan berkelanjutan.</p></div></td>
+    </tr>
+  </table>
+  <div class="callout">
+    <h3>Alasan kontribusi ini relevan untuk penyesuaian kompensasi</h3>
+    <p>Dashboard telah menjadi aset organisasi yang membantu banyak lapisan pengguna, mengurangi beban koordinasi, memperkuat kontrol manajemen, dan memiliki potensi pemakaian lintas regional. Nilai kontribusi karenanya tidak hanya berasal dari waktu pembuatan, tetapi dari tanggung jawab berkelanjutan dan manfaat yang terus diterima organisasi.</p>
+  </div>
+  <p><strong>Prinsip pengajuan:</strong> penyesuaian gaji diajukan sebagai pengakuan yang proporsional terhadap peningkatan cakupan tanggung jawab, kompetensi yang digunakan, aset yang dihasilkan, dan nilai operasional yang telah diberikan.</p>
+  <div class="quote">Kontribusi ini layak dinilai sebagai penciptaan dan pengelolaan produk internal, bukan sekadar pelaksanaan tugas rutin.</div>
+  <div class="footer">Laporan Kontribusi Dashboard Regional B <span>6</span></div>
+</section>
+
+<section class="page">
+  <div class="eyebrow">06 — Rekomendasi &amp; Pengukuran</div>
+  <h2>Usulan evaluasi yang objektif</h2>
+  <div class="accent-line"></div>
+  <p>Agar pembahasan kompensasi dapat dilakukan secara terbuka dan terukur, disarankan evaluasi mempertimbangkan empat dimensi berikut:</p>
+  <table class="metric-table">
+    <tr><th>Dimensi</th><th>Bukti saat ini</th><th>Indikator lanjutan</th></tr>
+    <tr><td>Cakupan tanggung jawab</td><td>Analisis, build, integrasi, deployment, dan maintenance ditangani end-to-end.</td><td>Waktu dukungan, jumlah perubahan, dan SLA penanganan isu.</td></tr>
+    <tr><td>Adopsi</td><td>Sistem disiapkan untuk staf, korwil, manajemen, serta akses lintas regional.</td><td>Pengguna aktif bulanan, unit aktif, dan frekuensi penggunaan.</td></tr>
+    <tr><td>Efisiensi</td><td>Rekap, export, otomasi sinkronisasi, dan status workflow telah tersedia.</td><td>Jam kerja yang dihemat dan penurunan permintaan rekap manual.</td></tr>
+    <tr><td>Dampak keputusan</td><td>Pencapaian, scoring, target, closing, dan anggaran disajikan terpusat.</td><td>Kecepatan tindak lanjut, penyelesaian kendala, dan pencapaian target.</td></tr>
+  </table>
+  <h3>Rekomendasi</h3>
+  <ol>
+    <li>Melakukan peninjauan jabatan dan penyesuaian gaji yang mencerminkan fungsi pengembangan serta pemeliharaan produk internal.</li>
+    <li>Menetapkan kepemilikan sistem dan alokasi waktu resmi untuk pengembangan, dukungan pengguna, keamanan, dan keberlanjutan.</li>
+    <li>Menyepakati indikator dampak untuk 3–6 bulan berikutnya agar nilai sistem dapat diukur secara konsisten.</li>
+    <li>Mempertimbangkan insentif berbasis milestone bila sistem diperluas dan diadopsi oleh regional atau pimpinan lain.</li>
+  </ol>
+  <div class="callout"><h3>Permohonan</h3><p>Dengan mempertimbangkan skala karya, cakupan pengguna, tanggung jawab teknis dan operasional, serta manfaat jangka panjang bagi organisasi, saya memohon kesempatan untuk membahas penyesuaian gaji dan pengakuan peran secara profesional.</p></div>
+  <div class="sign">
+    <p>Hormat saya,</p>
+    <div class="line"><strong>Ahmad Humaidi</strong><br><span class="muted">Pengembang Dashboard Regional B</span></div>
+  </div>
+  <div class="footer">Laporan Kontribusi Dashboard Regional B <span>7</span></div>
+</section>
+
+<section class="page">
+  <div class="eyebrow">Lampiran — Ringkasan Bukti Sistem</div>
+  <h2>Inventaris kapabilitas yang terverifikasi</h2>
+  <div class="accent-line"></div>
+  <p class="small muted">Ringkasan ini disusun dari struktur aplikasi pada 6 Oktober 2026. Data dampak pengguna perlu dilengkapi dari analitik penggunaan atau catatan operasional organisasi.</p>
+  <table class="metric-table small">
+    <tr><th>Area</th><th>Kapabilitas yang ditemukan</th></tr>
+    <tr><td>Dashboard</td><td>Overview, filter cakupan, angka kinerja, action center, metrik kolaborasi, dan klasifikasi closing.</td></tr>
+    <tr><td>Laporan</td><td>Create, edit, detail, delete, lampiran, status, approval, revisi, kendala, tindak lanjut, rekap, export, dan format WhatsApp.</td></tr>
+    <tr><td>Kinerja</td><td>Pencapaian staf, pencapaian kampus, scoring, target, bobot, XP, gamification, league, badge, dan journey staf.</td></tr>
+    <tr><td>Operasional</td><td>CRM leads, anggaran iklan, leads iklan, konten sosial, jadwal koordinator, personalia, laporan senior, dan forum.</td></tr>
+    <tr><td>Integrasi</td><td>Collab, BDC, sinkronisasi data, job terjadwal, snapshot, cache, dan fallback sumber.</td></tr>
+    <tr><td>Tata kelola</td><td>Role efektif, scope wilayah/regional, kelola user, impersonation terkontrol, notifikasi, log aktivitas, dan proteksi route.</td></tr>
+  </table>
+  <h3>Jejak skala implementasi</h3>
+  <ul>
+    <li><strong>116</strong> berkas PHP pada lapisan aplikasi.</li>
+    <li><strong>61</strong> tampilan Blade untuk antarmuka pengguna.</li>
+    <li><strong>49</strong> migrasi basis data untuk evolusi struktur data.</li>
+    <li><strong>213</strong> commit tercatat atas nama Ahmad Humaidi/ahmadhumaidi.</li>
+  </ul>
+  <p class="small muted"><strong>Catatan metodologi:</strong> jumlah berkas dan commit merupakan bukti skala, bukan ukuran tunggal kualitas atau dampak. Nilai utama tetap dinilai dari masalah yang diselesaikan, adopsi pengguna, reliabilitas, dan hasil operasional.</p>
+  <h3>Data yang disarankan untuk dilengkapi saat presentasi</h3>
+  <p><span class="pill">Jumlah pengguna aktif</span><span class="pill">Jumlah unit terlayani</span><span class="pill">Laporan per bulan</span><span class="pill">Waktu rekap sebelum/sesudah</span><span class="pill">Jumlah kendala terselesaikan</span><span class="pill">Regional/pimpinan pengguna</span></p>
+  <div class="footer">Laporan Kontribusi Dashboard Regional B <span>8</span></div>
+</section>
+</body>
+</html>

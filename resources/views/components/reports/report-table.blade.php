@@ -34,7 +34,7 @@
                 </thead>
                 <tbody>
                     @foreach ($rows as $row)
-                        <tr class="border-b border-border/60 last:border-0">
+                        <tr class="border-b last:border-0 {{ ! empty($row['needs_action']) ? 'border-l-4' : 'border-border/60' }}" @if(! empty($row['needs_action'])) style="border-left-color:#f59e0b; border-bottom-color:#fde68a; background-color:#fffbeb; box-shadow:inset 0 0 0 1px rgba(245,158,11,.12)" @endif>
                             <td class="py-2 pr-3 text-ink-muted">{{ $row['report_date'] }}</td>
                             <td class="py-2 pr-3 text-ink">{{ $row['unit_name'] ?: '-' }} <span class="text-xs text-ink-muted">{{ $row['wilayah'] }}</span></td>
                             <td class="py-2 pr-3 text-ink">{{ $row['staff_name'] ?: '-' }}</td>
@@ -47,6 +47,9 @@
                                 @endif
                             </td>
                             <td class="py-2 pr-3">
+                                @if (! empty($row['needs_action']))
+                                    <span class="mb-1 inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-900"><span aria-hidden="true">!</span> {{ $row['action_label'] ?: 'Perlu tindakan' }}</span>
+                                @endif
                                 @php $statusTone = $statusTones[mb_strtolower(trim((string) $row['status']))] ?? 'slate'; @endphp
                                 <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" style="background: color-mix(in srgb, var(--color-tone-{{ $statusTone }}) 18%, transparent); color: var(--color-tone-{{ $statusTone }})">{{ $row['status'] ?: '-' }}</span>
                                 @if (! empty($row['escalated_to_label']))

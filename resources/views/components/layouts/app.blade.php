@@ -58,6 +58,7 @@
                                 >
                                     <x-icon :name="$item['icon']" class="h-5 w-5 shrink-0 text-white/80" />
                                     <span class="truncate">{{ $item['label'] }}</span>
+                                    @if($item['key'] === 'aktivitas' && $pendingReportCount > 0)<span class="ml-auto grid min-w-5 place-items-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-black text-white">{{ $pendingReportCount > 99 ? '99+' : $pendingReportCount }}</span>@endif
                                 </a>
                             @endforeach
                         </div>
@@ -74,24 +75,14 @@
                         <x-icon name="menu" class="h-6 w-6" />
                     </button>
                     <div>
-                        <div class="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-sky-300 uppercase"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.14)]"></span>{{ $eyebrow }}</div>
+                        @if($eyebrow !== '')
+                            <div class="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-sky-300 uppercase"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.14)]"></span>{{ $eyebrow }}</div>
+                        @endif
                         <h1 class="mt-0.5 text-xl font-bold tracking-tight text-white">{{ $title }}</h1>
                     </div>
                 </div>
 
                 <div class="flex flex-nowrap items-center gap-2.5 overflow-x-auto">
-                    <div x-data="{ open: false }" class="relative shrink-0">
-                        <button type="button" @click="open = !open" class="flex items-center gap-1.5 rounded-xl bg-sky-500 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-950/20 transition hover:bg-sky-400" aria-label="Buat laporan baru">
-                            <x-icon name="plus" class="h-4 w-4" />
-                            <span class="hidden md:inline">Buat Laporan</span>
-                        </button>
-                        <div x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false" class="fixed right-3 top-16 z-50 w-60 rounded-2xl border border-border bg-surface p-2 text-left text-ink shadow-2xl lg:absolute lg:right-0 lg:top-full lg:mt-2">
-                            <p class="px-3 py-2 text-[11px] font-bold tracking-wider text-ink-muted uppercase">Pilih jenis laporan</p>
-                            <a href="{{ route('kegiatan.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-surface-muted"><x-icon name="briefcase" class="h-4 w-4 text-brand-600" />Kegiatan Marketing</a>
-                            <a href="{{ route('aktivitas.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-surface-muted"><x-icon name="bolt" class="h-4 w-4 text-brand-600" />Aktivitas Lain</a>
-                            <a href="{{ route('anggaran.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-surface-muted"><x-icon name="currency" class="h-4 w-4 text-brand-600" />Laporan Iklan</a>
-                        </div>
-                    </div>
                     @if (count($allowedRoleKeys ?? []) > 1)
                         <form method="GET" action="{{ url()->current() }}">
                             @foreach (request()->except('role') as $name => $value)

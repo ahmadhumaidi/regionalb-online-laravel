@@ -218,8 +218,15 @@ class ProfileController extends Controller
         $user = Auth::user();
         abort_unless(in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true), 403);
 
-        $validated = $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
+        $validated = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'leaderboard_from' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'leaderboard_to' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:leaderboard_from'],
+        ]);
         $journey = StaffJourneyService::build($user, $validated['date'] ?? null);
+        $leaderboardFrom = $validated['leaderboard_from'] ?? now()->toDateString();
+        $leaderboardTo = $validated['leaderboard_to'] ?? now()->toDateString();
+        $journeyLeaderboard = StaffJourneyService::leaderboard($user, $leaderboardFrom, $leaderboardTo);
 
         return view('staff-journey.index', [
             'user' => $user,
@@ -227,6 +234,9 @@ class ProfileController extends Controller
             'activityProgress' => $this->staffJourneyProgress($user),
             'journeyStaff' => $journey['staff'],
             'journeyDate' => $journey['date'],
+            'journeyLeaderboard' => $journeyLeaderboard,
+            'leaderboardFrom' => $leaderboardFrom,
+            'leaderboardTo' => $leaderboardTo,
             'trackedDaily' => $journey['tracked_daily'],
         ]);
     }

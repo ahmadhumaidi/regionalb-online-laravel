@@ -284,6 +284,47 @@ class CollabSourceService
         return $result;
     }
 
+    /** Sync a single report selected from the Sumber Collab screen. */
+    public static function syncReport(string $reportName): array
+    {
+        if (! in_array($reportName, self::knownReports(), true)) {
+            return ['ok' => false, 'report' => $reportName];
+        }
+
+        if ($reportName === 'Absen Staff') {
+            return self::syncAttendance() + ['report' => $reportName];
+        }
+
+        $syncedAt = now()->format('Y-m-d H:i:s');
+        $report = self::reportFromUrl($reportName);
+        $cache = self::cacheRead();
+        $cache['reports'] = (array) ($cache['reports'] ?? []);
+        $cache['errors'] = (array) ($cache['errors'] ?? []);
+
+        if ($report === []) {
+            $cache['errors'][$reportName] = 'Source tidak terbaca saat sinkronisasi.';
+            self::cacheWrite($cache);
+
+            return ['ok' => false, 'report' => $reportName];
+        }
+
+        $report['source_mode'] = 'cache_auto';
+        $report['cached_at'] = $syncedAt;
+        $cache['reports'][$reportName] = $report;
+        $cache['synced_at'] = $syncedAt;
+        $cache['synced_at_unix'] = now()->timestamp;
+        unset($cache['errors'][$reportName]);
+
+        self::archiveReport($reportName, $report);
+        if (in_array($reportName, self::DAILY_METRIC_REPORTS, true)) {
+            self::ingestDailyMetrics($reportName, $report);
+        }
+        self::cacheWrite($cache);
+        CollabUserDirectoryService::sync($cache);
+
+        return ['ok' => true, 'report' => $reportName];
+    }
+
     /** Sync only GGKlik attendance without fetching every Collab report. */
     public static function syncAttendance(?string $date = null): array
     {
@@ -758,10 +799,6 @@ class CollabSourceService
      */
     private static function normalizeReportTables(string $reportName, array $tables): array
     {
-        if ($reportName !== 'Pasang Spanduk') {
-            return $tables;
-        }
-
         foreach ($tables as &$rows) {
             if (! is_array($rows)) {
                 continue;
@@ -775,7 +812,7 @@ class CollabSourceService
                         continue;
                     }
                     $cell = preg_replace(
-                        '/^(Total\s+)?Regional\s*-\s*-\s*Nugroho Budi Santoso$/i',
+                        '/^(Total\s+)?Regional\s*-\s*(?:-\s*)?Nugroho Budi Santoso$/i',
                         '$1Regional 7 - Nugroho Budi Santoso',
                         $cell
                     ) ?? $cell;
@@ -915,6 +952,13 @@ class CollabSourceService
             } elseif ($isPersonalRegional) {
                 $label = trim((string) ($row[0] ?? ''));
                 if ($label === '') {
+                    continue;
+                }
+                // The section heading is the reliable regional marker. Some
+                // Collab rows omit the digit inside "(Korwil Regional )".
+                if (preg_match('/^Regional\s+([1-7])\s*-/i', $label, $regionalHeaderMatch)) {
+                    $currentRegional = 'Regional '.$regionalHeaderMatch[1];
+
                     continue;
                 }
                 if (preg_match('/\(Korwil Regional\s*([1-7])\)\s*$/i', $label, $korwilMatch)) {

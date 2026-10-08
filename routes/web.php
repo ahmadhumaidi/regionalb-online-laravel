@@ -32,6 +32,8 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ClosingCampusController;
 use App\Http\Controllers\ClosingTargetSimulationController;
 use App\Http\Controllers\ScoringController;
+use App\Http\Controllers\SeniorActivityReportController;
+use App\Http\Controllers\AboutApplicationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -130,7 +132,16 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/scoring/targets', [TargetController::class, 'index'])->name('scoring.targets');
     Route::post('/scoring/targets', [TargetController::class, 'store'])->name('scoring.targets.store');
     Route::get('/badges', [BadgeController::class, 'index'])->name('badges');
+    Route::get('/tentang-aplikasi', [AboutApplicationController::class, 'index'])->name('about-application.index');
+    Route::get('/tentang-aplikasi/laporan-kontribusi', [AboutApplicationController::class, 'download'])->name('about-application.report');
     Route::post('/badges', [BadgeController::class, 'update'])->name('badges.update');
+    Route::get('/laporan-senior', [SeniorActivityReportController::class, 'index'])->name('laporan-senior.index');
+    Route::get('/laporan-senior/create', [SeniorActivityReportController::class, 'create'])->name('laporan-senior.create');
+    Route::post('/laporan-senior', [SeniorActivityReportController::class, 'store'])->name('laporan-senior.store');
+    Route::get('/laporan-senior/{seniorReport}/edit', [SeniorActivityReportController::class, 'edit'])->name('laporan-senior.edit');
+    Route::patch('/laporan-senior/{seniorReport}', [SeniorActivityReportController::class, 'update'])->name('laporan-senior.update');
+    Route::delete('/laporan-senior/{seniorReport}', [SeniorActivityReportController::class, 'destroy'])->name('laporan-senior.destroy');
+    Route::get('/laporan-senior/{seniorReport}/lampiran', [SeniorActivityReportController::class, 'attachment'])->name('laporan-senior.attachment');
     Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');

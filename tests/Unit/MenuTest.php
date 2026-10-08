@@ -19,6 +19,7 @@ class MenuTest extends TestCase
         $this->assertNotContains('targets', $keys);
         $this->assertNotContains('users', $keys);
         $this->assertNotContains('role', $keys);
+        $this->assertNotContains('about-application', $keys);
     }
 
     public function test_manager_menu_exposes_planning_and_administration(): void
@@ -32,5 +33,16 @@ class MenuTest extends TestCase
         $this->assertContains('users', $keys);
         $this->assertContains('sumber-collab', $keys);
         $this->assertContains('role', $keys);
+        $this->assertContains('about-application', $keys);
+    }
+
+    public function test_coordinator_menu_exposes_collab_source_without_sync_permission(): void
+    {
+        $user = new RsmUser(['role' => RsmUser::ROLE_KOORDINATOR]);
+        $keys = collect(Menu::sections($user))->flatMap(fn (array $section) => array_column($section['items'], 'key'));
+
+        $this->assertContains('sumber-collab', $keys);
+        $this->assertTrue(\App\Support\RsmRole::canViewCollab($user));
+        $this->assertFalse(\App\Support\RsmRole::canSyncCollab($user));
     }
 }

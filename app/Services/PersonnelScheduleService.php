@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class PersonnelScheduleService
 {
+    private const OFF_CODES = ['L', 'LN'];
+
     private const URL = 'https://cb.web.id/media.php?p=jadwal&zona=2';
 
     private const TABLE_ID = 'tb_jadwal';
@@ -67,6 +69,51 @@ class PersonnelScheduleService
 
             return $existing + ['errors' => [$e->getMessage()]];
         }
+    }
+
+    /** @return array<string, string> Normalized staff name => off-duty code. */
+    public static function offStatusesForDate(string $date): array
+    {
+        $snapshot = self::snapshot();
+        $zone = $snapshot['zonas'][2] ?? [];
+        $tableHtml = (string) ($zone['table_html'] ?? '');
+        $fetchedAt = (string) ($zone['fetched_at'] ?? '');
+
+        if ($tableHtml === '' || substr($fetchedAt, 0, 7) !== substr($date, 0, 7)) {
+            return [];
+        }
+
+        $day = (int) substr($date, 8, 2);
+        if ($day < 1 || $day > 31 || ! preg_match_all('/<tr\b[^>]*>(.*?)<\/tr>/is', $tableHtml, $rows)) {
+            return [];
+        }
+
+        $statuses = [];
+        foreach ($rows[1] as $row) {
+            if (! preg_match_all('/<td\b[^>]*>(.*?)<\/td>/is', $row, $cells)) {
+                continue;
+            }
+
+            $values = array_map(
+                static fn (string $cell): string => trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($cell), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? ''),
+                $cells[1],
+            );
+            if (count($values) < 36 || ! preg_match('/^SG\./i', $values[0])) {
+                continue;
+            }
+
+            $code = mb_strtoupper(trim($values[4 + $day] ?? ''));
+            if (in_array($code, self::OFF_CODES, true)) {
+                $statuses[self::nameKey($values[1] ?? '')] = $code;
+            }
+        }
+
+        return $statuses;
+    }
+
+    private static function nameKey(string $name): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s+Tim Terpilih$/i', '', $name)));
     }
 
     /** Port of rsm_jadwal_extract_table_html() (rsm_db.php:5269-5279). */

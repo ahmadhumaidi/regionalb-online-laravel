@@ -17,6 +17,7 @@ class RsmSocialPost extends Model
         'post_time',
         'caption',
         'post_url',
+        'url_fingerprint',
         'keyword_match',
         'score',
         'reach_count',

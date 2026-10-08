@@ -105,12 +105,30 @@ class CollabTableRenderer
         $firstCell = trim((string) ($row[0] ?? ''));
         $isSubtotalRow = $firstCell !== '' && stripos($firstCell, 'Total ') === 0;
 
+        $nonEmptyValues = array_values(array_filter(
+            array_map(static fn (mixed $cell): string => trim((string) $cell), $row),
+            static fn (string $cell): bool => $cell !== ''
+        ));
+        $isRegionalGroupRow = $firstCell !== ''
+            && preg_match('/^Regional\b/i', $firstCell) === 1
+            && count(array_unique($nonEmptyValues)) === 1;
+
+        if ($isRegionalGroupRow) {
+            $remainingWidth = count($row) - 1;
+
+            return '<tr class="collab-group-row"><td class="collab-sticky-label-cell"><span>'.e($firstCell).'</span></td>'
+                .($remainingWidth > 0 ? '<td colspan="'.$remainingWidth.'" aria-hidden="true"></td>' : '')
+                .'</tr>';
+        }
+
         if (! $isSubtotalRow) {
             $html = '<tr>';
             foreach ($row as $cell) {
                 $cellText = (string) $cell;
                 $isNumericCell = $cellText !== '' && preg_match('/^-?\d+([.,]\d+)?$/', trim($cellText)) === 1;
-                $html .= '<td class="'.($isNumericCell ? 'num' : '').'">'.e($cellText).'</td>';
+                $displayText = self::withoutNikPrefix($cellText);
+                $titleAttr = $displayText !== $cellText ? ' title="'.e($cellText).'"' : '';
+                $html .= '<td class="'.($isNumericCell ? 'num' : '').'"'.$titleAttr.'>'.e($displayText).'</td>';
             }
 
             return $html.'</tr>';
@@ -122,7 +140,10 @@ class CollabTableRenderer
         }
 
         $html = '<tr class="collab-subtotal-row">';
-        $html .= '<td'.($labelWidth > 1 ? ' colspan="'.$labelWidth.'"' : '').'>'.e($firstCell).'</td>';
+        $html .= '<td class="collab-sticky-label-cell"><span>'.e($firstCell).'</span></td>';
+        if ($labelWidth > 1) {
+            $html .= '<td colspan="'.($labelWidth - 1).'" aria-hidden="true"></td>';
+        }
         foreach (array_slice($row, $labelWidth) as $cell) {
             $cellText = (string) $cell;
             $isNumericCell = $cellText !== '' && preg_match('/^-?\d+([.,]\d+)?$/', trim($cellText)) === 1;
@@ -130,6 +151,14 @@ class CollabTableRenderer
         }
 
         return $html.'</tr>';
+    }
+
+    private static function withoutNikPrefix(string $value): string
+    {
+        $trimmed = trim($value);
+        $name = preg_replace('/^[A-Z]{1,10}\.\d{2,8}\.\d{4}\s*-\s*/iu', '', $trimmed);
+
+        return is_string($name) && $name !== '' ? $name : $value;
     }
 
     private static function headerRuns(array $row): array

@@ -202,36 +202,124 @@
        .collab-raw-table rules in public_html/assets/style.css, which Tailwind
        utility classes alone can't express since the rows come from
        App\Support\CollabTableRenderer as a pre-built HTML string. */
+    .collab-table-scroll {
+        isolation: isolate;
+        overscroll-behavior: contain;
+        scrollbar-color: var(--color-brand-300) transparent;
+        scrollbar-width: thin;
+        background: color-mix(in srgb, var(--color-surface) 82%, white);
+    }
+
     .collab-raw-table {
+        width: max-content;
         min-width: 100%;
         border-collapse: separate;
         border-spacing: 0;
+        background: var(--color-surface);
     }
 
     .collab-raw-table th,
     .collab-raw-table td {
-        @apply border-b border-border/60 px-3 py-2 text-xs whitespace-nowrap;
+        @apply border-r border-b border-border/60 px-3 py-2 text-xs whitespace-nowrap;
+        height: 2.25rem;
+        vertical-align: middle;
+    }
+
+    .collab-raw-table th:last-child,
+    .collab-raw-table td:last-child {
+        border-right: 0;
     }
 
     .collab-raw-table thead th {
         @apply bg-surface-muted text-ink-muted font-semibold tracking-wide uppercase;
         position: sticky;
-        top: 0;
-        z-index: 2;
+        top: auto;
+        z-index: 12;
+        background-color: var(--color-surface-muted);
+        background-clip: padding-box;
         box-shadow: 0 1px 0 var(--color-border);
     }
 
+    .collab-raw-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--color-surface-muted);
+    }
+
+    .collab-raw-table tbody {
+        position: static;
+    }
+
+    .collab-raw-table thead th[rowspan="2"] {
+        height: 4.5rem;
+        vertical-align: middle;
+    }
+
     .collab-raw-table thead tr:nth-child(2) th {
-        top: 2.25rem;
+        top: auto;
+        z-index: 12;
     }
 
     .collab-raw-table tbody tr:nth-child(even) {
         background: color-mix(in srgb, var(--color-surface-muted) 60%, transparent);
     }
 
+    .collab-raw-table tbody tr:nth-child(odd) {
+        background: var(--color-surface);
+    }
+
+    /* Body cells may be sticky only on the horizontal axis. Explicitly clear
+       vertical insets so the first campus rows never behave like headers. */
+    .collab-raw-table tbody td {
+        top: auto !important;
+        bottom: auto !important;
+    }
+
     .collab-raw-table tbody tr:hover {
         @apply bg-brand-50;
     }
+
+    /* Jadwal Personalia: Nama is the useful identity while NIK may scroll. */
+    .personnel-schedule-scroll .collab-raw-table tbody td:first-child,
+    .personnel-schedule-scroll .collab-raw-table thead tr:first-child th:first-child {
+        position: static;
+        left: auto;
+        z-index: auto;
+        box-shadow: none;
+    }
+
+    .personnel-schedule-scroll .collab-raw-table tbody td:nth-child(2) {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        min-width: 13rem;
+        max-width: 13rem;
+        overflow: hidden;
+        text-align: left;
+        text-overflow: ellipsis;
+        background: var(--color-surface);
+        box-shadow: 3px 0 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    .personnel-schedule-scroll .collab-raw-table tbody tr:nth-child(even) td:nth-child(2) {
+        background: color-mix(in srgb, var(--color-surface-muted) 60%, var(--color-surface));
+    }
+
+    .personnel-schedule-scroll .collab-raw-table tbody tr:hover td:nth-child(2) {
+        background: var(--color-brand-50);
+    }
+
+    .personnel-schedule-scroll .collab-raw-table thead tr:first-child th:nth-child(2) {
+        position: sticky;
+        left: 0;
+        z-index: 14;
+        min-width: 13rem;
+        max-width: 13rem;
+        text-align: left !important;
+        box-shadow: 1px 1px 0 var(--color-border), 3px 0 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
 
     .collab-raw-table td.num,
     .collab-raw-table th.num {
@@ -239,62 +327,306 @@
         font-variant-numeric: tabular-nums;
     }
 
+    .collab-raw-table thead tr:first-child th:first-child,
+    .collab-raw-table tbody tr:not(.collab-group-row):not(.collab-subtotal-row) td:first-child {
+        text-align: center;
+    }
+
     .collab-raw-table tbody td:first-child {
         position: sticky;
         left: 0;
         z-index: 1;
-        background: inherit;
-        box-shadow: 1px 0 0 var(--color-border);
+        background: var(--color-surface);
+        box-shadow: 2px 0 4px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    .collab-raw-table tbody tr:nth-child(even) td:first-child {
+        background: color-mix(in srgb, var(--color-surface-muted) 60%, var(--color-surface));
     }
 
     .collab-raw-table thead th.sticky-col,
     .collab-raw-table thead th:first-child {
         left: 0;
-        z-index: 3;
+        z-index: 13;
         box-shadow: 1px 1px 0 var(--color-border);
     }
 
-    /* Sebar Brosur starts with a narrow row-number column. Keep the useful
-       identity column (NIK - Nama) visible while scrolling horizontally. */
+    /* Personal activity reports use their first column as the identity. */
+    .collab-raw-table.collab-sticky-primary tbody tr:not(.collab-group-row):not(.collab-subtotal-row) td:first-child,
+    .collab-raw-table.collab-sticky-primary thead tr:first-child th:first-child {
+        width: 15rem;
+        min-width: 15rem;
+        max-width: 15rem;
+        overflow: hidden;
+        text-align: left;
+        text-overflow: ellipsis;
+    }
+
+    /* Sebar Brosur/Pasang Spanduk start with a narrow row-number column.
+       Freeze both that column and the useful identity column. Their explicit
+       widths also make the second column's sticky offset deterministic. */
     .collab-raw-table.collab-sticky-name tbody td:first-child {
+        width: 2.5rem;
+        min-width: 2.5rem;
+        max-width: 2.5rem;
+        padding-inline: 0.375rem;
+        text-align: center;
+    }
+
+    .collab-raw-table.collab-sticky-name tbody tr:not(.collab-group-row):not(.collab-subtotal-row) td:nth-child(2) {
+        position: sticky;
+        left: 2.5rem;
+        z-index: 1;
+        width: 15rem;
+        min-width: 15rem;
+        max-width: 15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: var(--color-surface);
+        box-shadow: 3px 0 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    .collab-raw-table.collab-sticky-name tbody tr:nth-child(even):not(.collab-group-row):not(.collab-subtotal-row) td:nth-child(2) {
+        background: color-mix(in srgb, var(--color-surface-muted) 60%, var(--color-surface));
+    }
+
+    .collab-raw-table tbody tr:hover td:first-child,
+    .collab-raw-table.collab-sticky-name tbody tr:not(.collab-group-row):not(.collab-subtotal-row):hover td:nth-child(2) {
+        background: var(--color-brand-50);
+    }
+
+    /* A subtotal label may span several source columns; freezing that merged
+       cell would cover the data columns while scrolling. */
+    .collab-raw-table tbody tr.collab-subtotal-row td:first-child {
         position: static;
         box-shadow: none;
     }
 
-    .collab-raw-table.collab-sticky-name tbody td:nth-child(2) {
+    .collab-raw-table tbody tr.collab-group-row {
+        background: color-mix(in srgb, var(--color-brand-100) 72%, var(--color-surface));
+    }
+
+    .collab-raw-table tbody tr.collab-group-row td {
+        position: static;
+        color: var(--color-brand-800);
+        font-weight: 800;
+        letter-spacing: 0.025em;
+        box-shadow: none;
+    }
+
+    /* Keep only the label cell frozen. The remaining merged area stays in the
+       normal table flow, so totals remain visible instead of being covered. */
+    .collab-raw-table tbody tr.collab-group-row td.collab-sticky-label-cell,
+    .collab-raw-table tbody tr.collab-subtotal-row td.collab-sticky-label-cell {
         position: sticky;
         left: 0;
-        z-index: 1;
+        z-index: 4;
+        padding: 0;
+        overflow: visible;
+        white-space: nowrap;
+    }
+
+    .collab-raw-table .collab-sticky-label-cell > span {
+        display: flex;
+        align-items: center;
+        min-height: 2.25rem;
+        padding-inline: 0.75rem;
+        background: inherit;
+    }
+
+    .collab-raw-table.collab-sticky-campus .collab-sticky-label-cell > span {
+        width: 14rem;
+        min-width: 14rem;
+        max-width: 14rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-shadow: 3px 0 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    .collab-raw-table.collab-sticky-primary .collab-sticky-label-cell > span {
+        width: 15rem;
+        min-width: 15rem;
+        max-width: 15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-shadow: 3px 0 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    .collab-raw-table.collab-sticky-name .collab-sticky-label-cell > span {
+        width: 17.5rem;
+        min-width: 17.5rem;
+        max-width: 17.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-shadow: 3px 0 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    .collab-raw-table tbody tr.collab-group-row td.collab-sticky-label-cell {
+        background: color-mix(in srgb, var(--color-brand-100) 72%, var(--color-surface));
+    }
+
+    .collab-raw-table tbody tr.collab-subtotal-row td.collab-sticky-label-cell {
+        background: var(--color-brand-700);
+    }
+
+    .collab-raw-table.collab-sticky-name thead tr:first-child th:first-child {
+        left: 0;
+        width: 2.5rem;
+        min-width: 2.5rem;
+        max-width: 2.5rem;
+        padding-inline: 0.375rem;
+        text-align: center;
+    }
+
+    .collab-raw-table.collab-sticky-name thead tr:first-child th:nth-child(2) {
+        left: 2.5rem;
+        z-index: 15;
+        width: 15rem;
+        min-width: 15rem;
+        max-width: 15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-shadow: 3px 1px 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    /* PMB campus labels are much shorter than NIK/name labels used by other
+       two-column freezes, so keep this column compact. */
+    .collab-raw-table.collab-compact-campus tbody tr:not(.collab-group-row):not(.collab-subtotal-row) td:nth-child(2),
+    .collab-raw-table.collab-compact-campus thead tr:first-child th:nth-child(2) {
         width: 12rem;
         min-width: 12rem;
         max-width: 12rem;
+    }
+
+    .collab-raw-table.collab-compact-campus .collab-sticky-label-cell > span {
+        width: 14.5rem;
+        min-width: 14.5rem;
+        max-width: 14.5rem;
+    }
+
+    /* Reports grouped by campus are easier to scan when the campus name,
+       rather than the sequence number, stays visible beside daily totals. */
+    .collab-raw-table.collab-sticky-campus tbody td:first-child {
+        position: static;
+        box-shadow: none;
+    }
+
+    .collab-raw-table.collab-sticky-campus tbody tr:not(.collab-group-row):not(.collab-subtotal-row) td:nth-child(4) {
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        width: 14rem;
+        min-width: 14rem;
+        max-width: 14rem;
         overflow: hidden;
         text-overflow: ellipsis;
         background: var(--color-surface);
-        box-shadow: 1px 0 0 var(--color-border);
+        box-shadow: 3px 0 5px -3px rgba(15, 23, 42, 0.55);
     }
 
-    .collab-raw-table.collab-sticky-name tbody tr:nth-child(even) td:nth-child(2) {
+    .collab-raw-table.collab-sticky-campus tbody tr:nth-child(even):not(.collab-group-row):not(.collab-subtotal-row) td:nth-child(4) {
         background: color-mix(in srgb, var(--color-surface-muted) 60%, var(--color-surface));
     }
 
-    .collab-raw-table.collab-sticky-name tbody tr:hover td:nth-child(2) {
+    .collab-raw-table.collab-sticky-campus tbody tr:not(.collab-group-row):not(.collab-subtotal-row):hover td:nth-child(4) {
         background: var(--color-brand-50);
     }
 
-    .collab-raw-table.collab-sticky-name thead th:first-child,
-    .collab-raw-table.collab-sticky-name thead th.sticky-col {
+    .collab-raw-table.collab-sticky-campus thead th:first-child,
+    .collab-raw-table.collab-sticky-campus thead th.sticky-col {
         left: auto;
         box-shadow: 0 1px 0 var(--color-border);
     }
 
-    .collab-raw-table.collab-sticky-name thead tr:first-child th:nth-child(2) {
+    .collab-raw-table.collab-sticky-campus thead tr:first-child th:nth-child(4) {
+        left: 0;
+        z-index: 15;
+        width: 14rem;
+        min-width: 14rem;
+        max-width: 14rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: var(--color-surface-muted);
+        background-clip: padding-box;
+        box-shadow: 3px 1px 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    /* Rekap PMB and attendance both put the useful identity in column two
+       (Kampus / Nama Karyawan), so the sequence number may scroll away. */
+    .collab-raw-table.collab-sticky-second tbody td:first-child {
+        position: static;
+        box-shadow: none;
+    }
+
+    .collab-raw-table.collab-sticky-second tbody tr:not(.collab-group-row):not(.collab-subtotal-row) td:nth-child(2) {
+        position: sticky;
         left: 0;
         z-index: 3;
-        width: 12rem;
-        min-width: 12rem;
-        max-width: 12rem;
-        box-shadow: 1px 1px 0 var(--color-border);
+        width: 15rem;
+        min-width: 15rem;
+        max-width: 15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: var(--color-surface);
+        box-shadow: 3px 0 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    .collab-raw-table.collab-sticky-second tbody tr:nth-child(even):not(.collab-group-row):not(.collab-subtotal-row) td:nth-child(2) {
+        background: color-mix(in srgb, var(--color-surface-muted) 60%, var(--color-surface));
+    }
+
+    .collab-raw-table.collab-sticky-second tbody tr:not(.collab-group-row):not(.collab-subtotal-row):hover td:nth-child(2) {
+        background: var(--color-brand-50);
+    }
+
+    .collab-raw-table.collab-sticky-second thead th:first-child,
+    .collab-raw-table.collab-sticky-second thead th.sticky-col {
+        left: auto;
+        box-shadow: 0 1px 0 var(--color-border);
+    }
+
+    .collab-raw-table.collab-sticky-second thead tr:first-child th:nth-child(2) {
+        left: 0;
+        z-index: 15;
+        width: 15rem;
+        min-width: 15rem;
+        max-width: 15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: var(--color-surface-muted);
+        background-clip: padding-box;
+        box-shadow: 3px 1px 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    .collab-raw-table.collab-header-second-row thead tr:first-child th:nth-child(2) {
+        left: auto;
+        z-index: 12;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        box-shadow: 0 1px 0 var(--color-border);
+    }
+
+    .collab-raw-table.collab-header-second-row thead tr:nth-child(2) th:nth-child(2) {
+        left: 0;
+        z-index: 15;
+        width: 15rem;
+        min-width: 15rem;
+        max-width: 15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: var(--color-surface-muted);
+        background-clip: padding-box;
+        box-shadow: 3px 1px 5px -3px rgba(15, 23, 42, 0.55);
+    }
+
+    .collab-raw-table.collab-sticky-second .collab-sticky-label-cell > span {
+        width: 15rem;
+        min-width: 15rem;
+        max-width: 15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-shadow: 3px 0 5px -3px rgba(15, 23, 42, 0.55);
     }
 
     .collab-raw-table tbody tr.collab-subtotal-row {

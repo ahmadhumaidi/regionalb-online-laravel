@@ -199,7 +199,7 @@ class ReportFormController extends Controller
                 'obstacle_text' => [Rule::requiredIf(fn () => $request->boolean('kendala')), 'nullable', 'string'],
                 'follow_up_text' => ['nullable', 'string'],
                 'kendala' => ['nullable', 'boolean'],
-                'eskalasi_ke' => [Rule::requiredIf(fn () => $request->boolean('kendala')), 'nullable', Rule::in([RsmUser::ROLE_KOORDINATOR])],
+                'eskalasi_ke' => [Rule::requiredIf(fn () => $request->boolean('kendala')), 'nullable', Rule::in([RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR])],
             ],
             RsmReport::TYPE_ADS => $common + [
                 'ad_period' => ['required', 'string', 'max:40'], 'platform' => ['required', 'string', 'max:120'],

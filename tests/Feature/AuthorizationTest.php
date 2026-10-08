@@ -6,9 +6,11 @@ use App\Models\RsmActivityLog;
 use App\Models\RsmAdBudgetLimit;
 use App\Models\RsmMonthlyTarget;
 use App\Models\RsmUser;
+use App\Jobs\SyncCollabSnapshot;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -21,7 +23,6 @@ class AuthorizationTest extends TestCase
             'users' => ['/users'],
             'scoring-targets' => ['/scoring/targets'],
             'personalia' => ['/jadwal-personalia'],
-            'collab-source' => ['/sumber-collab'],
         ];
     }
 
@@ -39,6 +40,28 @@ class AuthorizationTest extends TestCase
 
         $this->actingAs($staff)->get('/jadwal-koordinator')->assertForbidden();
         $this->actingAs($staff)->post('/jadwal-koordinator/generate', ['month' => '2026-08'])->assertForbidden();
+    }
+
+    public function test_employee_can_queue_one_selected_collab_activity(): void
+    {
+        Queue::fake();
+        $coordinator = new RsmUser([
+            'id' => 900022,
+            'name' => 'Test Korwil',
+            'role' => RsmUser::ROLE_KOORDINATOR,
+            'area' => 'Regional B',
+            'regional' => 'Regional 4',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($coordinator)->post('/sumber-collab/sync', [
+            'report' => 'Sebar Brosur',
+        ])->assertRedirect(route('sumber-collab', ['report' => 'Sebar Brosur']));
+
+        Queue::assertPushed(
+            SyncCollabSnapshot::class,
+            fn (SyncCollabSnapshot $job): bool => $job->reportName === 'Sebar Brosur'
+        );
     }
 
     public function test_unrelated_management_role_cannot_open_staff_journey(): void

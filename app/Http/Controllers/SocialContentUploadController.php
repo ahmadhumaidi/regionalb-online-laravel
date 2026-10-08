@@ -10,10 +10,13 @@ use App\Services\Content\SocialScope;
 use App\Services\Dashboard\ReferenceOptionsService;
 use App\Support\AreaRegionals;
 use App\Support\CampusMatcher;
+use App\Support\SocialPostUrl;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class SocialContentUploadController extends Controller
@@ -126,9 +129,11 @@ class SocialContentUploadController extends Controller
             'media_types.min' => 'Isi minimal satu link konten.',
         ]);
         $this->assertIdentityAllowed($user, $data['wilayah'], $data['unit_name']);
+        $this->assertUniquePostUrls($data['post_urls'] ?? []);
         $username = $this->instagramUsername($data['instagram_username'] ?? null, $data['instagram_url'] ?? null, $data['unit_name']);
 
-        DB::transaction(function () use ($data, $user, $username): void {
+        try {
+            DB::transaction(function () use ($data, $user, $username): void {
             $campus = PartnerCampus::query()->where('wilayah', $data['wilayah'])->get()->first(fn (PartnerCampus $campus): bool => CampusMatcher::matches($data['unit_name'], $campus->display_name ?: $campus->name)
             );
             if (filled($data['instagram_username'] ?? null) || filled($data['instagram_url'] ?? null)) {
@@ -165,6 +170,9 @@ class SocialContentUploadController extends Controller
                         'area' => $user->area ?: 'Regional B',
                         'caption' => $data['caption'] ?? null,
                         'post_url' => $data['post_urls'][$mediaType] ?? null,
+                        'url_fingerprint' => in_array($mediaType, ['feed', 'reels', 'story', 'facebook'], true)
+                            ? SocialPostUrl::fingerprint($data['post_urls'][$mediaType] ?? null)
+                            : null,
                         'keyword_match' => (bool) ($data['keyword_match'] ?? false),
                         'score' => $this->score($mediaType, (bool) ($data['keyword_match'] ?? false)),
                         'source_name' => 'Upload Konten Sosmed',
@@ -172,7 +180,10 @@ class SocialContentUploadController extends Controller
                     ]
                 );
             }
-        });
+            });
+        } catch (QueryException $exception) {
+            $this->throwDuplicateUrlValidation($exception, (string) ($data['media_types'][0] ?? 'feed'));
+        }
 
         return back()->with('status', 'Konten berhasil disimpan dan otomatis masuk ke Monitoring Konten Kampus.');
     }
@@ -188,8 +199,19 @@ class SocialContentUploadController extends Controller
             'caption' => ['nullable', 'string', 'max:5000'],
             'keyword_match' => ['nullable', 'boolean'],
         ]);
+        $this->assertUniquePostUrls([$data['media_type'] => $data['post_url'] ?? null], $post->id, true);
         $keywordMatch = (bool) ($data['keyword_match'] ?? false);
-        $post->update($data + ['keyword_match' => $keywordMatch, 'score' => $this->score($data['media_type'], $keywordMatch)]);
+        try {
+            $post->update($data + [
+                'url_fingerprint' => in_array($data['media_type'], ['feed', 'reels', 'story', 'facebook'], true)
+                    ? SocialPostUrl::fingerprint($data['post_url'] ?? null)
+                    : null,
+                'keyword_match' => $keywordMatch,
+                'score' => $this->score($data['media_type'], $keywordMatch),
+            ]);
+        } catch (QueryException $exception) {
+            $this->throwDuplicateUrlValidation($exception, $data['media_type'], true);
+        }
 
         return back()->with('status', 'Data konten berhasil diperbarui.');
     }
@@ -228,6 +250,50 @@ class SocialContentUploadController extends Controller
         if ($user->role === RsmUser::ROLE_STAFF) {
             abort_unless($wilayah === $user->regional && CampusMatcher::matches($unitName, (string) $user->campus_name), 403);
         }
+    }
+
+    private function assertUniquePostUrls(array $postUrls, ?int $ignorePostId = null, bool $singleField = false): void
+    {
+        $seen = [];
+        $errors = [];
+
+        foreach ($postUrls as $mediaType => $url) {
+            if (! in_array($mediaType, ['feed', 'reels', 'story', 'facebook'], true) || blank($url)) {
+                continue;
+            }
+
+            $fingerprint = SocialPostUrl::fingerprint((string) $url);
+            if ($fingerprint === null) {
+                continue;
+            }
+
+            $duplicateInRequest = isset($seen[$fingerprint]);
+            $duplicateInDatabase = RsmSocialPost::query()
+                ->where('url_fingerprint', $fingerprint)
+                ->when($ignorePostId, fn ($query) => $query->whereKeyNot($ignorePostId))
+                ->exists();
+
+            if ($duplicateInRequest || $duplicateInDatabase) {
+                $field = $singleField ? 'post_url' : 'post_urls.'.$mediaType;
+                $errors[$field] = 'Link konten ini sudah pernah dilaporkan dan tidak dapat digunakan kembali.';
+            }
+            $seen[$fingerprint] = true;
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function throwDuplicateUrlValidation(QueryException $exception, string $mediaType, bool $singleField = false): never
+    {
+        if ($exception->getCode() === '23000' && str_contains($exception->getMessage(), 'uq_rsm_social_posts_url_fingerprint')) {
+            throw ValidationException::withMessages([
+                ($singleField ? 'post_url' : 'post_urls.'.$mediaType) => 'Link konten ini sudah pernah dilaporkan dan tidak dapat digunakan kembali.',
+            ]);
+        }
+
+        throw $exception;
     }
 
     private function authorizePost(RsmUser $user, RsmSocialPost $post): void

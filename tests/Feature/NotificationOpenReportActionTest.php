@@ -115,11 +115,64 @@ class NotificationOpenReportActionTest extends TestCase
         $response->assertOk();
         $response->assertSee('Tindak Lanjuti');
         $response->assertSee('Tindak Lanjuti Kendala');
+        $response->assertSee('Perlu tindakan');
+        $response->assertSee('Kendala perlu ditangani');
+        $response->assertSee('background-color:#fffbeb', false);
         $response->assertSee('fixed inset-0 z-50', false);
         $response->assertDontSee('<details', false);
 
         $report->delete();
         $koordinator->delete();
+    }
+
+    public function test_aktivitas_summary_cards_filter_the_matching_obstacle_workflow(): void
+    {
+        $this->migrate();
+        $compiledViews = sys_get_temp_dir().'/rsm-report-views-'.uniqid();
+        mkdir($compiledViews, 0777, true);
+        config(['view.compiled' => $compiledViews]);
+
+        $viewer = RsmUser::create([
+            'id' => 920004,
+            'name' => 'Summary Filter Admin',
+            'username' => 'summary_filter_admin',
+            'password_hash' => 'x',
+            'role' => RsmUser::ROLE_SUPER_USER,
+            'jabatan' => 'Super User',
+            'area' => 'Regional B',
+            'is_active' => true,
+        ]);
+        $base = [
+            'area' => 'Regional B',
+            'report_type' => RsmReport::TYPE_OTHER,
+            'report_date' => now(),
+            'wilayah' => 'Regional 6',
+            'unit_name' => 'Unit Filter',
+            'staff_name' => 'Staff Filter',
+            'created_by_name' => 'Staff Filter',
+            'created_by_role' => RsmUser::ROLE_STAFF,
+            'obstacle_text' => 'Kendala filter card',
+        ];
+        $korwil = RsmReport::create($base + ['status' => 'Dikirim', 'title' => 'Kendala Khusus Korwil']);
+        $senior = RsmReport::create($base + ['status' => 'Ditindak Lanjuti', 'title' => 'Kendala Khusus Senior']);
+        $senior->forceFill(['escalated_to_role' => RsmUser::ROLE_SENIOR])->save();
+        $done = RsmReport::create($base + ['status' => 'Selesai', 'title' => 'Kendala Sudah Selesai']);
+        $approved = RsmReport::create($base + ['status' => 'Disetujui', 'title' => 'Kendala Final Disetujui']);
+
+        $this->actingAs($viewer)->get(route('aktivitas', ['type' => 'kendala', 'workflow' => 'active']))
+            ->assertOk()->assertSee($korwil->title)->assertSee($senior->title)->assertDontSee($done->title)->assertDontSee($approved->title);
+        $this->get(route('aktivitas', ['type' => 'kendala', 'workflow' => 'korwil']))
+            ->assertOk()->assertSee($korwil->title)->assertDontSee($senior->title)->assertDontSee($done->title)->assertDontSee($approved->title);
+        $this->get(route('aktivitas', ['type' => 'kendala', 'workflow' => 'senior']))
+            ->assertOk()->assertSee($senior->title)->assertDontSee($korwil->title)->assertDontSee($done->title);
+        $this->get(route('aktivitas', ['type' => 'kendala', 'workflow' => 'done']))
+            ->assertOk()->assertSee($done->title)->assertDontSee($korwil->title)->assertDontSee($senior->title);
+
+        $korwil->delete();
+        $senior->delete();
+        $done->delete();
+        $approved->delete();
+        $viewer->delete();
     }
 
     public function test_staff_report_detail_separates_leader_follow_up_from_staff_follow_up(): void

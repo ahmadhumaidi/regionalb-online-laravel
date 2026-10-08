@@ -93,7 +93,11 @@ class NotificationService
     /** Korwil/Senior Manager mengeskalasi laporan kendala ke role lain. */
     public static function notifyEscalation(RsmReport $report, string $toRole, RsmUser $actor): void
     {
-        $recipientIds = self::recipientIds($report->area, $toRole);
+        $recipientIds = self::recipientIds(
+            $report->area,
+            $toRole,
+            $toRole === RsmUser::ROLE_KOORDINATOR ? $report->wilayah : null,
+        );
 
         self::notify(
             $recipientIds,

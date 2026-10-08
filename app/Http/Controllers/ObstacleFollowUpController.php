@@ -50,7 +50,7 @@ class ObstacleFollowUpController extends Controller
 
         if ($eskalasiKe) {
             $this->transition($request, $report, $report->status, 'eskalasi', 'Eskalasi ke '.RsmRole::label($eskalasiKe), function () use ($report, $eskalasiKe) {
-                $report->escalated_to_role = $eskalasiKe;
+                $report->escalated_to_role = $eskalasiKe === RsmUser::ROLE_KOORDINATOR ? null : $eskalasiKe;
             });
             NotificationService::notifyEscalation($report, $eskalasiKe, $user);
 
@@ -87,9 +87,14 @@ class ObstacleFollowUpController extends Controller
         abort_if(trim((string) $report->obstacle_text) === '', 404);
         abort_unless($report->area === ($user->area ?: 'Regional B'), 404);
 
+        $isOwningStaff = $user->role === RsmUser::ROLE_STAFF
+            && $report->escalated_to_role === RsmUser::ROLE_STAFF
+            && ((int) $report->user_id === (int) $user->id || $report->staff_name === $user->name);
+
         $isResponsible = $user->role === RsmUser::ROLE_SUPER_USER
+            || $isOwningStaff
             || ($report->escalated_to_role === null && $user->role === RsmUser::ROLE_KOORDINATOR && $report->wilayah === $user->regional)
-            || ($report->escalated_to_role !== null && $user->role === $report->escalated_to_role);
+            || ($report->escalated_to_role !== null && $report->escalated_to_role !== RsmUser::ROLE_STAFF && $user->role === $report->escalated_to_role);
 
         abort_unless($isResponsible, 403);
     }

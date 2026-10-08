@@ -103,6 +103,38 @@ class XpLedgerTest extends TestCase
         $user->delete();
     }
 
+    public function test_season_xp_uses_report_date_instead_of_backfill_transaction_date(): void
+    {
+        $this->migrate();
+        $user = $this->makeStaff(920015, 'Season Date Staff');
+        $season = XpService::currentLeagueSeason();
+
+        $oldReport = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER,
+            'report_date' => $season['start']->copy()->subDay()->toDateString(),
+            'user_id' => $user->id, 'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => $user->name, 'created_by_role' => 'staff', 'status' => 'Disetujui', 'title' => 'Laporan season lama',
+        ]);
+        $currentReport = RsmReport::create([
+            'area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER,
+            'report_date' => $season['start']->copy()->addDay()->toDateString(),
+            'user_id' => $user->id, 'wilayah' => 'Regional 6', 'unit_name' => 'STIESIA Surabaya',
+            'staff_name' => $user->name, 'created_by_role' => 'staff', 'status' => 'Disetujui', 'title' => 'Laporan season aktif',
+        ]);
+
+        XpService::awardXp($user, 'report_approved', 500, 'report', $oldReport->id);
+        XpService::awardXp($user, 'report_approved', 20, 'report', $currentReport->id);
+        XpService::awardXp($user, 'daily_mission_claim', 10, 'daily_mission', 1);
+
+        $this->assertSame(30, XpService::getSeasonXp($user));
+        $this->assertSame(30, XpService::seasonXpByUserId(collect([$user->id]))->get($user->id));
+        $this->assertSame(530, XpService::getLifetimeXp($user));
+
+        $oldReport->delete();
+        $currentReport->delete();
+        $user->delete();
+    }
+
     /** 4. Level 1 bekerja + 9. user tanpa transaksi tetap aman. */
     public function test_zero_xp_and_no_transactions_is_safely_level_1(): void
     {

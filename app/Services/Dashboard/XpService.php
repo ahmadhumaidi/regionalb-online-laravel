@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Query\Builder;
 
 /**
  * Lifetime XP ledger + progressive level calculation.
@@ -108,12 +109,9 @@ class XpService
     {
         $season = self::currentLeagueSeason($at);
 
-        return (int) RsmGamificationTransaction::query()
-            ->where('user_id', $user->id)
-            // Ledger timestamps are stored in app/UTC time; season edges are
-            // defined in WIB so midnight on 1 Jan/Apr/Jul/Oct is exact.
-            ->whereBetween('created_at', [$season['start']->copy()->utc(), $season['end']->copy()->utc()])
-            ->sum('xp');
+        return (int) self::seasonTransactionsQuery($season)
+            ->where('gamification.user_id', $user->id)
+            ->sum('gamification.xp');
     }
 
     /** @param Collection<int, int|string> $userIds @return Collection<int|string, int> */
@@ -125,13 +123,42 @@ class XpService
 
         $season = self::currentLeagueSeason($at);
 
-        return RsmGamificationTransaction::query()
-            ->whereIn('user_id', $userIds->all())
-            ->whereBetween('created_at', [$season['start']->copy()->utc(), $season['end']->copy()->utc()])
-            ->selectRaw('user_id, COALESCE(SUM(xp), 0) as season_xp')
-            ->groupBy('user_id')
-            ->pluck('season_xp', 'user_id')
+        return self::seasonTransactionsQuery($season)
+            ->whereIn('gamification.user_id', $userIds->all())
+            ->selectRaw('gamification.user_id, COALESCE(SUM(gamification.xp), 0) as season_xp')
+            ->groupBy('gamification.user_id')
+            ->pluck('season_xp', 'gamification.user_id')
             ->map(fn ($value) => (int) $value);
+    }
+
+    /**
+     * Report-backed XP belongs to the season of the actual report, not the
+     * day a migration/backfill happened to insert its ledger transaction.
+     * Other event types continue to use the immutable ledger timestamp.
+     *
+     * @param array{start: Carbon, end: Carbon} $season
+     */
+    private static function seasonTransactionsQuery(array $season): Builder
+    {
+        $startUtc = $season['start']->copy()->utc();
+        $endUtc = $season['end']->copy()->utc();
+        $startDate = $season['start']->toDateString();
+        $endDate = $season['end']->toDateString();
+
+        return DB::table('rsm_gamification_transactions as gamification')
+            ->leftJoin('rsm_reports as source_report', function ($join): void {
+                $join->on('source_report.id', '=', 'gamification.source_id')
+                    ->where('gamification.source_type', '=', 'report');
+            })
+            ->where(function ($query) use ($startUtc, $endUtc, $startDate, $endDate): void {
+                $query->where(function ($fallback) use ($startUtc, $endUtc): void {
+                    $fallback->whereNull('source_report.id')
+                        ->whereBetween('gamification.created_at', [$startUtc, $endUtc]);
+                })->orWhere(function ($reportEvent) use ($startDate, $endDate): void {
+                    $reportEvent->whereNotNull('source_report.id')
+                        ->whereBetween('source_report.report_date', [$startDate, $endDate]);
+                });
+            });
     }
 
     /**

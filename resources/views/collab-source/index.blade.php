@@ -3,33 +3,13 @@
         <div class="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{{ session('status') }}</div>
     @endif
 
-    <section class="mb-5 grid gap-3 sm:grid-cols-2">
-        @php($collabHealth = $syncHealth['collab'] ?? [])
-        @php($bdcHealth = $syncHealth['bdc'] ?? [])
-        <div class="rounded-2xl glass-card p-4">
-            <span class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Collab</span>
-            <strong class="mt-1 block text-lg text-ink">{{ $collabHealth['status'] ?? '-' }}</strong>
-            <small class="text-xs text-ink-muted">
-                {{ ($collabHealth['synced_at'] ?? '') !== '' ? $collabHealth['synced_at'] . ' WIB' : 'Belum sinkron' }}
-                @if(!empty($collabHealth['errors'])) &middot; ada error source @endif
-            </small>
-        </div>
-        <div class="rounded-2xl glass-card p-4">
-            <span class="text-xs font-semibold tracking-wide text-ink-muted uppercase">BDC Marketing</span>
-            <strong class="mt-1 block text-lg text-ink">{{ $bdcHealth['status'] ?? '-' }}</strong>
-            <small class="text-xs text-ink-muted">
-                {{ ($bdcHealth['synced_at'] ?? '') !== '' ? $bdcHealth['synced_at'] . ' WIB' : 'Belum sinkron' }}
-                @if(!empty($bdcHealth['rows_count'])) &middot; {{ number_format((int) $bdcHealth['rows_count'], 0, ',', '.') }} snapshot @endif
-            </small>
-        </div>
-    </section>
-
     <section class="rounded-2xl glass-card p-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h2 class="text-base font-semibold text-ink">Sumber Data Collab (cb.web.id)</h2>
                 <p class="text-sm text-ink-muted">Snapshot cache terakhir tersinkron{{ $syncedAt !== '' ? ' - ' . $syncedAt . ' WIB' : ' - belum ada sinkronisasi' }}</p>
             </div>
+            @if($canSync)
             <form method="POST" action="{{ route('sources.sync') }}" onsubmit="const button=this.querySelector('button'); button.disabled=true; button.querySelector('[data-label]').textContent='Sinkron…';">
                 @csrf
                 <button class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-wait disabled:opacity-70" title="Sinkronkan Personalia, Collab, Absensi, dan BDC">
@@ -37,6 +17,7 @@
                     <span data-label>Sinkron Semua</span>
                 </button>
             </form>
+            @endif
         </div>
 
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -47,11 +28,6 @@
                             href="{{ route('sumber-collab', ['report' => $name]) }}"
                             class="px-3 py-1.5 text-xs font-bold {{ $name === $activeReport ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700 hover:bg-brand-100' }}"
                         >{{ $name }}</a>
-                        <form method="POST" action="{{ route('sumber-collab.sync') }}" class="flex border-l {{ $name === $activeReport ? 'border-brand-500' : 'border-brand-200' }}">
-                            @csrf
-                            <input type="hidden" name="report" value="{{ $name }}">
-                            <button type="submit" class="px-2.5 text-[11px] font-black {{ $name === $activeReport ? 'bg-brand-700 text-white hover:bg-brand-800' : 'bg-white text-brand-700 hover:bg-brand-100' }}" title="Sinkronkan hanya {{ $name }}" aria-label="Sinkronkan hanya {{ $name }}">&#8635; Sinkron</button>
-                        </form>
                     </div>
                 @endforeach
             </div>
@@ -71,6 +47,18 @@
             @endif
         </div>
 
+        @if($canSyncSelected)
+            <form method="POST" action="{{ route('sumber-collab.sync') }}" class="mt-4 flex flex-wrap items-center gap-3" onsubmit="const button=this.querySelector('button'); button.disabled=true; button.querySelector('[data-label]').textContent='Menyinkronkan…';">
+                @csrf
+                <input type="hidden" name="report" value="{{ $activeReport }}">
+                <button type="submit" class="inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-wait disabled:opacity-70">
+                    <span aria-hidden="true">&#8635;</span>
+                    <span data-label>Sinkronkan {{ $activeReport }}</span>
+                </button>
+                <span class="text-xs text-ink-muted">Hanya menyinkronkan aktivitas pada tab yang sedang dibuka.</span>
+            </form>
+        @endif
+
         @if(($reportData['error'] ?? '') !== '')
             <div class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ $reportData['error'] }}</div>
         @endif
@@ -85,8 +73,17 @@
             @endif
         </div>
 
-        <div class="mt-4 max-h-[70vh] overflow-auto rounded-xl border border-border">
-            <table class="collab-raw-table {{ in_array($activeReport, ['Sebar Brosur', 'Pasang Spanduk'], true) ? 'collab-sticky-name' : '' }}">
+        <div class="collab-table-scroll mt-4 max-h-[70vh] overflow-auto rounded-xl border border-border" tabindex="0" aria-label="Tabel {{ $activeReport }}; geser untuk melihat seluruh kolom">
+            @php
+                $tableFreezeClass = match (true) {
+                    in_array($activeReport, ['Sebar Brosur', 'Pasang Spanduk', 'Canvasing'], true) => 'collab-sticky-name',
+                    in_array($activeReport, ['Closing Kampus Regional', 'Herreg Kampus Regional'], true) => 'collab-sticky-campus',
+                    $activeReport === 'Rekapitulasi PMB Periode Prioritas P2K' => 'collab-sticky-name collab-compact-campus',
+                    $activeReport === 'Absen Staff' => 'collab-sticky-second collab-header-second-row',
+                    default => 'collab-sticky-primary',
+                };
+            @endphp
+            <table class="collab-raw-table {{ $tableFreezeClass }}">
                 @if(($reportData['rows'] ?? []) === [])
                     <tbody><tr><td class="px-3 py-6 text-center text-sm text-ink-muted">Belum ada data tersinkron untuk sumber ini.</td></tr></tbody>
                 @else
