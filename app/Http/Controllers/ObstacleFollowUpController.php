@@ -91,7 +91,7 @@ class ObstacleFollowUpController extends Controller
             && $report->escalated_to_role === RsmUser::ROLE_STAFF
             && ((int) $report->user_id === (int) $user->id || $report->staff_name === $user->name);
 
-        $isResponsible = $user->role === RsmUser::ROLE_SUPER_USER
+        $isResponsible = $user->hasSuperUserAccess()
             || $isOwningStaff
             || ($report->escalated_to_role === null && $user->role === RsmUser::ROLE_KOORDINATOR && $report->wilayah === $user->regional)
             || ($report->escalated_to_role !== null && $report->escalated_to_role !== RsmUser::ROLE_STAFF && $user->role === $report->escalated_to_role);

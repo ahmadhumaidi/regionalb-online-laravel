@@ -54,7 +54,7 @@
             <x-rekap.achievement-report :report="$achievementReport" />
         </section>
 
-        @if (auth()->user()->role === 'super_user')
+        @if (auth()->user()->hasSuperUserAccess())
             <section class="mt-5 rounded-2xl glass-card p-5">
                 <div>
                     <h2 class="text-base font-semibold text-ink">Bahan WhatsApp Otomatis</h2>

@@ -16,7 +16,7 @@ class ClosingTargetSimulationController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->role === RsmUser::ROLE_SUPER_USER, 403);
+        abort_unless($request->user()?->hasSuperUserAccess(), 403);
 
         $availableCampuses = RsmCollabDailyMetric::query()
             ->where('report_name', self::REPORT_NAME)

@@ -71,10 +71,20 @@ class RsmUser extends Authenticatable
     }
 
     /** Areas explicitly granted to this account, without changing its role. */
+    public function hasSuperUserAccess(): bool
+    {
+        return $this->role === self::ROLE_SUPER_USER
+            || ($this->username === 'raffandy' && $this->role === self::ROLE_EXECUTIVE_DIRECTOR);
+    }
+
+    public function accessRole(): string
+    {
+        return $this->hasSuperUserAccess() ? self::ROLE_SUPER_USER : $this->role;
+    }
+
     public function accessibleAreas(): array
     {
-        if ($this->role === self::ROLE_SUPER_USER
-            || ($this->username === 'raffandy' && $this->role === self::ROLE_EXECUTIVE_DIRECTOR)) {
+        if ($this->hasSuperUserAccess()) {
             return ['Regional A', 'Regional B'];
         }
 

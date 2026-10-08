@@ -11,6 +11,27 @@ use Tests\TestCase;
 
 class ScoringTableTest extends TestCase
 {
+    public function test_raffandy_arena_includes_staff_from_all_seven_regionals(): void
+    {
+        $this->migrate();
+        for ($i = 1; $i <= 7; $i++) {
+            RsmUser::create([
+                'name' => 'Arena Staff '.$i, 'username' => 'arena_all_'.$i, 'password_hash' => 'x',
+                'role' => 'staff', 'jabatan' => 'Staff Unit', 'area' => $i <= 3 ? 'Regional A' : 'Regional B',
+                'regional' => 'Regional '.$i, 'is_active' => true,
+            ]);
+        }
+        $raffandy = new RsmUser(['username' => 'raffandy', 'role' => 'executive_director', 'area' => 'Regional A']);
+        $filters = ['date_from' => today()->startOfMonth()->toDateString(), 'date_to' => today()->toDateString(), 'wilayah' => '', 'unit_name' => '', 'staff_name' => ''];
+        $arena = \App\Services\Dashboard\GamificationService::build('Regional A', $filters, $raffandy, true);
+        $this->assertCount(7, $arena['all_leaderboard']);
+        $this->assertCount(5, $arena['leaderboard']);
+        $this->assertSame(range(1, 7), array_column($arena['all_leaderboard'], 'rank'));
+        $this->assertSame(range(1, 7), array_column($arena['all_leaderboard'], 'previous_rank'));
+        $this->assertSame(array_fill(0, 7, 0), array_column($arena['all_leaderboard'], 'rank_delta'));
+        $this->assertCount(3, \App\Services\Dashboard\GamificationService::build('Regional A', $filters, $raffandy)['all_leaderboard']);
+    }
+
     private function migrate(): void
     {
         Artisan::call('migrate', ['--path' => [

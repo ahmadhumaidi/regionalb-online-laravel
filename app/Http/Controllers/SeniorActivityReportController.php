@@ -113,7 +113,7 @@ class SeniorActivityReportController extends Controller
 
     private function authorizeRole(?RsmUser $user): void
     {
-        abort_unless(in_array($user?->role, [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER], true), 403);
+        abort_unless(in_array($user?->accessRole(), [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER], true), 403);
     }
 
     private function authorizeOwner(?RsmUser $user, RsmSeniorActivityReport $report): void

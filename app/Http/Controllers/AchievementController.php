@@ -9,6 +9,7 @@ use App\Services\Dashboard\DashboardNumbers;
 use App\Services\Dashboard\ReferenceOptionsService;
 use App\Services\Dashboard\StaffProfileMatcher;
 use App\Services\Dashboard\TargetService;
+use App\Support\AreaRegionals;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -42,10 +43,42 @@ class AchievementController extends Controller
             ? (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior']))
             : $user;
 
-        $performance = CollabMetricsService::personalPerformance($area, $filters, $scopeUser);
-        $target = TargetService::build($area, $filters, $scopeUser);
-        $regionalTargets = TargetService::regionalSummary($area, $filters, $scopeUser);
-        $referenceOptions = ReferenceOptionsService::build($area, $user);
+        $areas = count($user->accessibleAreas()) > 1 ? $user->accessibleAreas() : [$area];
+        $performance = ['rows' => [], 'regional_summary' => [], 'totals' => ['registrasi' => 0, 'herregistrasi' => 0, 'staff_count' => 0]];
+        $target = ['target_registrasi' => 0, 'target_herregistrasi' => 0];
+        $regionalTargets = [];
+        $referenceOptions = ['regionals' => [], 'campuses' => [], 'staff' => []];
+        $profileIndex = ['byNik' => [], 'byName' => []];
+        foreach ($areas as $accessibleArea) {
+            $references = ReferenceOptionsService::build($accessibleArea, $user);
+            foreach (array_keys($referenceOptions) as $key) {
+                $referenceOptions[$key] = array_merge($referenceOptions[$key], $references[$key]);
+            }
+            $index = StaffProfileMatcher::index($accessibleArea);
+            foreach (array_keys($profileIndex) as $key) {
+                $profileIndex[$key] = array_merge($profileIndex[$key], $index[$key]);
+            }
+            if (count($areas) > 1 && $filters['wilayah'] !== '' && ! in_array($filters['wilayah'], AreaRegionals::forArea($accessibleArea), true)) {
+                continue;
+            }
+            $part = CollabMetricsService::personalPerformance($accessibleArea, $filters, $scopeUser);
+            $performance['sources'] = $part['sources'];
+            foreach (['rows', 'regional_summary'] as $key) {
+                $performance[$key] = array_merge($performance[$key], $part[$key]);
+            }
+            foreach (array_keys($performance['totals']) as $key) {
+                $performance['totals'][$key] += $part['totals'][$key];
+            }
+            $areaTarget = TargetService::build($accessibleArea, $filters, $scopeUser);
+            foreach (array_keys($target) as $key) {
+                $target[$key] += $areaTarget[$key] ?? 0;
+            }
+            $regionalTargets = array_merge($regionalTargets, TargetService::regionalSummary($accessibleArea, $filters, $scopeUser));
+        }
+        $performance['sources'] ??= ['registrasi' => ['label' => 'Closing Personal Per Regional'], 'herregistrasi' => ['label' => 'Herreg Personal Per Regional']];
+        $referenceOptions['regionals'] = array_values(array_unique($referenceOptions['regionals']));
+        $referenceOptions['campuses'] = collect($referenceOptions['campuses'])->unique('label')->values()->all();
+        $referenceOptions['staff'] = collect($referenceOptions['staff'])->unique('id')->values()->all();
 
         $registrasi = (float) $performance['totals']['registrasi'];
         $herregistrasi = (float) $performance['totals']['herregistrasi'];
@@ -79,7 +112,6 @@ class AchievementController extends Controller
             return $row;
         })->all();
 
-        $profileIndex = StaffProfileMatcher::index($area);
         $rows = collect($performance['rows'])
             ->map(function (array $row) use ($profileIndex) {
                 $row['name'] = StaffProfileMatcher::cleanName((string) $row['name']);
@@ -102,6 +134,7 @@ class AchievementController extends Controller
             ->map(fn ($group, $regional) => [
                 'regional' => $regional,
                 'total_registrasi' => (float) $group->sum('registrasi'),
+                'total_herregistrasi' => (float) $group->sum('herregistrasi'),
                 'rows' => $group->sortByDesc('registrasi')->values()->all(),
             ])
             ->sortByDesc('total_registrasi')

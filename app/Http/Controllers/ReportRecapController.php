@@ -30,7 +30,7 @@ class ReportRecapController extends Controller
         }
         $filters = DashboardFilters::fromRequest($request, 'rekap');
         $recap = $type === 'pencapaian' ? null : ReportRecapService::build($area, $filters, $type, $user);
-        $whatsappArtifact = $user->role === 'super_user' && $type === 'pencapaian'
+        $whatsappArtifact = $user->hasSuperUserAccess() && $type === 'pencapaian'
             ? AchievementWhatsappService::generate($area, $filters, $user)
             : AchievementWhatsappService::latest($area);
 
@@ -48,7 +48,7 @@ class ReportRecapController extends Controller
     public function generateWhatsapp(Request $request): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($user->role === 'super_user', 403);
+        abort_unless($user->hasSuperUserAccess(), 403);
 
         $filters = DashboardFilters::fromRequest($request, 'rekap');
         AchievementWhatsappService::generate($user->area ?: 'Regional B', $filters, $user);

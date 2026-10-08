@@ -57,22 +57,22 @@ class RsmRole
 
     public static function canViewUsersPage(?RsmUser $user): bool
     {
-        return in_array($user?->role, ['super_user', 'senior'], true);
+        return in_array($user?->accessRole(), ['super_user', 'senior'], true);
     }
 
     public static function canManageTargets(?RsmUser $user): bool
     {
-        return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior', 'mentor'], true);
+        return in_array($user?->accessRole(), ['super_user', 'executive_director', 'director', 'senior', 'mentor'], true);
     }
 
     public static function canSyncCollab(?RsmUser $user): bool
     {
-        return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior', 'mentor'], true);
+        return in_array($user?->accessRole(), ['super_user', 'executive_director', 'director', 'senior', 'mentor'], true);
     }
 
     public static function canViewCollab(?RsmUser $user): bool
     {
-        return $user !== null && in_array($user->role, array_keys(self::ROLE_LABELS), true);
+        return $user !== null && in_array($user->accessRole(), array_keys(self::ROLE_LABELS), true);
     }
 
     public static function canSyncCollabActivity(?RsmUser $user): bool
@@ -82,12 +82,12 @@ class RsmRole
 
     public static function canManageAdBudget(?RsmUser $user): bool
     {
-        return in_array($user?->role, ['super_user', 'senior'], true);
+        return in_array($user?->accessRole(), ['super_user', 'senior'], true);
     }
 
     public static function canManageAdBudgetLimit(?RsmUser $user): bool
     {
-        return in_array($user?->role, ['super_user', 'senior', 'koordinator'], true);
+        return in_array($user?->accessRole(), ['super_user', 'senior', 'koordinator'], true);
     }
 
     /**
@@ -97,7 +97,7 @@ class RsmRole
      */
     public static function canReviewAdBudgetRequest(?RsmUser $user): bool
     {
-        return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior'], true);
+        return in_array($user?->accessRole(), ['super_user', 'executive_director', 'director', 'senior'], true);
     }
 
     /**
@@ -115,42 +115,42 @@ class RsmRole
         }
 
         if (
-            $user?->role === 'koordinator'
+            $user?->accessRole() === 'koordinator'
             && $report->unit_name === 'Iklan '.$report->wilayah
         ) {
             return false;
         }
 
-        return $user?->role === 'koordinator' && $report->wilayah === $user->regional;
+        return $user?->accessRole() === 'koordinator' && $report->wilayah === $user->regional;
     }
 
     /** "Scoring" menu: a supervisory tool (koordinator reviewing their wilayah, senior tier reviewing the whole area) - not meant for staff to browse their peers' indicators. */
     public static function canViewScoringTable(?RsmUser $user): bool
     {
-        return $user?->role !== 'staff';
+        return $user?->accessRole() !== 'staff';
     }
 
     public static function canViewJadwalKoordinator(?RsmUser $user): bool
     {
-        return $user?->role !== 'staff';
+        return $user?->accessRole() !== 'staff';
     }
 
     public static function canManageCoordinatorSchedule(?RsmUser $user): bool
     {
-        return in_array($user?->role, [
+        return in_array($user?->accessRole(), [
             'super_user', 'executive_director', 'director', 'senior', 'mentor', 'koordinator',
         ], true);
     }
 
     public static function canImpersonate(?RsmUser $user): bool
     {
-        return in_array($user?->role, ['super_user', 'executive_director', 'director', 'senior', 'koordinator'], true);
+        return in_array($user?->accessRole(), ['super_user', 'executive_director', 'director', 'senior', 'koordinator'], true);
     }
 
     /** Forum Diskusi moderation (edit/delete any post or comment) - super_user only, not the wider senior tier. */
     public static function canModerateForum(?RsmUser $user): bool
     {
-        return $user?->role === 'super_user';
+        return $user?->hasSuperUserAccess() ?? false;
     }
 
     public static function label(string $role): string

@@ -256,7 +256,7 @@ class ReportFormController extends Controller
             ];
         }
 
-        if (in_array($user->role, ['super_user', 'executive_director', 'director', 'senior'], true)) {
+        if (in_array($user->accessRole(), ['super_user', 'executive_director', 'director', 'senior'], true)) {
             $rules['budget_approved'] = ['nullable', 'numeric', 'min:0'];
         }
 

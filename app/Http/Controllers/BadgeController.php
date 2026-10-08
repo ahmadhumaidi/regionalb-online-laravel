@@ -36,7 +36,7 @@ class BadgeController extends Controller
                 ['name' => 'Platinum', 'threshold' => 2500, 'note' => 'Terbuka saat XP season mencapai 2.500.'],
                 ['name' => 'Diamond', 'threshold' => 5000, 'note' => 'League tertinggi saat XP season mencapai 5.000.'],
             ],
-            'canManageBadges' => $user->role === 'super_user',
+            'canManageBadges' => $user->hasSuperUserAccess(),
             'fallback' => [
                 'name' => 'On Progress',
                 'condition' => 'Ditampilkan ketika staff belum memenuhi syarat badge mana pun.',
@@ -48,7 +48,7 @@ class BadgeController extends Controller
 
     public function update(Request $request)
     {
-        abort_unless($request->user()?->role === 'super_user', 403);
+        abort_unless($request->user()?->hasSuperUserAccess(), 403);
 
         $keys = collect(GamificationService::badgeDefinitions())->pluck('key')->all();
         $indicatorKeys = array_keys(GamificationService::scoringIndicators());

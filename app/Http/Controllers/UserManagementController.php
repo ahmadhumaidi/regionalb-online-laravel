@@ -21,7 +21,7 @@ class UserManagementController extends Controller
         $area = $this->selectedArea($request);
         $users = RsmUser::query()
             ->when(
-                $actor->role === RsmUser::ROLE_SUPER_USER,
+                $actor->hasSuperUserAccess(),
                 fn ($query) => $query->when(
                     $area !== 'all',
                     fn ($areaQuery) => $areaQuery->where(fn ($scopedQuery) => $scopedQuery->where('area', $area)->orWhereNull('area')),
@@ -67,7 +67,7 @@ class UserManagementController extends Controller
             'new_user_password' => 'required|string|min:6',
         ]);
 
-        abort_if($actor->role !== RsmUser::ROLE_SUPER_USER && $data['area'] !== $actor->area, 403);
+        abort_if(! $actor->hasSuperUserAccess() && $data['area'] !== $actor->area, 403);
         $role = $data['user_role'];
         RsmUser::create([
             'name' => $data['name'],
@@ -148,7 +148,7 @@ class UserManagementController extends Controller
         $actor = $request->user();
         $requestedArea = (string) $request->query('area', 'all');
 
-        return $actor->role === RsmUser::ROLE_SUPER_USER && in_array($requestedArea, ['all', 'Regional A', 'Regional B'], true)
+        return $actor->hasSuperUserAccess() && in_array($requestedArea, ['all', 'Regional A', 'Regional B'], true)
             ? $requestedArea
             : ($actor->area ?: 'Regional B');
     }
@@ -156,7 +156,7 @@ class UserManagementController extends Controller
     /** @return list<string> */
     private function manageableRoles(RsmUser $actor): array
     {
-        return $actor->role === RsmUser::ROLE_SUPER_USER
+        return $actor->hasSuperUserAccess()
             ? RsmUser::ROLES
             : [RsmUser::ROLE_MENTOR, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_STAFF];
     }
@@ -164,7 +164,7 @@ class UserManagementController extends Controller
     private function authorizeManagement(RsmUser $actor, RsmUser $managedUser): void
     {
         abort_unless(RsmRole::canViewUsersPage($actor), 403);
-        if ($actor->role !== RsmUser::ROLE_SUPER_USER) {
+        if (! $actor->hasSuperUserAccess()) {
             abort_unless(
                 $managedUser->area === $actor->area
                 && in_array($managedUser->role, $this->manageableRoles($actor), true),

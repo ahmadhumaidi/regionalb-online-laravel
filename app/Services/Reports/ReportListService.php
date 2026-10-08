@@ -106,7 +106,7 @@ class ReportListService
             && $escalatedToRole === RsmUser::ROLE_STAFF
             && ((int) $report->user_id === (int) $user->id || $report->staff_name === $user->name);
         $isResponsible = $hasKendala && (
-            $user->role === RsmUser::ROLE_SUPER_USER
+            $user->hasSuperUserAccess()
             || $isOwningStaff
             || ($escalatedToRole === null && $user->role === 'koordinator' && $report->wilayah === $user->regional)
             || ($escalatedToRole !== null && $escalatedToRole !== RsmUser::ROLE_STAFF && $user->role === $escalatedToRole)

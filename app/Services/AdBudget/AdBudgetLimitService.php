@@ -24,7 +24,7 @@ class AdBudgetLimitService
         $regionals = AreaRegionals::forArea($area);
         $hasUnitName = Schema::hasColumn('rsm_ad_budget_limits', 'unit_name');
 
-        if ($user->role === RsmUser::ROLE_SUPER_USER) {
+        if ($user->hasSuperUserAccess()) {
             array_unshift($regionals, $area);
         }
 

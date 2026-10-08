@@ -1,7 +1,7 @@
 @php use App\Models\RsmUser; use App\Support\RsmRole; @endphp
 <x-layouts.app title="Kelola User" active="users">
     @if(session('status'))<div class="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{{ session('status') }}</div>@endif @if($errors->any())<div class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ $errors->first() }}</div>@endif
-    @if(auth()->user()->role === RsmUser::ROLE_SUPER_USER)
+    @if(auth()->user()->hasSuperUserAccess())
         <nav class="mb-5 flex flex-wrap gap-2" aria-label="Pilih area user">
             @foreach(['all' => 'Semua Area', 'Regional A' => 'Regional A', 'Regional B' => 'Regional B'] as $areaValue => $areaLabel)
                 <a href="{{ route('users', ['area' => $areaValue]) }}" class="rounded-lg px-4 py-2 text-sm font-semibold {{ $area === $areaValue ? 'bg-brand-600 text-white' : 'border border-border bg-surface text-ink' }}">{{ $areaLabel }}</a>

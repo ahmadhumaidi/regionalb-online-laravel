@@ -62,7 +62,7 @@ class App extends Component
                             fn ($regionalQuery) => $regionalQuery->whereRaw('1 = 0'),
                         ),
                     fn ($q) => $q->when(
-                        $impersonationActor->role !== RsmUser::ROLE_SUPER_USER,
+                        ! $impersonationActor->hasSuperUserAccess(),
                         fn ($areaQuery) => $areaQuery->where(fn ($scopedQuery) => $scopedQuery
                             ->where('area', $impersonationActor->area)
                             ->orWhereNull('area')

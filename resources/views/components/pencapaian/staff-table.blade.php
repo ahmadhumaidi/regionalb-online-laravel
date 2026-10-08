@@ -46,6 +46,13 @@
                                 </tr>
                             @endforeach
                         </tbody>
+                        <tfoot>
+                            <tr class="border-t-2 border-border bg-surface-muted/70 font-bold text-ink">
+                                <th colspan="3" scope="row" class="py-2 pr-2 sm:py-3 sm:pr-3">Total {{ $group['regional'] }}</th>
+                                <td class="py-2 pr-2 text-right whitespace-nowrap sm:py-3 sm:pr-3">{{ number_format($group['total_registrasi'], 0, ',', '.') }}</td>
+                                <td class="py-2 text-right whitespace-nowrap sm:py-3">{{ number_format($group['total_herregistrasi'], 0, ',', '.') }}</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </section>

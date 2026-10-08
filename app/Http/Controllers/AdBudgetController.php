@@ -51,7 +51,7 @@ class AdBudgetController extends Controller
         ];
 
         $referenceOptions = ReferenceOptionsService::build($area, $user);
-        if ($user->role === RsmUser::ROLE_SUPER_USER && ! in_array($area, $referenceOptions['regionals'], true)) {
+        if ($user->hasSuperUserAccess() && ! in_array($area, $referenceOptions['regionals'], true)) {
             array_unshift($referenceOptions['regionals'], $area);
         }
         if ($user->role === RsmUser::ROLE_KOORDINATOR && filled($user->regional)) {
@@ -124,7 +124,7 @@ class AdBudgetController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        abort_unless($user->role === RsmUser::ROLE_SUPER_USER, 403);
+        abort_unless($user->hasSuperUserAccess(), 403);
 
         $data = $request->validate([
             'ad_period' => ['required', 'string', 'max:40'],

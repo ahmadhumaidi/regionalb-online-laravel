@@ -63,7 +63,7 @@ class CoordinatorScheduleController extends Controller
             'status' => $request->query('status'),
         ];
         [$rows, $grouped, $summary] = $this->fetchSchedules($area, $month, $filters, $user);
-        $whatsappArtifact = $user->role === 'super_user'
+        $whatsappArtifact = $user->hasSuperUserAccess()
             ? $this->saveWhatsappArtifact($this->coordinatorWhatsappText($area), $month)
             : $this->latestWhatsappArtifact();
 
@@ -396,7 +396,7 @@ class CoordinatorScheduleController extends Controller
     public function whatsapp(Request $request)
     {
         $user = $request->user();
-        abort_unless($user->role === 'super_user', 403);
+        abort_unless($user->hasSuperUserAccess(), 403);
         $month = $request->validate(['month' => ['required', 'date_format:Y-m']])['month'];
         $area = $user->area ?: 'Regional B';
 

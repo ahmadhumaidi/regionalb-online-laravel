@@ -53,7 +53,7 @@ class DashboardController extends Controller
         $gamificationUser = $user->role === 'staff'
             ? (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior']))
             : $user;
-        $gamification = GamificationService::build($area, $filters, $gamificationUser);
+        $gamification = GamificationService::build($area, $filters, $gamificationUser, count($user->accessibleAreas()) > 1);
         $referenceOptions = ReferenceOptionsService::build($area, $user);
         $actionItems = ActionCenterService::build($area, $user);
 
@@ -86,8 +86,6 @@ class DashboardController extends Controller
             $this->recapRegionals($area, $user)
         );
 
-        [$topStaffAchievement, $topStaffMaxValue] = $this->topStaffAchievement($area, $user, $regionalStaffAchievement);
-
         // "Top 5 Pencapaian Kampus" is a leaderboard across every campus, not
         // this one staff member's own campus - reuse the staff-scoped
         // $campusClosing for the (staff-hidden) summary tile above, but pull
@@ -96,6 +94,11 @@ class DashboardController extends Controller
         $topCampusClosing = $user->role === 'staff'
             ? CollabMetricsService::campusTotals($filters, $area, (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior'])))
             : $campusClosing;
+
+        if (count($user->accessibleAreas()) > 1) {
+            [$topCampusClosing, $regionalStaffAchievement] = $this->allAreaAchievements($filters, $user);
+        }
+        [$topStaffAchievement, $topStaffMaxValue] = $this->topStaffAchievement($area, $user, $regionalStaffAchievement);
 
         return view('dashboard.index', [
             'active' => 'dashboard',
@@ -203,9 +206,28 @@ class DashboardController extends Controller
         return CollabMetricsService::personalPerformance($area, $areaFilters, $areaUser);
     }
 
+    private function allAreaAchievements(array $filters, RsmUser $user): array
+    {
+        $campusRows = collect();
+        $staffRows = collect();
+        foreach ($user->accessibleAreas() as $area) {
+            if ($filters['wilayah'] !== '' && ! in_array($filters['wilayah'], AreaRegionals::forArea($area), true)) {
+                continue;
+            }
+            $campusRows = $campusRows->concat(CollabMetricsService::campusTotals($filters, $area, $user)['rows']);
+            $staffRows = $staffRows->concat(CollabMetricsService::personalPerformance($area, $filters, $user)['rows']);
+        }
+
+        return [
+            ['rows' => $campusRows->sortByDesc('registrasi')->values()->all(), 'max_value' => (float) ($campusRows->max('registrasi') ?? 0)],
+            ['rows' => $staffRows->all()],
+        ];
+    }
+
     private function topStaffAchievement(string $area, RsmUser $user, array $regionalStaffAchievement): array
     {
-        $achievementUsers = RsmUser::query()->where('area', $area)->get()->keyBy(fn (RsmUser $u) => mb_strtolower(trim($u->name)));
+        $achievementUsers = RsmUser::query()->whereIn('area', count($user->accessibleAreas()) > 1 ? $user->accessibleAreas() : [$area])
+            ->get()->keyBy(fn (RsmUser $u) => mb_strtolower(trim($u->name)));
 
         $rows = collect($regionalStaffAchievement['rows'])
             ->filter(fn (array $row) => trim($row['name']) !== '' && $row['name'] !== '-')

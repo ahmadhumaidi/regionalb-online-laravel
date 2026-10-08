@@ -114,7 +114,7 @@
                                             </div>
                                             <div class="flex shrink-0 items-center gap-2">
                                                 <strong class="text-sm text-ink">Rp {{ number_format($row['budget_limit'], 0, ',', '.') }}</strong>
-                                                @if (auth()->user()->role === 'super_user')
+                                                @if (auth()->user()->hasSuperUserAccess())
                                                     <form method="POST" action="{{ route('anggaran.limit.destroy') }}" onsubmit="return confirm('Hapus plafon {{ $row['unit_name'] }} periode {{ $period }}? Laporan iklan tetap tersimpan.')">
                                                         @csrf
                                                         @method('DELETE')

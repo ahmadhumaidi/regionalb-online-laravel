@@ -50,7 +50,7 @@ class ReportFormService
     public static function canCreate(string $type, RsmUser $user): bool
     {
         return $type !== RsmReport::TYPE_ADS
-            || in_array($user->role, [RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true);
+            || in_array($user->accessRole(), [RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true);
     }
 
     public static function canEdit(RsmReport $report, RsmUser $user): bool
@@ -131,7 +131,7 @@ class ReportFormService
 
         $report = DB::transaction(function () use ($type, $data, $attachment, $user) {
             $normalized = self::normalize($type, $data, $user);
-            if ($type !== RsmReport::TYPE_ADS || $user->role !== RsmUser::ROLE_SUPER_USER) {
+            if ($type !== RsmReport::TYPE_ADS || ! $user->hasSuperUserAccess()) {
                 self::validateBudget($type, $normalized);
             }
             $report = RsmReport::create($normalized);
@@ -236,7 +236,7 @@ class ReportFormService
         // Laporan pengeluaran Senior Manager: dibuat dan langsung disetujui oleh
         // Super User sendiri, tidak terikat wilayah/kampus koordinator maupun
         // plafon anggaran regional (lihat create(), skip validateBudget()).
-        $isSeniorExpense = $type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_SUPER_USER;
+        $isSeniorExpense = $type === RsmReport::TYPE_ADS && $user->hasSuperUserAccess();
         if ($isSeniorExpense) {
             $wilayah = $area;
             $unit = $area;

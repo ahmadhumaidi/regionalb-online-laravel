@@ -21,14 +21,14 @@ class Menu
         $sections = [
             ['key' => 'utama', 'title' => 'Utama', 'items' => array_values(array_filter([
                 ['key' => 'dashboard', 'label' => 'Dashboard Utama', 'icon' => 'home'],
-                in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true)
+                in_array($user->accessRole(), [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true)
                     ? ['key' => 'staff-journey', 'label' => 'Journey Staff', 'icon' => 'flag']
                     : null,
                 ['key' => 'forum', 'label' => 'Forum Diskusi', 'icon' => 'chat'],
             ]))],
             ['key' => 'pekerjaan', 'title' => 'Pekerjaan Saya', 'items' => array_values(array_filter([
                 ['key' => 'aktivitas', 'label' => 'Laporan', 'icon' => 'document'],
-                in_array($user->role, [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER], true)
+                in_array($user->accessRole(), [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER], true)
                     ? ['key' => 'laporan-senior', 'label' => 'Laporan Kunjungan & Rapat', 'icon' => 'briefcase']
                     : null,
             ]))],
@@ -40,7 +40,7 @@ class Menu
             ]))],
             ['key' => 'perencanaan', 'title' => 'Perencanaan Tim', 'items' => array_values(array_filter([
                 RsmRole::canManageTargets($user) ? ['key' => 'targets', 'label' => 'Target & Bobot', 'icon' => 'target'] : null,
-                $user->role === RsmUser::ROLE_SUPER_USER ? ['key' => 'closing-target-simulation', 'label' => 'Simulasi Target', 'icon' => 'target'] : null,
+                $user->hasSuperUserAccess() ? ['key' => 'closing-target-simulation', 'label' => 'Simulasi Target', 'icon' => 'target'] : null,
                 RsmRole::canViewJadwalKoordinator($user) ? ['key' => 'jadwal-koordinator', 'label' => 'Jadwal Koordinator', 'icon' => 'calendar'] : null,
                 RsmRole::canManageTargets($user) ? ['key' => 'jadwal-personalia', 'label' => 'Jadwal Personalia', 'icon' => 'clipboard'] : null,
             ]))],
@@ -56,7 +56,7 @@ class Menu
             ['key' => 'akun', 'title' => 'Akun', 'items' => [
                 ['key' => 'profile', 'label' => 'Profil Saya', 'icon' => 'user'],
                 ['key' => 'password', 'label' => 'Ganti Password', 'icon' => 'lock'],
-                ...($user->role === RsmUser::ROLE_SUPER_USER
+                ...($user->hasSuperUserAccess()
                     ? [['key' => 'about-application', 'label' => 'Tentang Aplikasi', 'icon' => 'document']]
                     : []),
             ]],
@@ -119,10 +119,10 @@ class Menu
             'sumber-collab' => RsmRole::canViewCollab($user),
             'scoring' => RsmRole::canViewScoringTable($user),
             'targets' => RsmRole::canManageTargets($user),
-            'closing-target-simulation' => $user->role === RsmUser::ROLE_SUPER_USER,
-            'about-application' => $user->role === RsmUser::ROLE_SUPER_USER,
-            'staff-journey' => in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true),
-            'laporan-senior' => in_array($user->role, [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER], true),
+            'closing-target-simulation' => $user->hasSuperUserAccess(),
+            'about-application' => $user->hasSuperUserAccess(),
+            'staff-journey' => in_array($user->accessRole(), [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true),
+            'laporan-senior' => in_array($user->accessRole(), [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER], true),
             default => true,
         };
     }

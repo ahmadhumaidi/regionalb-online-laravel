@@ -216,7 +216,7 @@ class ProfileController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        abort_unless(in_array($user->role, [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true), 403);
+        abort_unless(in_array($user->accessRole(), [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true), 403);
 
         $validated = $request->validate([
             'date' => ['nullable', 'date_format:Y-m-d'],

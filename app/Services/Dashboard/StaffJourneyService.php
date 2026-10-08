@@ -121,7 +121,7 @@ class StaffJourneyService
         return RsmUser::query()
             ->where('role', RsmUser::ROLE_STAFF)
             ->where('is_active', true)
-            ->when($viewer->role !== RsmUser::ROLE_SUPER_USER, function ($query) use ($viewer): void {
+            ->when(! $viewer->hasSuperUserAccess(), function ($query) use ($viewer): void {
                 $query->where('area', $viewer->area);
 
                 if (in_array($viewer->role, [RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_STAFF], true)) {

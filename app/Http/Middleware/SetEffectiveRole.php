@@ -31,7 +31,7 @@ class SetEffectiveRole
         }
         View::share('allowedAreas', $allowedAreas);
         $actualRole = $user->role;
-        $allowedRoleKeys = RsmRole::allowedEffectiveRoles($actualRole);
+        $allowedRoleKeys = RsmRole::allowedEffectiveRoles($user->accessRole());
 
         $requestedRole = strtolower((string) $request->query('role', $actualRole));
         $effectiveRole = in_array($requestedRole, $allowedRoleKeys, true) ? $requestedRole : $actualRole;

@@ -6,6 +6,7 @@ use App\Models\RsmBadgeSetting;
 use App\Models\RsmGamificationTransaction;
 use App\Models\RsmReport;
 use App\Models\RsmUser;
+use App\Support\AreaRegionals;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -83,11 +84,12 @@ class GamificationService
         })->values()->all();
     }
 
-    public static function build(string $area, array $filters, RsmUser $user): array
+    public static function build(string $area, array $filters, RsmUser $user, bool $allAccessibleAreas = false): array
     {
-        $previousRanks = self::previousRankLookup($area, $filters, $user);
+        $areas = $allAccessibleAreas ? $user->accessibleAreas() : [$area];
+        $previousRanks = self::previousRankLookup($areas, $filters, $user);
         $leaderboard = self::withRankMovement(
-            self::leaderboardRows($area, $filters, $user),
+            self::combinedLeaderboardRows($areas, $filters, $user),
             $previousRanks
         );
 
@@ -101,6 +103,16 @@ class GamificationService
             'challenge' => ['items' => self::challengeItems()],
             'point_rules' => self::pointRules(),
         ];
+    }
+
+    /** @return Collection<int, array> */
+    private static function combinedLeaderboardRows(array $areas, array $filters, RsmUser $user): Collection
+    {
+        return collect($areas)
+            ->filter(fn (string $area) => $filters['wilayah'] === '' || in_array($filters['wilayah'], AreaRegionals::forArea($area), true))
+            ->flatMap(fn (string $area) => self::leaderboardRows($area, $filters, $user))
+            ->sortBy([['total_score', 'desc'], ['name', 'asc']])
+            ->values();
     }
 
     /** @return Collection<int, array> */
@@ -167,14 +179,14 @@ class GamificationService
     }
 
     /** @return Collection<string, int> */
-    private static function previousRankLookup(string $area, array $filters, RsmUser $user): Collection
+    private static function previousRankLookup(array $areas, array $filters, RsmUser $user): Collection
     {
         $previousFilters = self::previousPeriodFilters($filters);
         if ($previousFilters === null) {
             return collect();
         }
 
-        return self::leaderboardRows($area, $previousFilters, $user)
+        return self::combinedLeaderboardRows($areas, $previousFilters, $user)
             ->values()
             ->mapWithKeys(fn (array $row, int $index) => [self::leaderboardKey($row) => $index + 1]);
     }
