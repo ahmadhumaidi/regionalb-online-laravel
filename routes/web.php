@@ -49,6 +49,15 @@ Route::post('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive'])
 Route::view('/kebijakan-privasi', 'legal.privacy-policy')->name('privacy-policy');
 
 Route::middleware(['auth', 'effective_role'])->group(function () {
+    Route::post('/area', function (\Illuminate\Http\Request $request) {
+        $allowedAreas = $request->user()->accessibleAreas();
+        abort_unless(count($allowedAreas) > 1, 403);
+        $data = $request->validate(['area' => ['required', \Illuminate\Validation\Rule::in($allowedAreas)]]);
+        $request->session()->put('selected_area.'.$request->user()->id, $data['area']);
+
+        return redirect()->route('dashboard');
+    })->name('area.switch');
+
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
     Route::get('/profile/password', [ProfileController::class, 'edit'])->name('password.edit');

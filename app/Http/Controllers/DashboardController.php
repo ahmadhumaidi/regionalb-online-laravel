@@ -127,6 +127,10 @@ class DashboardController extends Controller
             return [$user->regional];
         }
 
+        if (count($user->accessibleAreas()) > 1) {
+            return array_merge(...array_map(AreaRegionals::forArea(...), $user->accessibleAreas()));
+        }
+
         return AreaRegionals::forArea($area);
     }
 
@@ -137,6 +141,14 @@ class DashboardController extends Controller
      */
     private function regionalRecap(string $area, array $filters, RsmUser $user, string $regional): array
     {
+        // Recap cards span both accessible areas even when the current
+        // session is scoped to just one. Resolve each card's data area.
+        foreach ($user->accessibleAreas() as $accessibleArea) {
+            if (in_array($regional, AreaRegionals::forArea($accessibleArea), true)) {
+                $area = $accessibleArea;
+                break;
+            }
+        }
         $regionalFilters = array_merge($filters, ['wilayah' => $regional]);
 
         $closingKampus = CollabMetricsService::campusTotals($regionalFilters, $area, $user);

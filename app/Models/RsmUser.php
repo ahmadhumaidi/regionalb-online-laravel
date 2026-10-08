@@ -70,6 +70,17 @@ class RsmUser extends Authenticatable
         return $this->password_hash;
     }
 
+    /** Areas explicitly granted to this account, without changing its role. */
+    public function accessibleAreas(): array
+    {
+        if ($this->role === self::ROLE_SUPER_USER
+            || ($this->username === 'raffandy' && $this->role === self::ROLE_EXECUTIVE_DIRECTOR)) {
+            return ['Regional A', 'Regional B'];
+        }
+
+        return [$this->getRawOriginal('area') ?: $this->area ?: 'Regional B'];
+    }
+
     /** Keep Laravel's optional password rehash on the legacy column name. */
     public function getAuthPasswordName(): string
     {

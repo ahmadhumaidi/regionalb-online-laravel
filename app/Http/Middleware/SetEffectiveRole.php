@@ -20,6 +20,16 @@ class SetEffectiveRole
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();
+        $homeArea = $user->area;
+        $allowedAreas = $user->accessibleAreas();
+        $selectedArea = $request->session()->get('selected_area.'.$user->id, $homeArea);
+        if (in_array($selectedArea, $allowedAreas, true)) {
+            // Existing services scope queries by user->area. Keep this session
+            // selection clean so profile saves cannot overwrite the home area.
+            $user->area = $selectedArea;
+            $user->syncOriginalAttribute('area');
+        }
+        View::share('allowedAreas', $allowedAreas);
         $actualRole = $user->role;
         $allowedRoleKeys = RsmRole::allowedEffectiveRoles($actualRole);
 
@@ -34,6 +44,11 @@ class SetEffectiveRole
         View::share('effectiveRole', $effectiveRole);
         View::share('allowedRoleKeys', $allowedRoleKeys);
 
-        return $next($request);
+        try {
+            return $next($request);
+        } finally {
+            $user->area = $homeArea;
+            $user->syncOriginalAttribute('area');
+        }
     }
 }
