@@ -37,7 +37,7 @@ class RekapExport implements FromArray, WithEvents
             ['Periode', $this->dateFrom, $this->dateTo, '', '', '', '', '', ''],
             ['Jenis Rekap', $this->type, '', '', '', '', '', '', ''],
             array_fill(0, 9, ''),
-            ['Tanggal', 'Jenis', 'Wilayah', 'Unit/Kampus', 'Staff', 'Judul/Campaign', 'Leads', 'Closing', 'Anggaran', 'Realisasi', 'Status'],
+            ['Tanggal', 'Jenis', 'Wilayah', 'Unit/Kampus', 'Staff', 'Judul/Campaign', 'Link', 'Leads', 'Closing', 'Anggaran', 'Realisasi', 'Status'],
         ];
 
         foreach ($this->rows as $row) {
@@ -48,6 +48,7 @@ class RekapExport implements FromArray, WithEvents
                 $row['unit_name'] ?: '-',
                 $row['staff_name'] ?: '-',
                 $row['title'] ?: '-',
+                $row['campaign_link'] ?: '-',
                 $row['leads_count'],
                 $row['closing_count'],
                 $row['budget_requested'],
@@ -66,7 +67,7 @@ class RekapExport implements FromArray, WithEvents
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $lastCol = 'K';
+                $lastCol = 'L';
 
                 $sheet->getStyle('A1:A3')->getFont()->setBold(true);
                 $sheet->getStyle('A'.self::HEADER_ROW.':'.$lastCol.self::HEADER_ROW)->applyFromArray([
@@ -76,15 +77,15 @@ class RekapExport implements FromArray, WithEvents
                 ]);
 
                 if ($this->lastRow > self::HEADER_ROW) {
-                    $sheet->getStyle('I'.(self::HEADER_ROW + 1).':J'.$this->lastRow)->getNumberFormat()->setFormatCode('"Rp" #,##0');
-                    $sheet->getStyle('G'.(self::HEADER_ROW + 1).':H'.$this->lastRow)->getNumberFormat()->setFormatCode('#,##0');
+                    $sheet->getStyle('J'.(self::HEADER_ROW + 1).':K'.$this->lastRow)->getNumberFormat()->setFormatCode('"Rp" #,##0');
+                    $sheet->getStyle('H'.(self::HEADER_ROW + 1).':I'.$this->lastRow)->getNumberFormat()->setFormatCode('#,##0');
                     $sheet->getStyle('A'.self::HEADER_ROW.':'.$lastCol.$this->lastRow)->applyFromArray([
                         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'D1D5DB']]],
                     ]);
                 }
 
-                foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'] as $col) {
-                    $sheet->getColumnDimension($col)->setWidth($col === 'F' ? 32 : 16);
+                foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as $col) {
+                    $sheet->getColumnDimension($col)->setWidth(in_array($col, ['F', 'G'], true) ? 32 : 16);
                 }
                 $sheet->freezePane('A'.(self::HEADER_ROW + 1));
             },

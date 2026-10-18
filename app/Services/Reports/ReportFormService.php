@@ -27,7 +27,7 @@ class ReportFormService
                 'label' => 'kegiatan',
                 'options' => ['Follow up leads', 'Kunjungan sekolah', 'Kunjungan instansi', 'Sebar brosur', 'Pasang spanduk', 'Event kampus', 'Presentasi PMB', 'Aktivitas digital', 'Lainnya'],
                 'statuses' => ['Draft', 'Dikirim'],
-                'fields' => ['report_date', 'wilayah', 'unit_name', 'staff_name', 'activity_kind', 'title', 'location_name', 'target_text', 'result_text', 'leads_count', 'notes', 'attachment_path'],
+                'fields' => ['report_date', 'wilayah', 'unit_name', 'staff_name', 'activity_kind', 'title', 'location_name', 'target_text', 'result_text', 'leads_count', 'campaign_link', 'notes', 'attachment_path'],
             ],
             RsmReport::TYPE_OTHER => [
                 'title' => 'Aktivitas Lain',
@@ -243,6 +243,9 @@ class ReportFormService
             $status = 'Disetujui';
         }
 
+        $isDigitalActivity = $type === RsmReport::TYPE_MARKETING
+            && ($data['activity_kind'] ?? null) === 'Aktivitas digital';
+
         return [
             'area' => $area,
             'report_type' => $type,
@@ -262,10 +265,10 @@ class ReportFormService
                     : $existing?->escalated_to_role,
             'title' => $type === RsmReport::TYPE_ADS ? (trim((string) ($data['campaign_name'] ?? '')) ?: '-') : (trim((string) ($data['title'] ?? '')) ?: 'Laporan RSM'),
             'activity_kind' => $data['activity_kind'] ?? null,
-            'location_name' => $data['location_name'] ?? null,
-            'target_text' => $data['target_text'] ?? null,
-            'result_text' => $data['result_text'] ?? null,
-            'leads_count' => (int) ($data['leads_count'] ?? 0),
+            'location_name' => $isDigitalActivity ? null : ($data['location_name'] ?? null),
+            'target_text' => $isDigitalActivity ? null : ($data['target_text'] ?? null),
+            'result_text' => $isDigitalActivity ? null : ($data['result_text'] ?? null),
+            'leads_count' => $isDigitalActivity ? 0 : (int) ($data['leads_count'] ?? 0),
             'notes' => $data['notes'] ?? null,
             'platform' => $data['platform'] ?? null,
             'ad_period' => $data['ad_period'] ?? AdBudgetPeriods::default(),

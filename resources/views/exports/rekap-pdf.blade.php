@@ -25,7 +25,7 @@
         <thead>
             <tr>
                 <th>Tanggal</th><th>Jenis</th><th>Wilayah</th><th>Unit/Kampus</th><th>Staff</th>
-                <th>Judul/Campaign</th><th>Leads</th><th>Closing</th><th>Anggaran</th><th>Realisasi</th><th>Status</th>
+                <th>Judul/Campaign</th><th>Link</th><th>Leads</th><th>Closing</th><th>Anggaran</th><th>Realisasi</th><th>Status</th>
             </tr>
         </thead>
         <tbody>
@@ -37,6 +37,7 @@
                     <td>{{ $row['unit_name'] ?: '-' }}</td>
                     <td>{{ $row['staff_name'] ?: '-' }}</td>
                     <td>{{ $row['title'] ?: '-' }}</td>
+                    <td>{{ $row['campaign_link'] ?: '-' }}</td>
                     <td class="num">{{ number_format($row['leads_count'], 0, ',', '.') }}</td>
                     <td class="num">{{ number_format($row['closing_count'], 0, ',', '.') }}</td>
                     <td class="num">Rp {{ number_format($row['budget_requested'], 0, ',', '.') }}</td>
@@ -44,13 +45,13 @@
                     <td>{{ $row['status'] ?: '-' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="11">Belum ada data pada filter ini.</td></tr>
+                <tr><td colspan="12">Belum ada data pada filter ini.</td></tr>
             @endforelse
         </tbody>
         @if ($rows !== [])
             <tfoot>
                 <tr>
-                    <td colspan="6">TOTAL — {{ count($rows) }} laporan</td>
+                    <td colspan="7">TOTAL — {{ count($rows) }} laporan</td>
                     <td class="num">{{ number_format(array_sum(array_column($rows, 'leads_count')), 0, ',', '.') }}</td>
                     <td class="num">{{ number_format(array_sum(array_column($rows, 'closing_count')), 0, ',', '.') }}</td>
                     <td class="num">Rp {{ number_format(array_sum(array_column($rows, 'budget_requested')), 0, ',', '.') }}</td>

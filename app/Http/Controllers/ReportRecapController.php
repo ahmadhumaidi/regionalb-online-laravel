@@ -105,9 +105,9 @@ class ReportRecapController extends Controller
             fputcsv($out, ['Periode', $filters['date_from'], $filters['date_to']]);
             fputcsv($out, ['Jenis Rekap', $type]);
             fputcsv($out, []);
-            fputcsv($out, ['Tanggal', 'Jenis', 'Wilayah', 'Unit/Kampus', 'Staff', 'Judul/Campaign', 'Leads', 'Closing', 'Anggaran', 'Realisasi', 'Status']);
+            fputcsv($out, ['Tanggal', 'Jenis', 'Wilayah', 'Unit/Kampus', 'Staff', 'Judul/Campaign', 'Link', 'Leads', 'Closing', 'Anggaran', 'Realisasi', 'Status']);
             foreach ($recap['rows'] as $row) {
-                fputcsv($out, [$row['report_date'], $row['report_type'], $row['wilayah'], $row['unit_name'], $row['staff_name'], $row['title'], $row['leads_count'], $row['closing_count'], $row['budget_requested'], $row['realization_amount'], $row['status']]);
+                fputcsv($out, [$row['report_date'], $row['report_type'], $row['wilayah'], $row['unit_name'], $row['staff_name'], $row['title'], $row['campaign_link'], $row['leads_count'], $row['closing_count'], $row['budget_requested'], $row['realization_amount'], $row['status']]);
             }
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);

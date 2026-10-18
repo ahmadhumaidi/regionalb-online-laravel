@@ -185,13 +185,20 @@ class ReportFormController extends Controller
             'wilayah' => ['nullable', 'string', 'max:120'],
             'unit_name' => ['nullable', 'string', 'max:180'],
             'staff_name' => ['nullable', 'string', 'max:180'],
-            'attachment_path' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf'],
+            'attachment_path' => [
+                Rule::prohibitedIf(fn () => $type === RsmReport::TYPE_MARKETING && $request->input('activity_kind') === 'Aktivitas digital'),
+                'nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf',
+            ],
         ];
         $rules = match ($type) {
             RsmReport::TYPE_MARKETING => $common + [
                 'activity_kind' => ['nullable', 'string', 'max:120'], 'title' => ['required', 'string', 'max:220'],
-                'location_name' => ['nullable', 'string', 'max:220'], 'target_text' => ['nullable', 'string'], 'result_text' => ['nullable', 'string'],
-                'leads_count' => ['nullable', 'integer', 'min:0'], 'notes' => ['nullable', 'string'],
+                'location_name' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'string', 'max:220'],
+                'target_text' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'string'],
+                'result_text' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'string'],
+                'leads_count' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'integer', 'min:0'],
+                'campaign_link' => [Rule::requiredIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'url:http,https', 'max:500'],
+                'notes' => ['nullable', 'string'],
             ],
             RsmReport::TYPE_OTHER => $common + [
                 'category' => ['nullable', 'string', 'max:120'], 'title' => ['required', 'string', 'max:220'],

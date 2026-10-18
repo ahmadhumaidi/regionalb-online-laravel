@@ -44,6 +44,8 @@ class ReportRecapService
             'unit_name' => $report->unit_name,
             'staff_name' => $report->staff_name,
             'title' => $report->campaign_name ?: $report->title,
+            'activity_kind' => $report->activity_kind,
+            'campaign_link' => $report->campaign_link,
             'ad_period' => $report->ad_period,
             'platform' => $report->platform,
             'campaign_name' => $report->campaign_name,

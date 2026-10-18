@@ -2,8 +2,23 @@
     <div class="profile-glass-shell -mx-2 rounded-2xl bg-[#101227] p-3 text-white shadow-2xl sm:mx-0 sm:rounded-3xl sm:p-6">
         <div class="grid gap-5 lg:grid-cols-[270px_1fr]">
             <aside class="rounded-2xl border border-white/10 bg-[#212446] p-4 text-center sm:p-5">
-                <div class="relative mx-auto h-28 w-28 sm:h-40 sm:w-40">
-                    <x-league-photo :league="$league" :user="$user" text-size="text-lg" />
+                <div x-data="{ photoPreviewOpen: false }">
+                    @if ($user->photo_path)
+                        <button type="button" @click="photoPreviewOpen = true" class="relative mx-auto block h-28 w-28 cursor-zoom-in rounded-full focus:outline-none focus:ring-4 focus:ring-sky-300/60 sm:h-40 sm:w-40" aria-label="Pratinjau foto profil">
+                            <x-league-photo :league="$league" :user="$user" text-size="text-lg" />
+                        </button>
+                        <div x-show="photoPreviewOpen" x-cloak @keydown.escape.window="photoPreviewOpen = false" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/85 p-4" role="dialog" aria-modal="true" aria-label="Pratinjau foto profil">
+                            <div @click.outside="photoPreviewOpen = false" class="relative w-full max-w-3xl">
+                                <button type="button" @click="photoPreviewOpen = false" class="absolute -top-12 right-0 rounded-lg border border-white/30 bg-black/40 px-3 py-2 text-sm font-semibold text-white hover:bg-black/70">Tutup</button>
+                                <img src="{{ $user->photoUrl() }}" alt="Foto profil {{ $user->name }}" class="mx-auto max-h-[82vh] w-auto max-w-full rounded-2xl object-contain shadow-2xl">
+                                <p class="mt-3 text-center text-sm font-semibold text-white">{{ $user->name }}</p>
+                            </div>
+                        </div>
+                    @else
+                        <div class="relative mx-auto h-28 w-28 sm:h-40 sm:w-40">
+                            <x-league-photo :league="$league" :user="$user" text-size="text-lg" />
+                        </div>
+                    @endif
                 </div>
                 <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-3 text-left">
                     @csrf
@@ -12,7 +27,7 @@
                         Ganti foto profil
                     </label>
                     <input id="profile_photo" name="profile_photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" onchange="this.form.submit()">
-                    <p class="mt-2 text-center text-[11px] text-indigo-300">JPG, PNG, atau WebP · maksimal 2 MB</p>
+                    <p class="mt-2 text-center text-[11px] text-indigo-300">JPG, PNG, atau WebP · maksimal 9 MB setelah konversi iPhone</p>
                     @error('profile_photo')
                         <p class="mt-2 rounded-lg bg-rose-400/15 px-2 py-1.5 text-center text-[11px] text-rose-200">{{ $message }}</p>
                     @enderror

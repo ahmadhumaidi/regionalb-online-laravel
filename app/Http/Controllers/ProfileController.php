@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -469,14 +471,56 @@ class ProfileController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $data = $request->validate(['bio_text' => ['nullable', 'string', 'max:800'], 'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']]);
+        $data = $request->validate(
+            ['bio_text' => ['nullable', 'string', 'max:800'], 'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:9216']],
+            ['profile_photo.max' => 'Ukuran foto profil setelah dikonversi maksimal 9 MB.']
+        );
         $user = Auth::user();
+        $oldPhotoPath = $user->photo_path;
         if ($request->hasFile('profile_photo')) {
-            if ($user->photo_path && str_starts_with($user->photo_path, 'profiles/')) Storage::disk('public')->delete($user->photo_path);
-            $data['photo_path'] = $request->file('profile_photo')->store('profiles', 'public');
+            $data['photo_path'] = $this->storeCompressedProfilePhoto($request->file('profile_photo'));
         }
         $user->forceFill(array_filter(['bio_text' => $data['bio_text'] ?? null, 'photo_path' => $data['photo_path'] ?? null], static fn ($v) => $v !== null))->save();
+        if (isset($data['photo_path']) && $oldPhotoPath && str_starts_with($oldPhotoPath, 'profiles/')) {
+            Storage::disk('public')->delete($oldPhotoPath);
+        }
         return back()->with('notice', 'Profil berhasil diperbarui.');
+    }
+
+    private function storeCompressedProfilePhoto(UploadedFile $photo): string
+    {
+        $source = @imagecreatefromstring((string) file_get_contents($photo->getRealPath()));
+        if ($source === false) {
+            throw ValidationException::withMessages(['profile_photo' => 'Foto tidak dapat diproses. Gunakan JPG, PNG, atau WebP.']);
+        }
+
+        $width = imagesx($source);
+        $height = imagesy($source);
+        $maxDimension = 1200;
+        $scale = min(1, $maxDimension / max($width, $height));
+        $targetWidth = max(1, (int) round($width * $scale));
+        $targetHeight = max(1, (int) round($height * $scale));
+        $target = imagecreatetruecolor($targetWidth, $targetHeight);
+        imagealphablending($target, false);
+        imagesavealpha($target, true);
+        imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+
+        ob_start();
+        $encoded = imagewebp($target, null, 82);
+        $contents = ob_get_clean();
+        imagedestroy($source);
+        imagedestroy($target);
+
+        if (! $encoded || ! is_string($contents) || $contents === '') {
+            throw ValidationException::withMessages(['profile_photo' => 'Foto gagal dikompresi. Silakan coba kembali.']);
+        }
+
+        $path = 'profiles/'.Str::uuid().'.webp';
+        if (! Storage::disk('public')->put($path, $contents)) {
+            throw ValidationException::withMessages(['profile_photo' => 'Foto gagal disimpan. Silakan coba kembali.']);
+        }
+
+        return $path;
     }
 
     /** Claim today's reward for one Daily Mission tier - recomputes mission progress server-side rather than trusting the client. */
