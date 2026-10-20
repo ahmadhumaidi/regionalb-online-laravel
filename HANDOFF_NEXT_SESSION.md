@@ -1,3 +1,14 @@
+# Status deployment saat ini — 2026-10-20
+
+- Aplikasi utama: `/var/www/regionalb.online/laravel`, branch Git `main`.
+- Domain production: `https://regionalb.online` dan `https://www.regionalb.online`.
+- Document root Nginx: `/var/www/regionalb.online/laravel/public`.
+- `.env` menggunakan `APP_ENV=production` dan `APP_URL=https://regionalb.online`.
+- Staging sudah tidak digunakan; konfigurasi staging dipensiunkan atas permintaan pengguna.
+- Catatan di bawah adalah arsip historis dan tidak menggambarkan deployment saat ini.
+
+---
+
 # Handoff — migrasi form laporan Laravel
 
 Tanggal: 2026-08-05

@@ -1,3 +1,15 @@
+# Regional B — aplikasi utama
+
+Aplikasi Laravel production untuk `regionalb.online` dan `www.regionalb.online`.
+
+- Lokasi aplikasi: `/var/www/regionalb.online/laravel`
+- Document root web server: `/var/www/regionalb.online/laravel/public`
+- Branch utama: `main`
+- Persiapan permission dan cache: `./scripts/prepare-production.sh`
+- Staging sudah tidak digunakan. Catatan deployment lama pada `HANDOFF_NEXT_SESSION.md` disimpan sebagai arsip.
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
