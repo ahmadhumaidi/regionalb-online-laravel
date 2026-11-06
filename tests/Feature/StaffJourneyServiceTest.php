@@ -183,6 +183,12 @@ class StaffJourneyServiceTest extends TestCase
         RsmReport::create(['area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER, 'report_date' => '2026-10-05', 'user_id' => $staff->id, 'wilayah' => 'Regional 4', 'unit_name' => 'Kampus Real', 'staff_name' => $staff->name, 'created_by_role' => 'staff', 'status' => 'Disetujui', 'title' => 'Sapa Grup Affiliate', 'activity_kind' => 'Sapa Grup Affiliate']);
 
         RsmReport::create(['area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER, 'report_date' => '2026-10-06', 'user_id' => $staff->id, 'wilayah' => 'Regional 4', 'unit_name' => 'Kampus Real', 'staff_name' => $staff->name, 'created_by_role' => 'staff', 'status' => 'Dikirim', 'title' => 'Live Streaming Night', 'activity_kind' => 'Live Streaming Night']);
+        $beforeSync = collect(StaffJourneyService::build($viewer, '2026-10-07')['staff'])->firstWhere('id', $staff->id);
+        $this->assertFalse($beforeSync['activities']['live_night']['done']);
+        DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Live Streaming Night', 'metric_date' => '2026-10-06',
+            'entity_key' => 'night-ari', 'staff_name' => $staff->name, 'regional' => 'Regional 4', 'value' => 1,
+        ]);
         $row = collect(StaffJourneyService::build($viewer, '2026-10-07')['staff'])->firstWhere('id', $staff->id);
         $this->assertTrue($row['activities']['live_night']['done']);
         $this->assertFalse($row['activities']['live_day']['done']);

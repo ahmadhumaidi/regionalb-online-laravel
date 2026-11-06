@@ -44,6 +44,7 @@ class ScoringTableService
         $campusHerreg = self::campusIndex(CollabMetricsService::campusTotals($filters, $area, $user, 'Herreg Kampus Regional'));
         $shareFbByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Share FB Group');
         $liveStreamingByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Live Streaming');
+        $liveNightByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Live Streaming Night');
         $attendanceByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Absen Tepat Waktu');
         $affMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Mahasiswa');
         $affNonMhsByName = CollabMetricsService::personalTotalsByName($filters, $area, $user, 'Affiliator Non Mahasiswa');
@@ -58,7 +59,7 @@ class ScoringTableService
             : collect();
 
         $rows = $roster
-            ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg, $shareFbByName, $liveStreamingByName, $attendanceByName, $affMhsByName, $affNonMhsByName, $socialPosts, $indicators, $targetsByName) {
+            ->map(function (RsmUser $staff) use ($indicatorByName, $personalByName, $campusRegistrasi, $campusHerreg, $shareFbByName, $liveStreamingByName, $liveNightByName, $attendanceByName, $affMhsByName, $affNonMhsByName, $socialPosts, $indicators, $targetsByName) {
                 $nameKey = mb_strtolower(trim((string) $staff->name));
                 $indicator = $indicatorByName->get($nameKey);
                 $personal = $personalByName->get($nameKey);
@@ -85,6 +86,7 @@ class ScoringTableService
                     'hari_aktif' => (int) ($indicator['report_days'] ?? 0),
                     'share_fb_group' => (float) ($shareFbByName->get($nameKey) ?? 0),
                     'live_streaming' => (float) ($liveStreamingByName->get($nameKey) ?? 0),
+                    'live_streaming_night' => (float) ($liveNightByName->get($nameKey) ?? 0),
                     'absen_masuk' => (float) ($attendanceByName->get($nameKey) ?? 0),
                     'konten_instagram' => (float) $campusPosts->whereIn('media_type', ['feed', 'reels'])->count(),
                     'konten_facebook' => (float) $campusPosts->where('media_type', 'facebook')->count(),

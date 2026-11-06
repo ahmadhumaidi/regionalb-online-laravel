@@ -63,7 +63,7 @@ class ScoringTableTest extends TestCase
     {
         $this->migrate();
         $roster = [['user_id' => 900090, 'name' => 'Journey Export Staff', 'wilayah' => 'Regional 6', 'unit_name' => 'Journey Campus']];
-        foreach (['Absen Tepat Waktu' => 2, 'Follow Up BDC' => 45, 'Live Streaming' => 3, 'Share FB Group' => 8, 'Canvasing' => 4, 'Sebar Brosur' => 250, 'Pasang Spanduk' => 5] as $name => $value) {
+        foreach (['Absen Tepat Waktu' => 2, 'Follow Up BDC' => 45, 'Live Streaming' => 3, 'Live Streaming Night' => 2, 'Share FB Group' => 8, 'Canvasing' => 4, 'Sebar Brosur' => 250, 'Pasang Spanduk' => 5] as $name => $value) {
             foreach (['2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03'] as $date) {
                 RsmCollabDailyMetric::create([
                     'report_name' => $name, 'metric_date' => $date, 'entity_key' => 'journey-export-'.$date,
@@ -95,8 +95,61 @@ class ScoringTableTest extends TestCase
         $this->assertSame([
             'absen' => 4.0, 'fu_bdc' => 90.0, 'instagram' => 4, 'facebook' => 2, 'tiktok' => 2,
             'live_day' => 6.0, 'story_ig' => 2, 'share_fb' => 16.0, 'laporan' => 3,
-            'live_night' => 1, 'affiliate' => 1, 'canvassing' => 8.0, 'brosur' => 500.0, 'spanduk' => 10.0,
+            'live_night' => 4.0, 'affiliate' => 1, 'canvassing' => 8.0, 'brosur' => 500.0, 'spanduk' => 10.0,
         ], array_intersect_key($row, StaffJourneyService::ACTIVITY_LABELS));
+    }
+
+    public function test_live_night_source_flows_into_scoring_and_weekly_journey_without_day_or_report_double_counting(): void
+    {
+        $this->migrate();
+        $staff = RsmUser::create([
+            'name' => 'Night Staff', 'username' => 'night_staff', 'password_hash' => 'x',
+            'role' => 'staff', 'jabatan' => 'Staff Unit', 'area' => 'Regional B',
+            'regional' => 'Regional 6', 'campus_name' => 'Night Campus', 'is_active' => true,
+        ]);
+        $source = \App\Services\CollabSourceService::class;
+        $this->assertContains('Live Streaming Night', $source::knownReports());
+        $this->assertSame('https://cb.web.id/pencapaian_live_streaming_night.php', $source::sourceUrl('Live Streaming Night'));
+        $rows = [
+            ['Nama', 'Nov 2026', 'Nov 2026', 'Nov 2026', 'Total'],
+            ['Nama', '01', '04', '05', 'Total'],
+            array_fill(0, 5, 'Regional 6 - Coordinator'),
+            ['SG.1234.2026 - Night Staff', '5', '2', '7', '14'],
+            array_fill(0, 5, 'Total Regional 6 - Coordinator'),
+        ];
+        $ingest = new \ReflectionMethod($source, 'ingestDailyMetrics');
+        $ingest->invoke(null, 'Live Streaming Night', ['tables' => [$rows]]);
+        $ingest->invoke(null, 'Live Streaming Night', ['tables' => [$rows]]);
+        $this->assertSame(3, RsmCollabDailyMetric::where('report_name', 'Live Streaming Night')->count());
+        \Illuminate\Support\Facades\DB::table('rsm_collab_daily_metrics')->insert([
+            'report_name' => 'Live Streaming', 'metric_date' => '2026-11-04',
+            'entity_key' => 'night-day', 'staff_name' => $staff->name, 'regional' => 'Regional 6', 'value' => 1,
+        ]);
+        RsmMonthlyTarget::create([
+            'area' => 'Regional B', 'target_month' => '2026-11', 'scope_type' => 'staff',
+            'scope_key' => 'staff:night staff', 'staff_name' => $staff->name,
+            'wilayah' => 'Regional 6', 'unit_name' => 'Night Campus',
+            'indicator_targets' => ['live_night' => ['target' => 4, 'weight' => 8]],
+        ]);
+        RsmReport::create([
+            'user_id' => $staff->id, 'staff_name' => $staff->name, 'area' => 'Regional B',
+            'report_type' => RsmReport::TYPE_OTHER, 'report_date' => '2026-11-04',
+            'wilayah' => 'Regional 6', 'unit_name' => 'Night Campus', 'created_by_role' => 'staff',
+            'status' => 'Dikirim', 'title' => 'Live Streaming Night',
+        ]);
+        $filters = ['date_from' => '2026-11-04', 'date_to' => '2026-11-04', 'wilayah' => '', 'unit_name' => '', 'staff_name' => ''];
+        $score = ScoringTableService::build('Regional B', $filters, $staff)['rows'][0];
+        $this->assertSame(2.0, $score['live_streaming_night']);
+        $this->assertSame(1.0, $score['live_streaming']);
+        $this->assertSame(4.0, $score['score_details']['live_night']['score']);
+        $this->assertSame(4.0, $score['total_score']);
+        $journey = StaffJourneyService::build($staff, '2026-11-04')['staff'][0];
+        $this->assertTrue($journey['activities']['live_night']['done']);
+        $this->assertSame(2.0, $journey['activities']['live_night']['actual']);
+        $this->assertSame(1.0, $journey['activities']['live_day']['actual']);
+        $roster = [['user_id' => $staff->id, 'name' => $staff->name, 'wilayah' => $staff->regional, 'unit_name' => $staff->campus_name]];
+        $report = StaffJourneyService::reportRows($roster, $filters)[0];
+        $this->assertSame(2.0, $report['live_night']);
     }
 
     public function test_staff_cannot_open_scoring_menu(): void

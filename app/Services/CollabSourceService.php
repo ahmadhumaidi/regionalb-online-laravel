@@ -26,6 +26,7 @@ class CollabSourceService
         'Follow Up BDC',
         'Share FB Group',
         'Live Streaming',
+        'Live Streaming Night',
         'Canvasing',
         'Sebar Brosur',
         'Pasang Spanduk',
@@ -43,6 +44,7 @@ class CollabSourceService
         'Follow Up BDC',
         'Share FB Group',
         'Live Streaming',
+        'Live Streaming Night',
         'Canvasing',
         'Sebar Brosur',
         'Pasang Spanduk',
@@ -59,6 +61,7 @@ class CollabSourceService
         'Follow Up BDC',
         'Share FB Group',
         'Live Streaming',
+        'Live Streaming Night',
         'Canvasing',
         'Sebar Brosur',
         'Pasang Spanduk',
@@ -76,6 +79,7 @@ class CollabSourceService
         'Follow Up BDC' => 'https://cb.web.id/pencapaian_follow_up_BDC.php',
         'Share FB Group' => 'https://cb.web.id/pencapaian_share_fb.php',
         'Live Streaming' => 'https://cb.web.id/pencapaian_live_streaming.php',
+        'Live Streaming Night' => 'https://cb.web.id/pencapaian_live_streaming_night.php',
         'Canvasing' => 'https://cb.web.id/data_canvassing_harian_peregional.php',
         'Sebar Brosur' => 'https://cb.web.id/data_sebar_brosur_peregional.php',
         'Pasang Spanduk' => 'https://cb.web.id/data_pasang_spanduk_peregional.php',
@@ -890,7 +894,7 @@ class CollabSourceService
         $isCampus = in_array($reportName, ['Closing Kampus Regional', 'Herreg Kampus Regional'], true);
         $isPersonalRegional = in_array($reportName, [
             'Closing Personal Per Regional', 'Herreg Personal Per Regional', 'Follow Up BDC',
-            'Share FB Group', 'Live Streaming', 'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
+            'Share FB Group', 'Live Streaming', 'Live Streaming Night', 'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
         ], true);
         // Unit activities use No, NIK - Nama, optional campus columns,
         // day columns, Total. Canvasing has fewer metadata columns; the

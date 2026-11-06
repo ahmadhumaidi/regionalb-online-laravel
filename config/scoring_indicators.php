@@ -112,6 +112,13 @@ return [
             'default_weight' => 6,
             'metric_key' => 'live_streaming',
         ],
+        'live_night' => [
+            'label' => 'Live Night',
+            'group' => 'Digital',
+            'default_weight' => 0,
+            'default_target' => 4,
+            'metric_key' => 'live_streaming_night',
+        ],
         'aff_mhs' => [
             'label' => 'Aff. Mhs',
             'group' => 'Afiliasi',

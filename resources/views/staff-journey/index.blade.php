@@ -10,7 +10,7 @@
             ['key'=>'story_ig','title'=>'Story Instagram','short'=>'Story IG','target'=>'1/hari','category'=>'DAILY','icon'=>'photo','report_url'=>route('upload-konten-sosmed').'#input-aktivitas-konten'],
             ['key'=>'share_fb','title'=>'Share Konten Facebook','short'=>'Share FB','target'=>'3/hari','category'=>'DAILY','icon'=>'cloud','report_url'=>'https://cb.web.id/ggklikv2/','external'=>true],
             ['key'=>'laporan','title'=>'Laporan Aktivitas Lain','short'=>'Aktivitas Lain','target'=>'1/hari','category'=>'DAILY','icon'=>'clipboard','report_url'=>route('aktivitas.create')],
-            ['key'=>'live_night','title'=>'Live Streaming Night','short'=>'Live Night','target'=>'1 jam/minggu','category'=>'WEEKLY','icon'=>'bolt','report_url'=>route('aktivitas.create',['activity'=>'Live Streaming Night'])],
+            ['key'=>'live_night','title'=>'Live Streaming Night','short'=>'Live Night','target'=>'1 jam/minggu','category'=>'WEEKLY','icon'=>'bolt','report_url'=>'https://cb.web.id/pencapaian_live_streaming_night.php','external'=>true],
             ['key'=>'affiliate','title'=>'Sapa Grup Affiliate','short'=>'Sapa Affiliate','target'=>'1/minggu','category'=>'WEEKLY','icon'=>'chat','report_url'=>route('aktivitas.create',['activity'=>'Sapa Grup Affiliate'])],
             ['key'=>'canvassing','title'=>'Canvassing','short'=>'Canvassing','target'=>'3/minggu','category'=>'WEEKLY','icon'=>'users','report_notice'=>'Data diambil dari Collab · Canvasing'],
             ['key'=>'brosur','title'=>'Sebar Brosur','short'=>'Sebar Brosur','target'=>'1.000 / 3 bulan','category'=>'PERIODIC','icon'=>'document','report_notice'=>'Data diambil dari Collab · Sebar Brosur'],

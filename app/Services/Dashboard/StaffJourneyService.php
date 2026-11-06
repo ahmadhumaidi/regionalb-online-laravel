@@ -41,6 +41,7 @@ class StaffJourneyService
         $metricNames = [
             'absen' => 'Absen Tepat Waktu', 'fu_bdc' => 'Follow Up BDC',
             'live_day' => 'Live Streaming', 'share_fb' => 'Share FB Group',
+            'live_night' => 'Live Streaming Night',
             'canvassing' => 'Canvasing', 'brosur' => 'Sebar Brosur', 'spanduk' => 'Pasang Spanduk',
         ];
         $metrics = RsmCollabDailyMetric::query()
@@ -70,6 +71,7 @@ class StaffJourneyService
         $metricNames = [
             'absen' => 'Absen Tepat Waktu', 'fu_bdc' => 'Follow Up BDC',
             'live_day' => 'Live Streaming', 'share_fb' => 'Share FB Group',
+            'live_night' => 'Live Streaming Night',
             'canvassing' => 'Canvasing', 'brosur' => 'Sebar Brosur', 'spanduk' => 'Pasang Spanduk',
         ];
         $metrics = $metrics->groupBy(fn ($row) => self::nameKey((string) $row->staff_name));
@@ -80,7 +82,7 @@ class StaffJourneyService
             $staffMetrics = $metrics->get(self::nameKey((string) $row['name']), collect());
             foreach ($metricNames as $key => $name) {
                 $matching = $staffMetrics->where('report_name', $name);
-                if (in_array($key, ['canvassing', 'brosur', 'spanduk'], true)) {
+                if (in_array($key, ['canvassing', 'brosur', 'spanduk', 'live_night'], true)) {
                     $matching = $matching->where('regional', $row['wilayah']);
                 }
                 $actuals[$key] = (float) $matching->sum('value');
@@ -93,7 +95,6 @@ class StaffJourneyService
             $staffReports = $reports->get('id:'.$row['user_id'], collect())
                 ->concat($reports->get('name:'.self::nameKey((string) $row['name']), collect()));
             $actuals['laporan'] = $staffReports->count();
-            $actuals['live_night'] = $staffReports->filter(fn (RsmReport $report): bool => self::isActivity($report, 'Live Streaming Night'))->count();
             $actuals['affiliate'] = $staffReports->filter(fn (RsmReport $report): bool => self::isActivity($report, 'Sapa Grup Affiliate'))->count();
 
             return array_merge($row, $actuals);
@@ -142,7 +143,7 @@ class StaffJourneyService
         $offStatuses = PersonnelScheduleService::offStatusesForDate($date);
 
         $periodCollab = RsmCollabDailyMetric::query()
-            ->whereIn('report_name', ['Pasang Spanduk', 'Sebar Brosur', 'Canvasing'])
+            ->whereIn('report_name', ['Pasang Spanduk', 'Sebar Brosur', 'Canvasing', 'Live Streaming Night'])
             ->whereBetween('metric_date', [$selectedDate->subMonthsNoOverflow(2)->startOfMonth()->toDateString(), $date])
             ->get(['report_name', 'metric_date', 'staff_name', 'regional', 'value'])
             ->groupBy(fn ($row) => self::nameKey((string) $row->staff_name));
@@ -289,12 +290,13 @@ class StaffJourneyService
         $weeklyMetrics = $periodMetrics->filter(fn ($row): bool => $row->metric_date->toDateString() >= $weekStart);
         $brosurTotal = (float) $periodMetrics->where('report_name', 'Sebar Brosur')->sum('value');
         $canvassingTotal = (float) $weeklyMetrics->where('report_name', 'Canvasing')->sum('value');
-        $nightReports = $staffReports->filter(fn (RsmReport $report): bool => self::isActivity($report, 'Live Streaming Night') && optional($report->report_date)->toDateString() <= $date);
+        $nightMetrics = $weeklyMetrics->where('report_name', 'Live Streaming Night');
+        $nightTotal = (float) $nightMetrics->sum('value');
 
         $activity = [
             'brosur' => self::activity($brosurTotal >= 1000, $brosurTotal, 1000, null, 'Collab · Sebar Brosur · 3 bulan berjalan'),
             'canvassing' => self::activity($canvassingTotal >= 3, $canvassingTotal, 3, null, 'Collab · Canvasing · minggu berjalan'),
-            'live_night' => self::activity($nightReports->isNotEmpty(), $nightReports->count(), 1, optional($nightReports->sortBy('created_at')->first()?->created_at)->format('H:i'), 'Laporan · Live Streaming Night'),
+            'live_night' => self::activity($nightTotal >= 1, $nightTotal, 1, null, 'Collab · Live Streaming Night · minggu berjalan'),
             'spanduk' => self::activity($spandukTotal >= 6, $spandukTotal, 6, null, 'Collab · Pasang Spanduk · bulan sebelumnya sampai tanggal terpilih'),
             'absen' => self::activity($metric('Absen Tepat Waktu') >= 1, $metric('Absen Tepat Waktu'), 1, $metricTime('Absen Tepat Waktu', 1), 'GGKlik v2 · Absen Tepat Waktu'),
             'fu_bdc' => self::activity($metric('Follow Up BDC') >= 30, $metric('Follow Up BDC'), 30, $metricTime('Follow Up BDC', 30), 'Collab · Follow Up BDC'),
