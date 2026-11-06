@@ -40,7 +40,7 @@ class StaffProfileMatcher
         $byNik = [];
         $byName = [];
 
-        foreach (RsmUser::query()->where('area', $area)->where('is_active', true)->get() as $candidate) {
+        foreach (RsmUser::query()->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])->where('is_active', true)->get() as $candidate) {
             $nameKey = mb_strtolower(trim($candidate->name));
             $nikKey = mb_strtolower(trim((string) $candidate->nik));
             if ($nameKey !== '') {

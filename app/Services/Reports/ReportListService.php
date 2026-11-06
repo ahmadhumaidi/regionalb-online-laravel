@@ -42,7 +42,7 @@ class ReportListService
     {
         $reportTypes = (array) $reportType;
         $query = ReportScope::apply(
-            RsmReport::query()->where('area', $area)->whereIn('report_type', $reportTypes),
+            RsmReport::query()->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])->whereIn('report_type', $reportTypes),
             $user
         );
 
@@ -124,7 +124,10 @@ class ReportListService
             'unit_name' => $report->unit_name,
             'staff_name' => $report->staff_name,
             'category' => $report->category ?: $report->activity_kind,
+            'duration_minutes' => $report->duration_minutes,
+            'urgency' => $report->urgency,
             'title' => $report->title,
+            'activity_name' => $report->activity_name,
             'result_text' => $report->result_text,
             'obstacle_text' => $report->obstacle_text,
             'follow_up_text' => $report->follow_up_text,

@@ -17,6 +17,8 @@ class RsmUser extends Authenticatable
 
     protected $table = 'rsm_users';
 
+    public ?string $selectedArea = null;
+
     public const ROLE_SUPER_USER = 'super_user';
     public const ROLE_EXECUTIVE_DIRECTOR = 'executive_director';
     public const ROLE_DIRECTOR = 'director';
@@ -77,14 +79,35 @@ class RsmUser extends Authenticatable
             || ($this->username === 'raffandy' && $this->role === self::ROLE_EXECUTIVE_DIRECTOR);
     }
 
+    public function hasDirectorAccess(): bool
+    {
+        return $this->hasSuperUserAccess()
+            || in_array($this->role, [self::ROLE_DIRECTOR, self::ROLE_EXECUTIVE_DIRECTOR], true);
+    }
+
     public function accessRole(): string
     {
         return $this->hasSuperUserAccess() ? self::ROLE_SUPER_USER : $this->role;
     }
 
+    public static function roleHasGlobalAreaAccess(string $role): bool
+    {
+        return in_array($role, [self::ROLE_SUPER_USER, self::ROLE_EXECUTIVE_DIRECTOR, self::ROLE_DIRECTOR], true);
+    }
+
+    public function viewingArea(): string
+    {
+        return $this->selectedArea ?? (count($this->accessibleAreas()) > 1 ? 'all' : ($this->area ?: 'Regional B'));
+    }
+
+    public function selectedAreas(): array
+    {
+        return $this->viewingArea() === 'all' ? $this->accessibleAreas() : [$this->viewingArea()];
+    }
+
     public function accessibleAreas(): array
     {
-        if ($this->hasSuperUserAccess()) {
+        if (self::roleHasGlobalAreaAccess($this->role)) {
             return ['Regional A', 'Regional B'];
         }
 

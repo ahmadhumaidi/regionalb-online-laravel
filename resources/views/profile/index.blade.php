@@ -44,6 +44,52 @@
                     $leagueGridCols = implode(' ', array_map(fn ($t) => strtolower($t) === strtolower($league) ? '1.4fr' : '1fr', $leagueTiers));
                 @endphp
                 <section id="ringkasan" class="grid grid-cols-2 gap-3 sm:grid-cols-3"><article class="rounded-2xl border border-white/10 bg-[#35385f] p-3 sm:p-4"><span class="text-xs text-indigo-200">League</span><strong class="mt-2 block text-xl">{{ $league }}</strong><div class="mt-2 grid items-end gap-1" style="grid-template-columns: {{ $leagueGridCols }}">@foreach ($leagueTiers as $tier)<img src="{{ asset('images/league/'.strtolower($tier).'.png') }}" alt="League {{ $tier }}" title="{{ $tier }}" class="{{ strtolower($league) === strtolower($tier) ? 'drop-shadow-[0_0_4px_rgba(250,204,21,0.7)]' : 'opacity-30 grayscale' }} aspect-square w-full transition-all">@endforeach</div><small class="mt-2 block text-indigo-200">XP dan konsistensi</small></article><article class="rounded-2xl border border-white/10 bg-[#35385f] p-3 sm:p-4"><span class="text-xs text-indigo-200">Badge</span><strong class="mt-2 block text-xl">{{ collect($badges)->where('ok', true)->count() }}/{{ count($badges) }}</strong><div class="mt-3 grid grid-cols-4 gap-1.5 sm:grid-cols-7">@foreach ($badges as $badge)<span class="group relative flex aspect-square w-full items-center justify-center rounded-full" style="background: {{ $badge['ok'] ? 'color-mix(in srgb, var(--color-tone-'.$badge['tone'].') 25%, transparent)' : 'rgba(255,255,255,.06)' }}; color: {{ $badge['ok'] ? 'var(--color-tone-'.$badge['tone'].')' : 'rgba(199,210,254,.45)' }}"><x-icon name="{{ $badge['icon'] }}" class="h-1/2 w-1/2 {{ $badge['ok'] ? '' : 'opacity-70 grayscale' }}" />@unless($badge['ok'])<span class="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#35385f] bg-[#101227] text-indigo-300"><x-icon name="lock" class="h-2 w-2" /></span>@endunless<span class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 rounded-md bg-black/90 px-2 py-1 text-[10px] font-semibold whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ $badge['name'] }}</span></span>@endforeach</div></article><article class="col-span-2 rounded-2xl border border-white/10 bg-[#35385f] p-3 sm:col-span-1 sm:p-4"><span class="text-xs text-indigo-200">Aura</span><strong class="mt-2 block text-xl">{{ $score }}/100</strong><small class="text-indigo-200">Skor performa</small></article></section>
+                <section id="performa-journey" class="rounded-2xl border border-white/10 bg-[#212446] p-3 sm:p-5"
+                    x-data="{ metric: 'laporan', chart: @js($journeyPerformance), total(key) { return this.chart.weeks.reduce((sum, week) => sum + Number(week.values[key] || 0), 0); }, maximum() { return Math.max(1, ...this.chart.weeks.map(week => Number(week.values[this.metric] || 0))); } }">
+                    <div class="flex flex-wrap items-end justify-between gap-3">
+                        <div><h2 class="text-base font-bold">Performa Journey</h2><p class="mt-1 text-xs text-indigo-200">Aktivitas mingguan · {{ $journeyPerformance['label'] }}</p></div>
+                        <form method="GET" action="{{ route('profile') }}#performa-journey" class="flex flex-wrap items-end gap-2">
+                            <label class="text-xs text-indigo-200">Bulan<input type="month" name="performance_month" value="{{ $journeyPerformance['month'] }}" max="{{ now()->format('Y-m') }}" required class="mt-1 block rounded-lg border-white/20 bg-[#101227] text-sm text-white"></label>
+                            <button class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white">Tampilkan</button>
+                        </form>
+                    </div>
+                    <label class="mt-4 block text-xs text-indigo-200">Jenis aktivitas
+                        <select x-model="metric" class="mt-1 block w-full rounded-lg border-white/20 bg-[#101227] text-sm text-white sm:w-auto">
+                            @foreach ($journeyPerformance['labels'] as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach
+                        </select>
+                    </label>
+                    <p class="mt-3 text-sm"><span x-text="chart.labels[metric]"></span>: <strong x-text="total(metric).toLocaleString('id-ID')"></strong> pada bulan ini</p>
+                    <div class="mt-4 overflow-x-auto" role="figure" aria-label="Grafik garis jumlah aktivitas Journey per minggu">
+                        <svg viewBox="0 0 640 290" class="w-full" style="min-width: 360px" role="img" aria-labelledby="journey-chart-title">
+                            <title id="journey-chart-title">Performa Journey mingguan</title>
+                            @foreach ([0, 1, 2, 3, 4] as $tick)
+                                <line x1="55" x2="610" y1="{{ 230 - $tick * 45 }}" y2="{{ 230 - $tick * 45 }}" stroke="rgba(199,210,254,.15)" />
+                                <text x="45" y="{{ 234 - $tick * 45 }}" text-anchor="end" fill="#c7d2fe" font-size="11" x-text="(maximum() * {{ $tick }} / 4).toLocaleString('id-ID', { maximumFractionDigits: 1 })"></text>
+                            @endforeach
+                            <polyline fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                                :points="chart.weeks.map((week, index) => (70 + index * 525 / Math.max(1, chart.weeks.length - 1)) + ',' + (230 - Number(week.values[metric] || 0) / maximum() * 180)).join(' ')" />
+                            @foreach ($journeyPerformance['weeks'] as $index => $week)
+                                @php $pointX = 70 + $index * 525 / max(1, count($journeyPerformance['weeks']) - 1); @endphp
+                                <circle cx="{{ $pointX }}" :cy="230 - Number(chart.weeks[{{ $index }}].values[metric] || 0) / maximum() * 180" r="5" fill="#38bdf8" stroke="#212446" stroke-width="2">
+                                    <title x-text="chart.weeks[{{ $index }}].label + ': ' + Number(chart.weeks[{{ $index }}].values[metric] || 0).toLocaleString('id-ID')"></title>
+                                </circle>
+                                <text x="{{ $pointX }}" :y="218 - Number(chart.weeks[{{ $index }}].values[metric] || 0) / maximum() * 180" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold" x-text="Number(chart.weeks[{{ $index }}].values[metric] || 0).toLocaleString('id-ID')"></text>
+                                <text x="{{ $pointX }}" y="253" text-anchor="middle" fill="#e0e7ff" font-size="11">Minggu {{ $index + 1 }}</text>
+                                <text x="{{ $pointX }}" y="272" text-anchor="middle" fill="#a5b4fc" font-size="10">{{ $week['label'] }}</text>
+                            @endforeach
+                        </svg>
+                    </div>
+                    <p x-show="total(metric) === 0" class="mt-3 text-xs text-indigo-200">Belum ada aktivitas jenis ini pada bulan yang dipilih.</p>
+                    <p class="mt-4 text-xs text-indigo-300">Jumlah aktivitas Journey, bukan persentase target. Minggu dibagi tanggal 1–7, 8–14, 15–21, 22–28, dan 29–akhir bulan. Konten sosial mengikuti unit/kampus Anda.</p>
+                    <details class="mt-4">
+                        <summary class="cursor-pointer text-xs font-semibold text-sky-200">Rincian aktivitas bulanan</summary>
+                        <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                            @foreach ($journeyPerformance['labels'] as $key => $label)
+                                <div class="flex justify-between gap-3 rounded-lg bg-white/5 px-3 py-2 text-xs"><span>{{ $label }}</span><strong>{{ number_format(array_sum(array_column(array_column($journeyPerformance['weeks'], 'values'), $key)), 0, ',', '.') }}</strong></div>
+                            @endforeach
+                        </div>
+                    </details>
+                </section>
                 <section id="daily-mission" class="rounded-2xl border border-white/10 bg-gradient-to-b from-[#1c2b52] to-[#111a33] p-3 sm:p-5">
                     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                         <div>
@@ -189,7 +235,29 @@
                         @endforeach
                     </div>
                 </section>
-                <section id="aktivitas" class="rounded-2xl border border-white/10 bg-[#35385f] p-3 sm:p-5"><h2 class="mb-3 text-base font-bold">Aktivitas Terbaru</h2><div class="space-y-2">@forelse($reports as $report)<a href="{{ route('reports.show',$report) }}" class="block rounded-xl border border-white/10 p-3 hover:bg-white/10"><div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-3"><strong class="break-words text-sm">{{ $report->title ?: $report->campaign_name }}</strong><span class="shrink-0 text-xs text-indigo-200">{{ optional($report->report_date)->format('d/m/Y') }}</span></div><p class="mt-1 break-words text-xs text-indigo-200">{{ $report->report_type }} · {{ $report->status }} · {{ $report->leads_count }} leads · {{ $report->closing_count }} closing</p></a>@empty<p class="text-sm text-indigo-200">Belum ada aktivitas.</p>@endforelse</div></section>
+                <section id="aktivitas" class="rounded-2xl border border-white/10 bg-[#35385f] p-3 sm:p-5">
+                    <h2 class="mb-3 text-base font-bold">Aktivitas Terbaru</h2>
+                    <div class="space-y-2">
+                        @forelse($reports as $report)
+                            <a href="{{ route('reports.show',$report) }}" class="block rounded-xl border border-white/10 p-3 hover:bg-white/10">
+                                <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-3"><strong class="break-words text-sm">{{ $report->title ?: $report->campaign_name }}</strong><span class="shrink-0 text-xs text-indigo-200">{{ optional($report->report_date)->format('d/m/Y') }}</span></div>
+                                <p class="mt-1 break-words text-xs text-indigo-200">{{ $report->report_type }} · {{ $report->status }} · {{ $report->leads_count }} leads · {{ $report->closing_count }} closing</p>
+                            </a>
+                        @empty
+                            <p class="text-sm text-indigo-200">Belum ada aktivitas.</p>
+                        @endforelse
+                    </div>
+                    @if ($reports->hasPages())
+                        <div class="mt-4 flex flex-wrap justify-between gap-2">
+                            @if ($reports->previousPageUrl())
+                                <a href="{{ $reports->previousPageUrl() }}" class="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-indigo-100 hover:bg-white/10">Sebelumnya</a>
+                            @endif
+                            @if ($reports->hasMorePages())
+                                <a href="{{ $reports->nextPageUrl() }}" class="rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-500">Selengkapnya</a>
+                            @endif
+                        </div>
+                    @endif
+                </section>
             </div>
         </div>
     </div>

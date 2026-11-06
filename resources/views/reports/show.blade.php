@@ -6,7 +6,7 @@
         $staffFollowUpText = '';
     }
     $fields = [['Staff',$report->staff_name],['Kategori',$report->category ?: $report->activity_kind],['Hasil',$report->result_text],['Kendala',$report->obstacle_text],['Tindak lanjut staff',$staffFollowUpText],['Anggaran',$report->budget_requested ? number_format($report->budget_requested,0,',','.') : null]];
-    if ($report->report_type === 'marketing' && $report->activity_kind === 'Aktivitas digital') {
+    if ($report->report_type === 'marketing' && $report->activity_kind === 'Upload Footage') {
         $fields = [['Staff', $report->staff_name], ['Kategori', $report->activity_kind], ['Link', $report->campaign_link], ['Catatan', $report->notes]];
     }
     if ($report->report_type === 'ads') {
@@ -20,8 +20,14 @@
             [$goalMetric['label'], ($goalMetric['money'] ? 'Rp ' : '').number_format($goalMetric['value'], $goalMetric['money'] ? 2 : 0, ',', '.')],
         ]);
     }
+    if ($report->report_type !== 'ads') {
+        $fields[] = ['Nama Aktivitas', $report->activity_name];
+        $fields[] = ['Deskripsi', $report->title];
+        $fields[] = ['Durasi', $report->duration_minutes ? $report->duration_minutes.' menit' : null];
+        $fields[] = ['Urgensi', $report->urgency ? $report->urgency.' - '.([1 => 'Rendah', 2 => 'Sedang', 3 => 'Tinggi'][$report->urgency] ?? '') : null];
+    }
 @endphp
-<dl class="mt-5 grid gap-4 text-sm md:grid-cols-3">@foreach ($fields as [$label,$value])<div><dt class="text-xs text-ink-muted">{{ $label }}</dt><dd class="mt-1 break-words text-ink">@if ($label === 'Link' && $value)<a href="{{ $value }}" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline">{{ $value }}</a>@else{{ $value ?: '-' }}@endif</dd></div>@endforeach</dl>@if (($report->attachment_path && ! ($report->report_type === 'marketing' && $report->activity_kind === 'Aktivitas digital')) || $report->insight_attachment_path)<div class="mt-5 flex flex-wrap gap-2">@if ($report->attachment_path && ! ($report->report_type === 'marketing' && $report->activity_kind === 'Aktivitas digital'))<a href="{{ route('reports.attachment', $report) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg border border-l-4 border-border border-l-tone-blue bg-surface-muted/50 px-3 py-2 text-sm font-semibold text-tone-blue hover:bg-surface-muted"><x-icon name="document" class="h-4 w-4" />Lihat lampiran</a>@endif @if ($report->insight_attachment_path)<a href="{{ route('reports.insight-attachment', $report) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg border border-l-4 border-border border-l-tone-orange bg-surface-muted/50 px-3 py-2 text-sm font-semibold text-tone-orange hover:bg-surface-muted"><x-icon name="bolt" class="h-4 w-4" />Lihat bukti insight</a>@endif</div>@endif</section>
+<dl class="mt-5 grid gap-4 text-sm md:grid-cols-3">@foreach ($fields as [$label,$value])<div><dt class="text-xs text-ink-muted">{{ $label }}</dt><dd class="mt-1 break-words text-ink">@if ($label === 'Link' && $value)<a href="{{ $value }}" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline">{{ $value }}</a>@else{{ $value ?: '-' }}@endif</dd></div>@endforeach</dl>@if (($report->attachment_path && ! ($report->report_type === 'marketing' && $report->activity_kind === 'Upload Footage')) || $report->insight_attachment_path)<div class="mt-5 flex flex-wrap gap-2">@if ($report->attachment_path && ! ($report->report_type === 'marketing' && $report->activity_kind === 'Upload Footage'))<a href="{{ route('reports.attachment', $report) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg border border-l-4 border-border border-l-tone-blue bg-surface-muted/50 px-3 py-2 text-sm font-semibold text-tone-blue hover:bg-surface-muted"><x-icon name="document" class="h-4 w-4" />Lihat lampiran</a>@endif @if ($report->insight_attachment_path)<a href="{{ route('reports.insight-attachment', $report) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg border border-l-4 border-border border-l-tone-orange bg-surface-muted/50 px-3 py-2 text-sm font-semibold text-tone-orange hover:bg-surface-muted"><x-icon name="bolt" class="h-4 w-4" />Lihat bukti insight</a>@endif</div>@endif</section>
 @if ($leaderFollowUpText !== '')
     <section class="rounded-2xl glass-card border-t-4 p-5" style="border-top-color: var(--color-tone-blue);">
         <h2 class="text-base font-semibold text-tone-blue">Tindak lanjut dari pimpinan</h2>
@@ -67,7 +73,7 @@
         @endif
     </section>
 @endif
-@if ($report->report_type === 'ads' && mb_strtolower(trim((string) $report->ad_goal)) !== 'awareness')
+@if ($report->report_type === 'ads')
     <section id="data-hasil-iklan" class="rounded-2xl glass-card border-t-4 p-5" style="border-top-color: var(--color-tone-green);">
         <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div><h2 class="text-base font-semibold text-tone-green">Data Hasil Iklan</h2><p class="mt-1 text-sm text-ink-muted">Isi dari file XLS yang diupload pada laporan iklan</p></div>

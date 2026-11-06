@@ -6,7 +6,7 @@
         <div class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ $errors->first() }}</div>
     @endif
 
-    @if (auth()->user()->hasSuperUserAccess())
+    @if (\App\Support\RsmRole::canViewCoordinatorWhatsappReport(auth()->user()))
         <section class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
             <div>
                 <h2 class="text-sm font-semibold text-ink">Laporan WhatsApp</h2>

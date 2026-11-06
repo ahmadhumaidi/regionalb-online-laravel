@@ -36,6 +36,20 @@ class MenuTest extends TestCase
         $this->assertContains('about-application', $keys);
     }
 
+    public function test_both_director_roles_have_every_super_user_menu_without_super_identity(): void
+    {
+        $keysFor = fn (RsmUser $user) => collect(Menu::sections($user))->flatMap(fn (array $section) => array_column($section['items'], 'key'))->all();
+        $expected = $keysFor(new RsmUser(['role' => RsmUser::ROLE_SUPER_USER]));
+        foreach ([RsmUser::ROLE_DIRECTOR, RsmUser::ROLE_EXECUTIVE_DIRECTOR] as $role) {
+            $user = new RsmUser(['role' => $role]);
+            $this->assertSame($expected, $keysFor($user));
+            foreach ($expected as $key) {
+                $this->assertTrue(Menu::isAllowed($key, $user), $role.': '.$key);
+            }
+            $this->assertFalse($user->hasSuperUserAccess());
+        }
+    }
+
     public function test_coordinator_menu_exposes_collab_source_without_sync_permission(): void
     {
         $user = new RsmUser(['role' => RsmUser::ROLE_KOORDINATOR]);

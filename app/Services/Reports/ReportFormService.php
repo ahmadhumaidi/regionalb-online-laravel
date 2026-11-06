@@ -19,20 +19,37 @@ class ReportFormService
 {
     private const SENIOR_ROLES = ['super_user', 'executive_director', 'director', 'senior'];
 
+    public static function activityOptions(): array
+    {
+        return array_values(array_unique(array_merge(
+            ['Upload Footage'],
+            self::config(RsmReport::TYPE_OTHER)['options'],
+            self::config(RsmReport::TYPE_MARKETING)['options'],
+        )));
+    }
+
+    public static function isMarketingActivity(?string $category): bool
+    {
+        return in_array($category, array_diff(
+            self::config(RsmReport::TYPE_MARKETING)['options'],
+            self::config(RsmReport::TYPE_OTHER)['options'],
+        ), true);
+    }
+
     public static function config(string $type): array
     {
         return match ($type) {
             RsmReport::TYPE_MARKETING => [
                 'title' => 'Kegiatan Marketing',
                 'label' => 'kegiatan',
-                'options' => ['Follow up leads', 'Kunjungan sekolah', 'Kunjungan instansi', 'Sebar brosur', 'Pasang spanduk', 'Event kampus', 'Presentasi PMB', 'Aktivitas digital', 'Lainnya'],
+                'options' => ['Upload Footage', 'Follow up leads', 'Kunjungan sekolah', 'Kunjungan instansi', 'Sebar brosur', 'Pasang spanduk', 'Event kampus', 'Presentasi PMB', 'Lainnya'],
                 'statuses' => ['Draft', 'Dikirim'],
                 'fields' => ['report_date', 'wilayah', 'unit_name', 'staff_name', 'activity_kind', 'title', 'location_name', 'target_text', 'result_text', 'leads_count', 'campaign_link', 'notes', 'attachment_path'],
             ],
             RsmReport::TYPE_OTHER => [
                 'title' => 'Aktivitas Lain',
                 'label' => 'aktivitas',
-                'options' => ['Meeting internal', 'Briefing', 'Training', 'Koordinasi kampus', 'Koordinasi mitra', 'Pelayanan calon mahasiswa', 'Administrasi PMB', 'Follow up pembayaran', 'Sapa Grup Affiliate', 'Spanduk Kerjasama', 'Live Streaming Night', 'Lainnya'],
+                'options' => ['Meeting internal', 'Briefing', 'Training', 'Koordinasi kampus', 'Koordinasi mitra', 'Pelayanan calon mahasiswa', 'Pelayanan Mahasiswa Lama', 'Administrasi PMB', 'Follow up pembayaran', 'Sapa Grup Affiliate', 'Spanduk Kerjasama', 'Live Streaming Night', 'Lainnya'],
                 'statuses' => ['Disetujui'],
                 'fields' => ['report_date', 'wilayah', 'unit_name', 'staff_name', 'category', 'title', 'result_text', 'obstacle_text', 'follow_up_text', 'attachment_path'],
             ],
@@ -244,12 +261,13 @@ class ReportFormService
         }
 
         $isDigitalActivity = $type === RsmReport::TYPE_MARKETING
-            && ($data['activity_kind'] ?? null) === 'Aktivitas digital';
+            && ($data['activity_kind'] ?? null) === 'Upload Footage';
 
         return [
             'area' => $area,
             'report_type' => $type,
             'report_date' => $data['report_date'] ?? now()->toDateString(),
+            ...array_intersect_key($data, array_flip(['duration_minutes', 'urgency', 'activity_name'])),
             'user_id' => $staffRow?->id,
             'partner_campus_id' => $campus?->id ?? $staffRow?->partner_campus_id,
             'wilayah' => $wilayah ?: 'Belum diisi',
@@ -267,7 +285,7 @@ class ReportFormService
             'activity_kind' => $data['activity_kind'] ?? null,
             'location_name' => $isDigitalActivity ? null : ($data['location_name'] ?? null),
             'target_text' => $isDigitalActivity ? null : ($data['target_text'] ?? null),
-            'result_text' => $isDigitalActivity ? null : ($data['result_text'] ?? null),
+            'result_text' => $isDigitalActivity ? null : ($data['result_text'] ?? ($type === RsmReport::TYPE_OTHER ? $existing?->result_text : null)),
             'leads_count' => $isDigitalActivity ? 0 : (int) ($data['leads_count'] ?? 0),
             'notes' => $data['notes'] ?? null,
             'platform' => $data['platform'] ?? null,
@@ -282,8 +300,8 @@ class ReportFormService
             'cpm' => $existing?->cpm ?? 0,
             'campaign_link' => $data['campaign_link'] ?? null,
             'category' => $data['category'] ?? null,
-            'obstacle_text' => $data['obstacle_text'] ?? null,
-            'follow_up_text' => $data['follow_up_text'] ?? null,
+            'obstacle_text' => $data['obstacle_text'] ?? $existing?->obstacle_text,
+            'follow_up_text' => $data['follow_up_text'] ?? $existing?->follow_up_text,
         ];
     }
 

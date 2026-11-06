@@ -12,9 +12,9 @@
             ['key'=>'laporan','title'=>'Laporan Aktivitas Lain','short'=>'Aktivitas Lain','target'=>'1/hari','category'=>'DAILY','icon'=>'clipboard','report_url'=>route('aktivitas.create')],
             ['key'=>'live_night','title'=>'Live Streaming Night','short'=>'Live Night','target'=>'1 jam/minggu','category'=>'WEEKLY','icon'=>'bolt','report_url'=>route('aktivitas.create',['activity'=>'Live Streaming Night'])],
             ['key'=>'affiliate','title'=>'Sapa Grup Affiliate','short'=>'Sapa Affiliate','target'=>'1/minggu','category'=>'WEEKLY','icon'=>'chat','report_url'=>route('aktivitas.create',['activity'=>'Sapa Grup Affiliate'])],
-            ['key'=>'canvassing','title'=>'Canvassing','short'=>'Canvassing','target'=>'3/minggu','category'=>'WEEKLY','icon'=>'users','report_notice'=>'Lapor melalui aplikasi absen'],
-            ['key'=>'brosur','title'=>'Sebar Brosur','short'=>'Sebar Brosur','target'=>'200/minggu','category'=>'WEEKLY','icon'=>'document','report_notice'=>'Lapor melalui aplikasi absen'],
-            ['key'=>'spanduk','title'=>'Spanduk Kerjasama','short'=>'Spanduk','target'=>'6 pcs / 2 bulan','category'=>'PERIODIC','icon'=>'flag','report_url'=>route('aktivitas.create',['activity'=>'Spanduk Kerjasama'])],
+            ['key'=>'canvassing','title'=>'Canvassing','short'=>'Canvassing','target'=>'3/minggu','category'=>'WEEKLY','icon'=>'users','report_notice'=>'Data diambil dari Collab · Canvasing'],
+            ['key'=>'brosur','title'=>'Sebar Brosur','short'=>'Sebar Brosur','target'=>'1.000 / 3 bulan','category'=>'PERIODIC','icon'=>'document','report_notice'=>'Data diambil dari Collab · Sebar Brosur'],
+            ['key'=>'spanduk','title'=>'Spanduk Kerjasama','short'=>'Spanduk','target'=>'6 pcs / 2 bulan','category'=>'PERIODIC','icon'=>'flag','report_notice'=>'Data diambil dari Collab · Pasang Spanduk'],
         ];
     @endphp
     <div x-data="journeyDashboard(@js($journeyStaff), @js($activities), @js($journeyDate), @js($journeyLeaderboard))" x-init="startClock()" class="space-y-5" @keydown.escape.window="selectedStaff = null; selectedActivity = null; selectedCheckpoint = null" @fullscreenchange.window="isFullscreen = document.fullscreenElement === $refs.journeyArena">
@@ -33,6 +33,21 @@
                 <input x-model="filters.query" type="search" placeholder="Cari staff..." class="min-h-11 w-full min-w-0 rounded-xl border-border bg-white px-3 text-sm md:col-span-2 xl:col-span-1">
             </div></section>
         @endif
+        @if ($user->role === \App\Models\RsmUser::ROLE_KOORDINATOR)
+            <form method="GET" action="{{ route('staff-journey') }}" class="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-white p-3 shadow-sm">
+                <input type="hidden" name="date" value="{{ $journeyDate }}">
+                <input type="hidden" name="leaderboard_area" value="{{ $leaderboardArea }}">
+                <input type="hidden" name="leaderboard_from" value="{{ $leaderboardFrom }}">
+                <input type="hidden" name="leaderboard_to" value="{{ $leaderboardTo }}">
+                <label class="text-xs font-bold text-ink-muted">Cakupan Perjalanan Staff Hari Ini
+                    <select name="journey_area" class="mt-1 block min-h-10 rounded-xl border-border px-3 text-sm">
+                        <option value="own" @selected($journeyArea === 'own')>Wilayah Saya</option>
+                        <option value="Regional B" @selected($journeyArea === 'Regional B')>Regional B</option>
+                    </select>
+                </label>
+                <button type="submit" class="min-h-10 rounded-xl bg-slate-900 px-4 text-xs font-black text-white">Terapkan</button>
+            </form>
+        @endif
         @include('staff-journey.partials.track')
         @if($trackedDaily < 9)<div class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><span class="mt-0.5">⚠</span><p><strong>{{ $trackedDaily }} dari 9 KPI daily sudah terhubung ke data nyata.</strong> KPI yang belum memiliki sumber data tidak dihitung selesai sampai integrasinya tersedia.</p></div>@endif
         <section class="grid grid-cols-2 gap-3 lg:grid-cols-5"><template x-for="card in statCards" :key="card.label"><article class="rounded-2xl border border-white bg-white p-4 shadow-sm last:col-span-2 lg:last:col-span-1"><span class="mb-3 grid h-9 w-9 place-items-center rounded-xl text-lg" :class="card.tone" x-text="card.icon"></span><strong class="block text-2xl font-black tracking-tight text-slate-900" x-text="card.value"></strong><span class="text-sm text-slate-500" x-text="card.label"></span></article></template></section>
@@ -44,10 +59,15 @@
             get filteredStaff(){const q=this.filters.query.toLowerCase();return this.staff.filter(p=>(!this.filters.area||p.area===this.filters.area)&&(!this.filters.regional||p.regional===this.filters.regional)&&(!this.filters.campus||p.campus===this.filters.campus)&&(!this.filters.unit||p.unit===this.filters.unit)&&(!q||`${p.name} ${p.unit} ${p.campus}`.toLowerCase().includes(q)));},
             get completedMissions(){return this.filteredStaff.reduce((sum,p)=>sum+Math.min(p.completed_daily,p.total_daily),0);}, get totalMissions(){return this.filteredStaff.reduce((sum,p)=>sum+p.total_daily,0);}, get teamProgress(){return this.totalMissions?Math.round(this.completedMissions/this.totalMissions*100):0;},
             get statCards(){const total=this.filteredStaff.length,start=this.filteredStaff.filter(p=>p.completed_daily===0).length,finish=this.filteredStaff.filter(p=>p.completed_daily>=p.total_daily).length;return [{label:'Total Player',value:total,icon:'♟',tone:'bg-blue-50 text-blue-600'},{label:'Di Basecamp',value:start,icon:'🚩',tone:'bg-slate-100 text-slate-600'},{label:'Sedang Bertanding',value:total-start-finish,icon:'🔥',tone:'bg-amber-50 text-amber-600'},{label:'Daily Champion',value:finish,icon:'🏆',tone:'bg-emerald-50 text-emerald-600'},{label:'Progress Tim',value:this.teamProgress+'%',icon:'⚡',tone:'bg-violet-50 text-violet-600'}];},
-            get filteredLeaderboard(){return this.journeyLeaderboard.filter(p=>(!this.filters.area||p.area===this.filters.area)&&(!this.filters.regional||p.regional===this.filters.regional)&&(!this.filters.campus||p.campus===this.filters.campus)&&(!this.filters.unit||p.unit===this.filters.unit)&&(!this.filters.query||`${p.name} ${p.unit} ${p.campus}`.toLowerCase().includes(this.filters.query.toLowerCase())));},
+            get filteredLeaderboard(){const regionalB = @js(($leaderboardArea ?? 'own') === 'Regional B'); return this.journeyLeaderboard.filter(p=>(regionalB||((!this.filters.area||p.area===this.filters.area)&&(!this.filters.regional||p.regional===this.filters.regional)&&(!this.filters.campus||p.campus===this.filters.campus)&&(!this.filters.unit||p.unit===this.filters.unit)))&&(!this.filters.query||`${p.name} ${p.unit} ${p.campus}`.toLowerCase().includes(this.filters.query.toLowerCase())));},
             get leaderboard(){return this.leaderboardExpanded?this.filteredLeaderboard:this.filteredLeaderboard.slice(0,5);},
-            activityCount(key,done){return this.filteredStaff.filter(person=>done?person.activities?.[key]?.done===true:person.activities?.[key]?.done!==true).length;},
-            activityPeople(state){if(!this.selectedActivity)return[];return this.filteredStaff.filter(person=>{const progress=person.activities?.[this.selectedActivity.key];if(state==='done')return progress?.tracked===true&&progress?.done===true;if(state==='pending')return progress?.tracked===true&&progress?.done!==true;return !progress||progress.tracked!==true;});},
+            activityWorked(person,key){const progress=person.activities?.[key];return progress?.tracked===true&&(key==='canvassing'?Number(progress.actual)>0:progress.done===true);},
+            activityCount(key,done){return this.filteredStaff.filter(person=>this.activityWorked(person,key)===done).length;},
+            get periodTracks(){return [{key:'weekly',label:'Mingguan',keys:['live_night','affiliate','canvassing'],steps:['Mulai','1 misi','2 misi','Finish Mingguan'],hint:'3 target mingguan: Live Night, Sapa Affiliate, dan Canvassing.'},{key:'monthly',label:'Bulanan',keys:['spanduk','brosur'],steps:['Mulai','1 misi','Finish Bulanan'],hint:'Spanduk: 6 pcs / 2 bulan. Sebar Brosur: 1.000 / 3 bulan. Progres sampai tanggal terpilih.'}];},
+            periodCompleted(person,track){return track.keys.filter(key=>person.activities?.[key]?.tracked===true&&person.activities?.[key]?.done===true).length;},
+            periodPeople(track,step){return this.filteredStaff.filter(person=>this.periodCompleted(person,track)===step);},
+            periodProgress(track){const total=this.filteredStaff.length*track.keys.length;return total?Math.round(this.filteredStaff.reduce((sum,person)=>sum+this.periodCompleted(person,track),0)/total*100):0;},
+            activityPeople(state){if(!this.selectedActivity)return[];return this.filteredStaff.filter(person=>{const progress=person.activities?.[this.selectedActivity.key];if(state==='done')return this.activityWorked(person,this.selectedActivity.key);if(state==='pending')return progress?.tracked===true&&!this.activityWorked(person,this.selectedActivity.key);return !progress||progress.tracked!==true;});},
             checkpointPeople(){return this.selectedCheckpoint?this.at(this.selectedCheckpoint.step):[];},
             checkpointFinishLabel(person,step){const time=person.checkpoint_times?.[step];return time?'Finish '+time:'Jam finish belum tersedia';},
             openStaffFromCheckpoint(person){this.selectedCheckpoint=null;this.selectedStaff=person;},

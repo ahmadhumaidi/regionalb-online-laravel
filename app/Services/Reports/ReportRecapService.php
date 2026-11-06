@@ -13,7 +13,7 @@ class ReportRecapService
 {
     public static function build(string $area, array $filters, string $type, RsmUser $user): array
     {
-        $query = RsmReport::query()->where('area', $area)
+        $query = RsmReport::query()->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->whereBetween('report_date', [$filters['date_from'], $filters['date_to']]);
 
         if (in_array($type, [RsmReport::TYPE_MARKETING, RsmReport::TYPE_ADS, RsmReport::TYPE_OTHER], true)) {

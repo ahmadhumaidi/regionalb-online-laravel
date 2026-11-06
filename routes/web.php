@@ -52,8 +52,8 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::post('/area', function (\Illuminate\Http\Request $request) {
         $allowedAreas = $request->user()->accessibleAreas();
         abort_unless(count($allowedAreas) > 1, 403);
-        $data = $request->validate(['area' => ['required', \Illuminate\Validation\Rule::in($allowedAreas)]]);
-        $request->session()->put('selected_area.'.$request->user()->id, $data['area']);
+        $data = $request->validate(['area' => ['required', \Illuminate\Validation\Rule::in(['all', ...$allowedAreas])]]);
+        $request->session()->put('selected_area_filter.'.$request->user()->id, $data['area']);
 
         return redirect()->route('dashboard');
     })->name('area.switch');
@@ -74,12 +74,14 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::delete('/impersonation', [ImpersonationController::class, 'destroy'])->name('impersonation.destroy');
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/forum/activity', [ForumController::class, 'activity'])->name('forum.activity');
     Route::get('/forum', [ForumController::class, 'index'])->name('forum');
     Route::post('/forum/posts', [ForumController::class, 'storePost'])->name('forum.posts.store');
     Route::post('/forum/posts/{post}/like', [ForumController::class, 'toggleLike'])->name('forum.posts.like');
     Route::post('/forum/posts/{post}/comments', [ForumController::class, 'storeComment'])->name('forum.posts.comments.store');
     Route::patch('/forum/posts/{post}', [ForumController::class, 'updatePost'])->name('forum.posts.update');
     Route::delete('/forum/posts/{post}', [ForumController::class, 'destroyPost'])->name('forum.posts.destroy');
+    Route::post('/forum/comments/{comment}/like', [ForumController::class, 'toggleCommentLike'])->name('forum.comments.like');
     Route::patch('/forum/comments/{comment}', [ForumController::class, 'updateComment'])->name('forum.comments.update');
     Route::delete('/forum/comments/{comment}', [ForumController::class, 'destroyComment'])->name('forum.comments.destroy');
     Route::get('/anggaran', [AdBudgetController::class, 'index'])->name('anggaran');
@@ -138,6 +140,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::get('/closing-kampus', [ClosingCampusController::class, 'index'])->name('closing-kampus');
     Route::get('/simulasi-target-closing', [ClosingTargetSimulationController::class, 'index'])->name('closing-target-simulation');
     Route::get('/scoring', [ScoringController::class, 'index'])->name('scoring');
+    Route::get('/scoring/export', [ScoringController::class, 'export'])->name('scoring.export');
     Route::get('/scoring/targets', [TargetController::class, 'index'])->name('scoring.targets');
     Route::post('/scoring/targets', [TargetController::class, 'store'])->name('scoring.targets.store');
     Route::get('/badges', [BadgeController::class, 'index'])->name('badges');
@@ -151,7 +154,7 @@ Route::middleware(['auth', 'effective_role'])->group(function () {
     Route::patch('/laporan-senior/{seniorReport}', [SeniorActivityReportController::class, 'update'])->name('laporan-senior.update');
     Route::delete('/laporan-senior/{seniorReport}', [SeniorActivityReportController::class, 'destroy'])->name('laporan-senior.destroy');
     Route::get('/laporan-senior/{seniorReport}/lampiran', [SeniorActivityReportController::class, 'attachment'])->name('laporan-senior.attachment');
-    Route::get('/kegiatan/create', fn () => app(ReportFormController::class)->create('marketing'))->name('kegiatan.create');
+    Route::get('/kegiatan/create', fn () => redirect()->route('aktivitas.create', ['activity' => request()->query('activity', 'Follow up leads')]))->name('kegiatan.create');
     Route::post('/kegiatan', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'marketing'))->name('kegiatan.store');
     Route::get('/aktivitas/create', fn () => app(ReportFormController::class)->create('other'))->name('aktivitas.create');
     Route::post('/aktivitas', fn (\Illuminate\Http\Request $request) => app(ReportFormController::class)->store($request, 'other'))->name('aktivitas.store');

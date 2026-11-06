@@ -49,11 +49,35 @@ class CoordinatorScheduleController extends Controller
         'Regional 7' => ['name' => 'Nugroho Budi Santoso', 'home' => 'Banyuwangi'],
     ];
 
+    /** Resolve current coordinators within the selected area and account scope. */
+    private function coordinatorProfiles(RsmUser $user): array
+    {
+        $query = RsmUser::where('role', 'koordinator')
+            ->where('is_active', true)
+            ->whereIn('area', $user->selectedAreas())
+            ->whereIn('regional', AreaRegionals::forArea($user->viewingArea()));
+        if ($user->role === 'koordinator') {
+            $query->whereKey($user->id);
+        }
+
+        $profiles = [];
+        foreach ($query->orderBy('id')->get() as $coordinator) {
+            $profiles[$coordinator->regional] = [
+                'id' => $coordinator->id,
+                'name' => $coordinator->name,
+                'area' => $coordinator->area,
+                'home' => $this->profiles[$coordinator->regional]['home'] ?? '',
+            ];
+        }
+
+        return $profiles;
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
         abort_unless(RsmRole::canViewJadwalKoordinator($user), 403);
-        $area = $user->area ?: 'Regional B';
+        $area = $user->viewingArea();
         $month = preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month')) ? $request->query('month') : now('Asia/Jakarta')->format('Y-m');
         $regionals = AreaRegionals::forArea($area);
 
@@ -63,7 +87,7 @@ class CoordinatorScheduleController extends Controller
             'status' => $request->query('status'),
         ];
         [$rows, $grouped, $summary] = $this->fetchSchedules($area, $month, $filters, $user);
-        $whatsappArtifact = $user->hasSuperUserAccess()
+        $whatsappArtifact = RsmRole::canViewCoordinatorWhatsappReport($user)
             ? $this->saveWhatsappArtifact($this->coordinatorWhatsappText($area), $month)
             : $this->latestWhatsappArtifact();
 
@@ -77,7 +101,7 @@ class CoordinatorScheduleController extends Controller
             'area' => $area,
             'regionals' => $regionals,
             'summaryRegionals' => $summaryRegionals,
-            'profiles' => $this->profiles,
+            'profiles' => $this->coordinatorProfiles($user),
             'canManage' => RsmRole::canManageCoordinatorSchedule($user),
             'references' => ReferenceOptionsService::build($area, $user),
             'checklistSummary' => $this->checklistSummary($rows),
@@ -95,7 +119,7 @@ class CoordinatorScheduleController extends Controller
     private function fetchSchedules(string $area, string $month, array $filters, ?RsmUser $user): array
     {
         $query = RsmCoordinatorSchedule::query()
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->whereBetween('schedule_date', [$month.'-01', date('Y-m-t', strtotime($month.'-01'))]);
         if ($user?->role === 'koordinator' && $user->regional) {
             $query->where('wilayah', $user->regional);
@@ -178,7 +202,7 @@ class CoordinatorScheduleController extends Controller
         if ($user->role === 'koordinator' && $user->regional !== $data['wilayah']) {
             abort(422, 'Koordinator hanya bisa mengatur regionalnya sendiri.');
         }
-        $profile = $this->profiles[$data['wilayah']] ?? ['name' => $data['koordinator_name'], 'home' => ''];
+        $profile = $this->coordinatorProfiles($user)[$data['wilayah']] ?? ['name' => $data['koordinator_name'], 'home' => ''];
         $kor = RsmUser::where('name', $data['koordinator_name'])->where('regional', $data['wilayah'])->first();
         $schedule = RsmCoordinatorSchedule::updateOrCreate(
             [
@@ -225,86 +249,16 @@ class CoordinatorScheduleController extends Controller
         $user = $request->user();
         abort_unless(RsmRole::canManageCoordinatorSchedule($user), 403);
         $month = $request->validate(['month' => ['required', 'date_format:Y-m']])['month'];
-        $area = $user->area ?: 'Regional B';
-
-        $campusesByRegional = DB::table('partner_campuses')
-            ->whereNotNull('wilayah')
-            ->orderByRaw('COALESCE(display_name, name)')
-            ->get(['wilayah', DB::raw('COALESCE(display_name, name) as label')])
-            ->groupBy('wilayah')
-            ->map(fn ($rows) => $rows->pluck('label')->unique()->values()->all());
-
-        $start = Carbon::createFromFormat('Y-m-d', $month.'-01');
-        $end = $start->copy()->endOfMonth();
-        $count = 0;
-        $campusIndex = [];
-
-        for ($day = $start->copy(); $day->lte($end); $day->addDay()) {
-            $weekday = $day->dayOfWeekIso;
-            foreach ($this->profiles as $regional => $profile) {
-                if ($user->role === 'koordinator' && $user->regional !== $regional) {
-                    continue;
-                }
-
-                $isWeeklyReview = $weekday === 5 || $weekday >= 6;
-                if ($isWeeklyReview) {
-                    $unit = "Rekap dan laporan mingguan {$regional}";
-                    $visitType = 'Zoom';
-                    $agenda = $weekday >= 6
-                        ? 'Follow up weekend, evaluasi leads, dan persiapan kunjungan pekan berikutnya'
-                        : 'Rekap mingguan dan follow up kendala kampus';
-                } else {
-                    $campuses = $campusesByRegional[$regional] ?? [];
-                    $index = $campusIndex[$regional] ?? 0;
-                    $unit = $campuses !== [] ? $campuses[$index % count($campuses)] : "Kampus prioritas {$regional}";
-                    $campusIndex[$regional] = $index + 1;
-                    $visitType = $this->scheduleVisitType($regional, $unit);
-                    $agenda = 'Monitoring PMB, leads, iklan, dan action plan kampus';
-                }
-
-                $kor = RsmUser::where('name', $profile['name'])->where('regional', $regional)->first();
-                $created = RsmCoordinatorSchedule::firstOrCreate(
-                    [
-                        'area' => $area,
-                        'schedule_date' => $day->toDateString(),
-                        'wilayah' => $regional,
-                        'unit_name' => $unit,
-                        'koordinator_name' => $profile['name'],
-                    ],
-                    [
-                        'koordinator_user_id' => $kor?->id,
-                        'koordinator_home' => $profile['home'],
-                        'visit_type' => $visitType,
-                        'status' => 'Rencana',
-                        'agenda' => $agenda,
-                        'created_by_user_id' => $user->id,
-                        'created_by_name' => $user->name,
-                    ]
-                );
-                $count += $created->wasRecentlyCreated ? 1 : 0;
-            }
+        $profiles = $this->coordinatorProfiles($user);
+        if ($profiles === []) {
+            return back()->withErrors(['month' => 'Tidak ada korwil aktif untuk area yang dipilih.']);
         }
+
+        $count = app(\App\Services\CoordinatorScheduleGenerator::class)->generate($month, $profiles, $user);
 
         return back()->with('status', "Generate selesai: {$count} agenda baru.");
     }
 
-    /** Port of rsm_schedule_visit_type() (rsm_db.php:3030-3045). */
-    private function scheduleVisitType(string $regional, string $unitName): string
-    {
-        $name = mb_strtolower($unitName);
-        $patterns = [
-            'Regional 5' => '/semarang|yogyakarta|ivet|lia|unaki|undaris|uby|ima/',
-            'Regional 6' => '/surabaya|gresik|stiesia|um |uwk|uwika|unigres|ikip/',
-            'Regional 7' => '/banyuwangi|jember|bali|stikom|unibabwi|ubhinus|polnas/',
-            'Regional 4' => '/makassar|sulawesi|uts|patria/',
-        ];
-
-        if (isset($patterns[$regional]) && preg_match($patterns[$regional], $name)) {
-            return 'Visit';
-        }
-
-        return 'Zoom';
-    }
 
     /** Port of rsm_coordinator_schedule_checklist_state() (rsm_db.php:3187-3205). */
     private function checklistState(RsmCoordinatorSchedule $row): array
@@ -388,7 +342,7 @@ class CoordinatorScheduleController extends Controller
     }
 
     /**
-     * "Laporan WhatsApp Kunjungan Koordinator" — super_user only, generates
+     * "Laporan WhatsApp Kunjungan Koordinator" — SM and above, generates
      * a cached text artifact (not a live per-request dump). Port of the
      * generate_coordinator_whatsapp_report handler (rsm_db.php:3546-3556)
      * + rsm_coordinator_schedule_whatsapp_text() (rsm_db.php:3246-3296).
@@ -396,9 +350,9 @@ class CoordinatorScheduleController extends Controller
     public function whatsapp(Request $request)
     {
         $user = $request->user();
-        abort_unless($user->hasSuperUserAccess(), 403);
+        abort_unless(RsmRole::canViewCoordinatorWhatsappReport($user), 403);
         $month = $request->validate(['month' => ['required', 'date_format:Y-m']])['month'];
-        $area = $user->area ?: 'Regional B';
+        $area = $user->viewingArea();
 
         $text = $this->coordinatorWhatsappText($area);
         $this->saveWhatsappArtifact($text, $month);
@@ -557,7 +511,7 @@ class CoordinatorScheduleController extends Controller
     private function scope(RsmCoordinatorSchedule $schedule, RsmUser $user): void
     {
         abort_unless(
-            $schedule->area === ($user->area ?: 'Regional B') && ($user->role !== 'koordinator' || $schedule->wilayah === $user->regional),
+            in_array($schedule->area, $user->selectedAreas(), true) && ($user->role !== 'koordinator' || $schedule->wilayah === $user->regional),
             404
         );
     }

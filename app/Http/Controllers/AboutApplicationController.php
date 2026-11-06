@@ -32,6 +32,6 @@ class AboutApplicationController extends Controller
 
     private function authorizeSuperUser(Request $request): void
     {
-        abort_unless($request->user()?->hasSuperUserAccess(), 403);
+        abort_unless($request->user()?->hasDirectorAccess(), 403);
     }
 }

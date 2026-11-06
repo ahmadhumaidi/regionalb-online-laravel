@@ -3,10 +3,17 @@
 namespace Tests\Feature;
 
 use App\Models\RsmAdLead;
+use App\Models\RsmCollabDailyMetric;
 use App\Models\RsmMonthlyTarget;
 use App\Models\RsmReport;
+use App\Models\RsmSocialAccount;
+use App\Models\RsmSocialPost;
 use App\Models\RsmUser;
+use App\Services\Dashboard\GamificationService;
+use App\Services\Dashboard\ScoringTableService;
+use App\Services\Dashboard\StaffJourneyService;
 use Illuminate\Support\Facades\Artisan;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class ScoringTableTest extends TestCase
@@ -23,13 +30,13 @@ class ScoringTableTest extends TestCase
         }
         $raffandy = new RsmUser(['username' => 'raffandy', 'role' => 'executive_director', 'area' => 'Regional A']);
         $filters = ['date_from' => today()->startOfMonth()->toDateString(), 'date_to' => today()->toDateString(), 'wilayah' => '', 'unit_name' => '', 'staff_name' => ''];
-        $arena = \App\Services\Dashboard\GamificationService::build('Regional A', $filters, $raffandy, true);
+        $arena = GamificationService::build('Regional A', $filters, $raffandy, true);
         $this->assertCount(7, $arena['all_leaderboard']);
         $this->assertCount(5, $arena['leaderboard']);
         $this->assertSame(range(1, 7), array_column($arena['all_leaderboard'], 'rank'));
         $this->assertSame(range(1, 7), array_column($arena['all_leaderboard'], 'previous_rank'));
         $this->assertSame(array_fill(0, 7, 0), array_column($arena['all_leaderboard'], 'rank_delta'));
-        $this->assertCount(3, \App\Services\Dashboard\GamificationService::build('Regional A', $filters, $raffandy)['all_leaderboard']);
+        $this->assertCount(3, GamificationService::build('Regional A', $filters, $raffandy)['all_leaderboard']);
     }
 
     private function migrate(): void
@@ -52,6 +59,46 @@ class ScoringTableTest extends TestCase
         ]]);
     }
 
+    public function test_activity_export_counts_all_journey_sources_only_within_selected_period(): void
+    {
+        $this->migrate();
+        $roster = [['user_id' => 900090, 'name' => 'Journey Export Staff', 'wilayah' => 'Regional 6', 'unit_name' => 'Journey Campus']];
+        foreach (['Absen Tepat Waktu' => 2, 'Follow Up BDC' => 45, 'Live Streaming' => 3, 'Share FB Group' => 8, 'Canvasing' => 4, 'Sebar Brosur' => 250, 'Pasang Spanduk' => 5] as $name => $value) {
+            foreach (['2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03'] as $date) {
+                RsmCollabDailyMetric::create([
+                    'report_name' => $name, 'metric_date' => $date, 'entity_key' => 'journey-export-'.$date,
+                    'staff_name' => 'Journey Export Staff Tim Terpilih', 'regional' => 'Regional 6', 'value' => $value,
+                ]);
+            }
+        }
+        RsmCollabDailyMetric::create([
+            'report_name' => 'Canvasing', 'metric_date' => '2026-10-01', 'entity_key' => 'other-region',
+            'staff_name' => 'Journey Export Staff', 'regional' => 'Regional 4', 'value' => 100,
+        ]);
+        foreach (['Live Streaming Night', 'Sapa Grup Affiliate', 'Rapat'] as $index => $activity) {
+            foreach (['2026-09-30', '2026-10-01', '2026-10-03'] as $date) {
+                RsmReport::create([
+                    'user_id' => $index === 1 ? null : 900090, 'staff_name' => 'Journey Export Staff',
+                    'area' => 'Regional B', 'report_type' => RsmReport::TYPE_OTHER, 'report_date' => $date,
+                    'wilayah' => 'Regional 6', 'unit_name' => 'Journey Campus', 'created_by_role' => 'staff',
+                    'status' => 'Dikirim', 'title' => $activity,
+                ]);
+            }
+        }
+        $account = RsmSocialAccount::create(['area' => 'Regional B', 'wilayah' => 'Regional 6', 'unit_name' => 'Journey Campus', 'instagram_username' => 'journey_export']);
+        foreach (['feed', 'reels', 'facebook', 'tiktok', 'story', 'no_post'] as $type) {
+            foreach (['2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03'] as $date) {
+                RsmSocialPost::create(['account_id' => $account->id, 'area' => 'Regional B', 'post_date' => $date, 'media_type' => $type]);
+            }
+        }
+        $row = StaffJourneyService::reportRows($roster, ['date_from' => '2026-10-01', 'date_to' => '2026-10-02'])[0];
+        $this->assertSame([
+            'absen' => 4.0, 'fu_bdc' => 90.0, 'instagram' => 4, 'facebook' => 2, 'tiktok' => 2,
+            'live_day' => 6.0, 'story_ig' => 2, 'share_fb' => 16.0, 'laporan' => 3,
+            'live_night' => 1, 'affiliate' => 1, 'canvassing' => 8.0, 'brosur' => 500.0, 'spanduk' => 10.0,
+        ], array_intersect_key($row, StaffJourneyService::ACTIVITY_LABELS));
+    }
+
     public function test_staff_cannot_open_scoring_menu(): void
     {
         $this->migrate();
@@ -63,6 +110,7 @@ class ScoringTableTest extends TestCase
         ]);
 
         $this->actingAs($staff)->get(route('scoring'))->assertForbidden();
+        $this->actingAs($staff)->get(route('scoring.export'))->assertForbidden();
 
         $staff->delete();
     }
@@ -142,6 +190,35 @@ class ScoringTableTest extends TestCase
         $response->assertOk();
         $response->assertSee('Own Wilayah Staff');
         $response->assertDontSee('Other Wilayah Staff');
+        $response->assertSee('Download Laporan Excel');
+        $response->assertViewHas('activities', StaffJourneyService::ACTIVITY_LABELS);
+        foreach (StaffJourneyService::ACTIVITY_LABELS as $label) {
+            $response->assertSee($label);
+        }
+        $response->assertDontSee('Total Skor');
+        $response->assertDontSee('Dari total bobot');
+
+        config()->set('excel.temporary_files.local_path', sys_get_temp_dir().'/regionalb-online-laravel-tests/excel');
+        $download = $this->actingAs($koordinator)->get(route('scoring.export', [
+            'date_from' => now()->toDateString(), 'date_to' => now()->addDay()->toDateString(),
+        ]));
+        $download->assertOk()->assertDownload('laporan-scoring-'.now()->toDateString().'_'.now()->addDay()->toDateString().'.xlsx');
+        $workbook = IOFactory::load($download->baseResponse->getFile()->getPathname());
+        $exportRows = $workbook->getActiveSheet()->toArray();
+        $this->assertContains('Own Wilayah Staff', array_column($exportRows, 0));
+        $this->assertNotContains('Other Wilayah Staff', array_column($exportRows, 0));
+        $this->assertSame(now()->toDateString(), $exportRows[2][1]);
+        $pageRow = collect($response->viewData('rows'))->firstWhere('name', 'Own Wilayah Staff');
+        $excelRow = collect($exportRows)->first(fn ($row) => ($row[0] ?? null) === 'Own Wilayah Staff');
+        foreach (array_keys(StaffJourneyService::ACTIVITY_LABELS) as $index => $key) {
+            $this->assertEquals($pageRow[$key], $excelRow[$index + 3]);
+        }
+
+        $this->assertSame(
+            array_merge(['Staff', 'Wilayah', 'Unit/Kampus'], array_values(StaffJourneyService::ACTIVITY_LABELS)),
+            $exportRows[5]
+        );
+        $workbook->disconnectWorksheets();
 
         $ownStaff->delete();
         $otherStaff->delete();
@@ -187,7 +264,7 @@ class ScoringTableTest extends TestCase
             'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'Kampus Arena', 'is_active' => true,
         ]);
 
-        $arena = \App\Services\Dashboard\GamificationService::build(
+        $arena = GamificationService::build(
             'Regional B',
             [
                 'date_from' => now()->startOfMonth()->toDateString(),
@@ -221,23 +298,23 @@ class ScoringTableTest extends TestCase
             'password_hash' => 'x', 'role' => 'staff', 'jabatan' => 'Staff Unit',
             'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'Kampus Daily', 'is_active' => true,
         ]);
-        $account = \App\Models\RsmSocialAccount::create([
+        $account = RsmSocialAccount::create([
             'area' => 'Regional B', 'wilayah' => 'Regional 6', 'unit_name' => 'Kampus Daily',
             'instagram_username' => 'kampus_daily_test',
         ]);
         foreach (['feed', 'reels', 'facebook', 'tiktok', 'story'] as $mediaType) {
-            \App\Models\RsmSocialPost::create([
+            RsmSocialPost::create([
                 'account_id' => $account->id, 'area' => 'Regional B', 'post_date' => now()->toDateString(),
                 'media_type' => $mediaType,
             ]);
         }
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Absen Tepat Waktu', 'metric_date' => now()->toDateString(),
             'entity_key' => 'daily-activity-staff', 'staff_name' => 'Daily Activity Staff',
             'regional' => 'Regional 6', 'value' => 1,
         ]);
 
-        $table = \App\Services\Dashboard\ScoringTableService::build(
+        $table = ScoringTableService::build(
             'Regional B',
             [
                 'date_from' => now()->startOfMonth()->toDateString(),
@@ -282,20 +359,20 @@ class ScoringTableTest extends TestCase
         // Deliberately no ad_leads rows for this staff - if the columns
         // were still reading GamificationService's ad_leads-derived
         // fallback, they'd show 0 instead of the Collab-sourced values.
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
             'entity_key' => 'collab-staff-1', 'staff_name' => 'Collab Staff', 'regional' => 'Regional 6', 'value' => 42,
         ]);
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Herreg Personal Per Regional', 'metric_date' => now(),
             'entity_key' => 'collab-staff-1', 'staff_name' => 'Collab Staff', 'regional' => 'Regional 6', 'value' => 17,
         ]);
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Closing Kampus Regional', 'metric_date' => now(),
             'entity_key' => 'collab-campus-1', 'campus_name' => 'STIESIA Surabaya', 'regional' => 'Regional 6', 'value' => 99,
         ]);
 
-        $table = \App\Services\Dashboard\ScoringTableService::build(
+        $table = ScoringTableService::build(
             'Regional B',
             [
                 'date_from' => now()->startOfMonth()->toDateString(),
@@ -334,7 +411,7 @@ class ScoringTableTest extends TestCase
             'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
         ]);
 
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
             'entity_key' => 'weighted-staff-1', 'staff_name' => 'Weighted Staff', 'regional' => 'Regional 6', 'value' => 5,
         ]);
@@ -353,7 +430,7 @@ class ScoringTableTest extends TestCase
             ],
         ]);
 
-        $table = \App\Services\Dashboard\ScoringTableService::build(
+        $table = ScoringTableService::build(
             'Regional B',
             [
                 'date_from' => now()->startOfMonth()->toDateString(),
@@ -405,7 +482,7 @@ class ScoringTableTest extends TestCase
             ],
         ]);
 
-        $table = \App\Services\Dashboard\ScoringTableService::build(
+        $table = ScoringTableService::build(
             'Regional B',
             [
                 'date_from' => now()->startOfMonth()->toDateString(),
@@ -450,7 +527,7 @@ class ScoringTableTest extends TestCase
             'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
         ]);
 
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Closing Personal Per Regional', 'metric_date' => now(),
             'entity_key' => 'overachiever-1', 'staff_name' => 'Overachiever Staff', 'regional' => 'Regional 6', 'value' => 10,
         ]);
@@ -468,7 +545,7 @@ class ScoringTableTest extends TestCase
             ],
         ]);
 
-        $table = \App\Services\Dashboard\ScoringTableService::build(
+        $table = ScoringTableService::build(
             'Regional B',
             [
                 'date_from' => now()->startOfMonth()->toDateString(),
@@ -528,7 +605,7 @@ class ScoringTableTest extends TestCase
             ],
         ]);
 
-        $table = \App\Services\Dashboard\ScoringTableService::build(
+        $table = ScoringTableService::build(
             'Regional B',
             [
                 'date_from' => now()->startOfMonth()->toDateString(),
@@ -579,7 +656,7 @@ class ScoringTableTest extends TestCase
             'status' => 'Dikirim', 'title' => 'Rapat Koordinasi',
         ]);
 
-        $table = \App\Services\Dashboard\ScoringTableService::build(
+        $table = ScoringTableService::build(
             'Regional B',
             [
                 'date_from' => now()->startOfMonth()->toDateString(),
@@ -606,7 +683,7 @@ class ScoringTableTest extends TestCase
     {
         $this->migrate();
 
-        \App\Models\RsmCollabDailyMetric::whereIn('staff_name', ['Arena Staff', 'Arena Rival'])->delete();
+        RsmCollabDailyMetric::whereIn('staff_name', ['Arena Staff', 'Arena Rival'])->delete();
         RsmMonthlyTarget::whereIn('staff_name', ['Arena Staff', 'Arena Rival'])->delete();
         RsmUser::whereIn('id', [900045, 900046, 900047])->delete();
 
@@ -626,19 +703,19 @@ class ScoringTableTest extends TestCase
             'area' => 'Regional B', 'regional' => 'Regional 6', 'campus_name' => 'STIESIA Surabaya', 'is_active' => true,
         ]);
 
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->toDateString(),
             'entity_key' => 'arena-staff', 'staff_name' => 'Arena Staff', 'regional' => 'Regional 6', 'value' => 5,
         ]);
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->toDateString(),
             'entity_key' => 'arena-rival', 'staff_name' => 'Arena Rival', 'regional' => 'Regional 6', 'value' => 1,
         ]);
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->subDay()->toDateString(),
             'entity_key' => 'arena-staff', 'staff_name' => 'Arena Staff', 'regional' => 'Regional 6', 'value' => 1,
         ]);
-        \App\Models\RsmCollabDailyMetric::create([
+        RsmCollabDailyMetric::create([
             'report_name' => 'Closing Personal Per Regional', 'metric_date' => now()->subDay()->toDateString(),
             'entity_key' => 'arena-rival', 'staff_name' => 'Arena Rival', 'regional' => 'Regional 6', 'value' => 4,
         ]);
@@ -692,7 +769,7 @@ class ScoringTableTest extends TestCase
             ],
         ]);
 
-        $arena = \App\Services\Dashboard\GamificationService::build(
+        $arena = GamificationService::build(
             'Regional B',
             [
                 'date_from' => now()->startOfMonth()->toDateString(),

@@ -8,6 +8,10 @@ class AreaRegionals
     /** @return list<string> */
     public static function forArea(string $area): array
     {
+        if ($area === 'all') {
+            return array_merge(self::forArea('Regional A'), self::forArea('Regional B'));
+        }
+
         return str_contains($area, 'B')
             ? ['Regional 4', 'Regional 5', 'Regional 6', 'Regional 7']
             : ['Regional 1', 'Regional 2', 'Regional 3'];

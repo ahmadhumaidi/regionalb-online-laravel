@@ -57,7 +57,7 @@ class RsmRole
 
     public static function canViewUsersPage(?RsmUser $user): bool
     {
-        return in_array($user?->accessRole(), ['super_user', 'senior'], true);
+        return in_array($user?->accessRole(), ['super_user', 'executive_director', 'director', 'senior'], true);
     }
 
     public static function canManageTargets(?RsmUser $user): bool
@@ -82,7 +82,7 @@ class RsmRole
 
     public static function canManageAdBudget(?RsmUser $user): bool
     {
-        return in_array($user?->accessRole(), ['super_user', 'senior'], true);
+        return in_array($user?->accessRole(), ['super_user', 'executive_director', 'director', 'senior'], true);
     }
 
     public static function canManageAdBudgetLimit(?RsmUser $user): bool
@@ -133,6 +133,11 @@ class RsmRole
     public static function canViewJadwalKoordinator(?RsmUser $user): bool
     {
         return $user?->accessRole() !== 'staff';
+    }
+
+    public static function canViewCoordinatorWhatsappReport(?RsmUser $user): bool
+    {
+        return in_array($user?->accessRole(), ['super_user', 'executive_director', 'director', 'senior'], true);
     }
 
     public static function canManageCoordinatorSchedule(?RsmUser $user): bool

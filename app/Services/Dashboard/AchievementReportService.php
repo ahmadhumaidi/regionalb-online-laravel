@@ -46,7 +46,7 @@ class AchievementReportService
         $senior = null;
         $coordinatorsByRegional = [];
 
-        foreach (RsmUser::query()->where('area', $area)->where('is_active', true)->get() as $candidate) {
+        foreach (RsmUser::query()->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])->where('is_active', true)->get() as $candidate) {
             $candidateRegional = trim((string) $candidate->regional);
             if (in_array($candidate->role, ['koordinator', 'staff'], true) && $scopedLookup !== [] && $candidateRegional !== '' && ! isset($scopedLookup[mb_strtolower($candidateRegional)])) {
                 continue;

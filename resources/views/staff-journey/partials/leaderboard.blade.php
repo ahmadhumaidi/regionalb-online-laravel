@@ -9,6 +9,15 @@
 
     <form method="GET" action="{{ route('staff-journey') }}" class="mb-4 grid grid-cols-2 gap-2">
         <input type="hidden" name="date" value="{{ $journeyDate }}">
+        <input type="hidden" name="journey_area" value="{{ $journeyArea ?? 'own' }}">
+        @if ($user->role === \App\Models\RsmUser::ROLE_KOORDINATOR)
+            <label class="col-span-2"><span class="mb-1 block text-[10px] font-bold uppercase tracking-wide text-ink-muted">Cakupan Leaderboard</span>
+                <select name="leaderboard_area" class="min-h-10 w-full rounded-xl border-border px-2 text-xs">
+                    <option value="own" @selected($leaderboardArea === 'own')>Wilayah Saya</option>
+                    <option value="Regional B" @selected($leaderboardArea === 'Regional B')>Regional B</option>
+                </select>
+            </label>
+        @endif
         <label class="min-w-0"><span class="mb-1 block text-[10px] font-bold uppercase tracking-wide text-ink-muted">Dari</span><input type="date" name="leaderboard_from" value="{{ $leaderboardFrom }}" max="{{ $leaderboardTo }}" class="min-h-10 w-full min-w-0 rounded-xl border-border px-2 text-xs"></label>
         <label class="min-w-0"><span class="mb-1 block text-[10px] font-bold uppercase tracking-wide text-ink-muted">Sampai</span><input type="date" name="leaderboard_to" value="{{ $leaderboardTo }}" min="{{ $leaderboardFrom }}" max="{{ now()->toDateString() }}" class="min-h-10 w-full min-w-0 rounded-xl border-border px-2 text-xs"></label>
         <button type="submit" class="col-span-2 min-h-10 rounded-xl bg-slate-900 px-3 text-xs font-black text-white hover:bg-slate-700">Terapkan Periode</button>

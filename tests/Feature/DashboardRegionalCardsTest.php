@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class DashboardRegionalCardsTest extends TestCase
 {
-    public function test_raffandy_sees_all_seven_cards_regardless_of_selected_area(): void
+    public function test_global_user_sees_all_seven_cards_by_default_and_can_narrow_area(): void
     {
         $user = new RsmUser(['username' => 'raffandy', 'role' => 'super_user', 'area' => 'Regional A']);
         $method = new \ReflectionMethod(DashboardController::class, 'recapRegionals');
@@ -16,9 +16,11 @@ class DashboardRegionalCardsTest extends TestCase
             $user->area = $area;
             $this->assertSame(
                 ['Regional 1', 'Regional 2', 'Regional 3', 'Regional 4', 'Regional 5', 'Regional 6', 'Regional 7'],
-                $method->invoke(new DashboardController, $area, $user),
+                $method->invoke(new DashboardController, 'all', $user),
             );
         }
+        $this->assertSame(['Regional 1', 'Regional 2', 'Regional 3'], $method->invoke(new DashboardController, 'Regional A', $user));
+        $this->assertSame(['Regional 4', 'Regional 5', 'Regional 6', 'Regional 7'], $method->invoke(new DashboardController, 'Regional B', $user));
     }
 
     public function test_single_area_and_staff_cards_remain_scoped(): void

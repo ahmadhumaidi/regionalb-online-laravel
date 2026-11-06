@@ -21,7 +21,7 @@ class UserManagementController extends Controller
         $area = $this->selectedArea($request);
         $users = RsmUser::query()
             ->when(
-                $actor->hasSuperUserAccess(),
+                $actor->hasDirectorAccess(),
                 fn ($query) => $query->when(
                     $area !== 'all',
                     fn ($areaQuery) => $areaQuery->where(fn ($scopedQuery) => $scopedQuery->where('area', $area)->orWhereNull('area')),
@@ -56,18 +56,20 @@ class UserManagementController extends Controller
         $actor = $request->user();
         abort_unless(RsmRole::canViewUsersPage($actor), 403);
 
+        $globalArea = RsmUser::roleHasGlobalAreaAccess((string) $request->input('user_role'));
         $data = $request->validate([
             'name' => 'required|string|max:160',
             'nik' => 'nullable|string|max:80',
             'username' => 'required|string|max:100|unique:rsm_users,username',
             'user_role' => ['required', Rule::in($this->manageableRoles($actor))],
-            'area' => ['required', Rule::in(['Regional A', 'Regional B'])],
-            'regional' => ['nullable', Rule::in(AreaRegionals::forArea((string) $request->input('area')))],
+            'area' => [$globalArea ? 'nullable' : 'required', Rule::in(['Regional A', 'Regional B'])],
+            'regional' => $globalArea ? ['exclude'] : ['nullable', Rule::in(AreaRegionals::forArea((string) $request->input('area')))],
             'campus_name' => 'nullable|string|max:200',
             'new_user_password' => 'required|string|min:6',
         ]);
 
-        abort_if(! $actor->hasSuperUserAccess() && $data['area'] !== $actor->area, 403);
+        $data['area'] = $globalArea ? null : $data['area'];
+        abort_if(! $actor->hasDirectorAccess() && $data['area'] !== $actor->area, 403);
         $role = $data['user_role'];
         RsmUser::create([
             'name' => $data['name'],
@@ -78,12 +80,12 @@ class UserManagementController extends Controller
             'jabatan' => RsmRole::label($role),
             'area' => $data['area'],
             'regional' => $data['regional'] ?? null,
-            'campus_name' => $data['campus_name'] ?? null,
+            'campus_name' => $globalArea ? null : ($data['campus_name'] ?? null),
             'must_change_password' => true,
             'is_active' => true,
         ]);
 
-        return redirect()->route('users', ['area' => $data['area']])->with('status', 'User berhasil ditambahkan.');
+        return redirect()->route('users', ['area' => $data['area'] ?? 'all'])->with('status', 'User berhasil ditambahkan.');
     }
 
     public function toggle(Request $request, RsmUser $managedUser)
@@ -99,12 +101,16 @@ class UserManagementController extends Controller
     {
         $actor = $request->user();
         $this->authorizeManagement($actor, $managedUser);
+        $globalArea = RsmUser::roleHasGlobalAreaAccess((string) $request->input('user_role'));
+        $targetArea = $request->input('area', $managedUser->getRawOriginal('area'));
+        $request->merge(['area' => $targetArea]);
         $data = $request->validate([
             'name' => 'required|string|max:160',
             'nik' => 'nullable|string|max:80',
             'user_role' => ['required', Rule::in($this->manageableRoles($actor))],
-            'regional' => ['nullable', Rule::in(array_values(array_unique(array_filter([
-                ...AreaRegionals::forArea($managedUser->area ?: 'Regional B'),
+            'area' => [$globalArea ? 'nullable' : 'required', Rule::in($actor->hasDirectorAccess() ? ['Regional A', 'Regional B'] : [$actor->area])],
+            'regional' => $globalArea ? ['exclude'] : ['nullable', Rule::in(array_values(array_unique(array_filter([
+                ...AreaRegionals::forArea((string) $targetArea),
                 $managedUser->regional,
             ]))))],
             'campus_name' => 'nullable|string|max:200',
@@ -113,6 +119,9 @@ class UserManagementController extends Controller
             'work_duration' => 'nullable|string|max:80',
             'bio_text' => 'nullable|string|max:800',
         ]);
+        if ($globalArea) {
+            $data['area'] = $data['regional'] = $data['campus_name'] = null;
+        }
         $data['role'] = $data['user_role'];
         unset($data['user_role']);
         $data['jabatan'] = ($data['jabatan'] ?? null) ?: RsmRole::label($data['role']);
@@ -148,7 +157,7 @@ class UserManagementController extends Controller
         $actor = $request->user();
         $requestedArea = (string) $request->query('area', 'all');
 
-        return $actor->hasSuperUserAccess() && in_array($requestedArea, ['all', 'Regional A', 'Regional B'], true)
+        return $actor->hasDirectorAccess() && in_array($requestedArea, ['all', 'Regional A', 'Regional B'], true)
             ? $requestedArea
             : ($actor->area ?: 'Regional B');
     }
@@ -156,15 +165,21 @@ class UserManagementController extends Controller
     /** @return list<string> */
     private function manageableRoles(RsmUser $actor): array
     {
-        return $actor->hasSuperUserAccess()
-            ? RsmUser::ROLES
-            : [RsmUser::ROLE_MENTOR, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_STAFF];
+        return match (true) {
+            $actor->hasSuperUserAccess() => RsmUser::ROLES,
+            $actor->role === RsmUser::ROLE_EXECUTIVE_DIRECTOR => array_values(array_diff(RsmUser::ROLES, [RsmUser::ROLE_SUPER_USER])),
+            $actor->role === RsmUser::ROLE_DIRECTOR => array_values(array_diff(RsmUser::ROLES, [RsmUser::ROLE_SUPER_USER, RsmUser::ROLE_EXECUTIVE_DIRECTOR])),
+            default => [RsmUser::ROLE_MENTOR, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_STAFF],
+        };
     }
 
     private function authorizeManagement(RsmUser $actor, RsmUser $managedUser): void
     {
         abort_unless(RsmRole::canViewUsersPage($actor), 403);
         if (! $actor->hasSuperUserAccess()) {
+            abort_unless(in_array($managedUser->role, $this->manageableRoles($actor), true), 403);
+        }
+        if (! $actor->hasDirectorAccess()) {
             abort_unless(
                 $managedUser->area === $actor->area
                 && in_array($managedUser->role, $this->manageableRoles($actor), true),

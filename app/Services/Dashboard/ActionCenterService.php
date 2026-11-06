@@ -31,7 +31,7 @@ class ActionCenterService
         }
 
         $revisionCount = ReportScope::apply(
-            RsmReport::query()->where('area', $area)->where('status', 'Revisi'),
+            RsmReport::query()->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])->where('status', 'Revisi'),
             $user,
         )->get()->filter(fn (RsmReport $report) => ReportFormService::canEdit($report, $user))->count();
         if ($revisionCount > 0) {
@@ -39,7 +39,7 @@ class ActionCenterService
         }
 
         $verificationCount = ReportScope::apply(
-            RsmReport::query()->where('area', $area)->where('report_type', RsmReport::TYPE_ADS)->where('status', 'Dilaporkan Unit'),
+            RsmReport::query()->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])->where('report_type', RsmReport::TYPE_ADS)->where('status', 'Dilaporkan Unit'),
             $user,
         )->get()->filter(fn (RsmReport $report) => RsmRole::canVerifyAdBudgetRequest($report, $user))->count();
         if ($verificationCount > 0) {
@@ -48,7 +48,7 @@ class ActionCenterService
 
         $obstacleCount = ReportScope::apply(
             RsmReport::query()
-                ->where('area', $area)
+                ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
                 ->where('report_type', RsmReport::TYPE_OTHER)
                 ->whereNotNull('obstacle_text')
                 ->where('obstacle_text', '<>', '')
@@ -78,7 +78,7 @@ class ActionCenterService
         }
 
         return RsmCoordinatorSchedule::query()
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->whereDate('schedule_date', today())
             ->where('status', '<>', 'Selesai')
             ->when($user->role === RsmUser::ROLE_KOORDINATOR, fn ($query) => $query

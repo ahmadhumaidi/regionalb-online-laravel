@@ -33,9 +33,9 @@ class RaffandyAccessTest extends TestCase
         foreach ([['someone', 'executive_director'], ['raffandy', 'staff']] as [$username, $role]) {
             $user = new RsmUser(['username' => $username, 'role' => $role, 'area' => 'Regional A']);
             $this->assertFalse($user->hasSuperUserAccess());
-            $this->assertFalse(Menu::isAllowed('about-application', $user));
+            $this->assertSame($role === 'executive_director', Menu::isAllowed('about-application', $user));
             $this->assertFalse(RsmRole::canModerateForum($user));
-            $this->assertSame(['Regional A'], $user->accessibleAreas());
+            $this->assertSame($role === 'executive_director' ? ['Regional A', 'Regional B'] : ['Regional A'], $user->accessibleAreas());
         }
         $this->assertFalse(RsmRole::canModerateForum(null));
     }

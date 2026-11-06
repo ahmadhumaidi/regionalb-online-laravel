@@ -31,6 +31,23 @@ class AboutApplicationTest extends TestCase
             ->assertDownload('Laporan_Kontribusi_Dashboard_Regional_Ahmad_Humaidi.pdf');
     }
 
+    public function test_both_director_roles_can_open_management_features(): void
+    {
+        foreach ([RsmUser::ROLE_DIRECTOR, RsmUser::ROLE_EXECUTIVE_DIRECTOR] as $role) {
+            $director = RsmUser::create([
+                'name' => 'Director', 'username' => 'feature_'.$role, 'password_hash' => 'x',
+                'role' => $role, 'jabatan' => 'Director', 'is_active' => true,
+            ]);
+            $this->actingAs($director)->get('/tentang-aplikasi')->assertOk();
+            $this->actingAs($director)->get('/tentang-aplikasi/laporan-kontribusi')->assertOk();
+            $this->actingAs($director)->get('/laporan-senior/create')->assertOk();
+            $this->actingAs($director)->post('/users', [
+                'name' => 'Forbidden Super', 'username' => 'forbidden_super_'.$role,
+                'user_role' => 'super_user', 'new_user_password' => 'secret123',
+            ])->assertSessionHasErrors('user_role');
+        }
+    }
+
     public function test_non_super_user_cannot_view_page_or_download_report(): void
     {
         $staff = RsmUser::create([

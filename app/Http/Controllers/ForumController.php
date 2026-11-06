@@ -6,12 +6,15 @@ use App\Models\RsmForumComment;
 use App\Models\RsmForumLike;
 use App\Models\RsmForumPost;
 use App\Services\NotificationService;
+use App\Services\ForumActivityService;
+use Illuminate\Http\JsonResponse;
 use App\Support\RsmRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -24,10 +27,11 @@ class ForumController extends Controller
     public function index(Request $request): View
     {
         $user = Auth::user();
+        $forumSnapshot = ForumActivityService::snapshot();
         $highlightPostId = (int) $request->query('post', 0);
 
         $posts = RsmForumPost::query()
-            ->with(['user', 'comments.user'])
+            ->with(['user', 'comments.user', 'comments.likes.user:id,name', 'likes.user:id,name'])
             ->withCount('likes')
             ->when($highlightPostId > 0, fn ($query) => $query->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$highlightPostId]))
             ->latest()
@@ -39,7 +43,15 @@ class ForumController extends Controller
             ->pluck('post_id')
             ->all();
 
+        ForumActivityService::markRead($user, $forumSnapshot);
+
         return view('forum.index', compact('posts', 'likedPostIds', 'highlightPostId'));
+    }
+
+    public function activity(): JsonResponse
+    {
+        return response()->json(ForumActivityService::unread(Auth::user()))
+            ->header('Cache-Control', 'private, no-store');
     }
 
     public function storePost(Request $request): RedirectResponse
@@ -77,14 +89,30 @@ class ForumController extends Controller
         return back();
     }
 
+    public function toggleCommentLike(RsmForumComment $comment): RedirectResponse
+    {
+        $likes = $comment->likes()->where('user_id', Auth::id());
+        if ($likes->exists()) {
+            $likes->delete();
+        } else {
+            $comment->likes()->firstOrCreate(['user_id' => Auth::id()]);
+        }
+
+        return back();
+    }
+
     public function storeComment(Request $request, RsmForumPost $post): RedirectResponse
     {
-        $data = $request->validate(['body' => ['required', 'string', 'max:500']]);
+        $data = $request->validate([
+            'body' => ['required', 'string'],
+            'parent_id' => ['nullable', 'integer', Rule::exists('rsm_forum_comments', 'id')->where('post_id', $post->id)],
+        ]);
 
         RsmForumComment::create([
             'post_id' => $post->id,
             'user_id' => Auth::id(),
             'body' => $data['body'],
+            'parent_id' => $data['parent_id'] ?? null,
         ]);
         NotificationService::notifyForumComment($post, Auth::user());
 
@@ -123,7 +151,7 @@ class ForumController extends Controller
     {
         abort_unless(RsmRole::canModerateForum(Auth::user()), 403);
 
-        $data = $request->validate(['body' => ['required', 'string', 'max:500']]);
+        $data = $request->validate(['body' => ['required', 'string']]);
         $comment->update(['body' => $data['body']]);
 
         return back()->with('notice', 'Komentar diperbarui.');

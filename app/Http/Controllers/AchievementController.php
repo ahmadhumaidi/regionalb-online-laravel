@@ -30,7 +30,7 @@ class AchievementController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        $area = $user->area ?: 'Regional B';
+        $area = $user->viewingArea();
 
         $filters = DashboardFilters::fromRequest($request, 'pencapaian');
 
@@ -43,7 +43,7 @@ class AchievementController extends Controller
             ? (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior']))
             : $user;
 
-        $areas = count($user->accessibleAreas()) > 1 ? $user->accessibleAreas() : [$area];
+        $areas = $user->selectedAreas();
         $performance = ['rows' => [], 'regional_summary' => [], 'totals' => ['registrasi' => 0, 'herregistrasi' => 0, 'staff_count' => 0]];
         $target = ['target_registrasi' => 0, 'target_herregistrasi' => 0];
         $regionalTargets = [];

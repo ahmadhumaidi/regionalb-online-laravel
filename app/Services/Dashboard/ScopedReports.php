@@ -12,7 +12,7 @@ class ScopedReports
     public static function query(string $area, array $filters, RsmUser $user): Builder
     {
         $query = RsmReport::query()
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->whereBetween('report_date', [$filters['date_from'], $filters['date_to']]);
 
         if ($filters['wilayah'] !== '') {

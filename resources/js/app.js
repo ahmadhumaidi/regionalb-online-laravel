@@ -185,3 +185,33 @@ document.addEventListener('click', (event) => {
     document.body.appendChild(fx);
     setTimeout(() => fx.remove(), 600);
 });
+
+
+// Refresh only the small forum badge; pause network requests in hidden tabs.
+const forumActivityBadge = document.querySelector('[data-forum-activity]');
+if (forumActivityBadge) {
+    let forumActivityLoading = false;
+    const refreshForumActivity = async () => {
+        if (document.hidden || forumActivityLoading) return;
+        forumActivityLoading = true;
+        try {
+            const response = await fetch(forumActivityBadge.dataset.url, {
+                headers: { Accept: 'application/json' }, cache: 'no-store',
+            });
+            if (!response.ok) return;
+            const activity = await response.json();
+            forumActivityBadge.hidden = activity.total === 0;
+            forumActivityBadge.textContent = activity.total > 99 ? '99+' : activity.total;
+            forumActivityBadge.setAttribute('aria-label', `${activity.total} aktivitas forum baru`);
+            forumActivityBadge.title = `${activity.posts} postingan dan ${activity.comments} komentar baru`;
+        } catch {
+            // Keep the last known count when temporarily offline.
+        } finally {
+            forumActivityLoading = false;
+        }
+    };
+    setInterval(refreshForumActivity, 30000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshForumActivity();
+    });
+}

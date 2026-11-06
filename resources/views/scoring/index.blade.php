@@ -21,6 +21,7 @@
             </div>
         @endunless
         <div class="ml-auto flex gap-2">
+            <a href="{{ route('scoring.export', $filters) }}" class="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-ink hover:bg-surface-muted">Download Laporan Excel</a>
             <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Terapkan</button>
             <a href="{{ route('scoring') }}" class="rounded-lg border border-border px-4 py-2 text-sm font-medium text-ink-muted hover:bg-surface-muted">Reset</a>
         </div>
@@ -36,8 +37,8 @@
     <section class="rounded-2xl glass-card p-5">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
             <div>
-                <h2 class="text-base font-semibold text-ink">Scoring - Semua Indikator Penilaian</h2>
-                <p class="mt-1 text-xs text-ink-muted">Kumpulan indikator mentah per staff berdasarkan konfigurasi indikator scoring.</p>
+                <h2 class="text-base font-semibold text-ink">Scoring - Aktivitas Journey Staff</h2>
+                <p class="mt-1 text-xs text-ink-muted">Jumlah seluruh aktivitas Journey Staff selama periode yang dipilih. Data ini juga digunakan pada laporan Excel.</p>
             </div>
             @if ($syncedAt)
                 <span class="text-xs text-ink-muted">Sumber Collab tersinkron: {{ \Illuminate\Support\Carbon::parse($syncedAt)->format('d M Y') }}</span>
@@ -52,23 +53,10 @@
                     <thead>
                         <tr class="border-b border-border text-xs leading-tight text-ink-muted">
                             <th class="w-56 py-2 pr-3 font-medium">Staff</th>
-                            <th class="w-20 py-2 pr-3 text-center font-medium">Total<br>Skor</th>
-                            @foreach ($indicators as $key => $indicator)
-                                @php
-                                    $headerDetail = $rows[0]['score_details'][$key] ?? [];
-                                    $headerTarget = (float) ($headerDetail['target'] ?? 0);
-                                    $headerWeight = (float) ($headerDetail['weight'] ?? 0);
-                                    $headerTargetStep = (string) ($indicator['step'] ?? '1');
-                                    $headerTargetText = $headerTargetStep === '0.01'
-                                        ? number_format($headerTarget, 2, ',', '.')
-                                        : number_format($headerTarget, 0, ',', '.');
-                                @endphp
-                                <th class="w-20 py-2 pr-3 text-center font-medium">
-                                    <span class="block">{{ $indicator['label'] ?? '-' }}</span>
-                                    <span class="mt-1 inline-flex rounded-full bg-white/60 px-2 py-0.5 text-[10px] font-semibold text-ink-muted">
-                                        {{ $headerTargetText }} / {{ number_format($headerWeight, 0, ',', '.') }}%
-                                    </span>
-                                </th>
+                            <th class="py-2 pr-3 font-medium">Wilayah</th>
+                            <th class="py-2 pr-3 font-medium">Unit/Kampus</th>
+                            @foreach ($activities as $label)
+                                <th class="min-w-24 py-2 pr-3 text-center font-medium">{{ $label }}</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -76,13 +64,11 @@
                         @foreach ($rows as $row)
                             <tr class="border-b border-border/60">
                                 <td class="py-2 pr-3 font-medium text-ink whitespace-nowrap" title="{{ $row['wilayah'] }} - {{ $row['unit_name'] }}">{{ $row['name'] }}</td>
-                                <td class="py-2 pr-3 text-center font-bold text-brand-700" title="Dari total bobot {{ number_format((float) ($row['total_weight'] ?? 0), 2, ',', '.') }}">{{ number_format((float) ($row['total_score'] ?? 0), 2, ',', '.') }}</td>
-                                @foreach ($indicators as $key => $indicator)
-                                    @php
-                                        $metricKey = (string) ($indicator['metric_key'] ?? '');
-                                        $actual = (float) ($row[$metricKey] ?? 0);
-                                    @endphp
-                                    <td class="py-2 pr-3 text-center text-ink">{{ number_format($actual, 0, ',', '.') }}</td>
+                                <td class="py-2 pr-3 text-ink whitespace-nowrap">{{ $row['wilayah'] }}</td>
+                                <td class="py-2 pr-3 text-ink whitespace-nowrap">{{ $row['unit_name'] }}</td>
+                                @foreach ($activities as $key => $label)
+                                    @php $actual = (float) ($row[$key] ?? 0); @endphp
+                                    <td class="py-2 pr-3 text-center text-ink">{{ number_format($actual, floor($actual) === $actual ? 0 : 2, ',', '.') }}</td>
                                 @endforeach
                             </tr>
                         @endforeach

@@ -12,11 +12,12 @@ class RsmSeniorActivityReport extends Model
     protected $fillable = [
         'area', 'user_id', 'activity_date', 'activity_type', 'title', 'location',
         'participants', 'agenda', 'result_text', 'next_action', 'attachment_path',
+        'duration_minutes', 'urgency',
     ];
 
     protected function casts(): array
     {
-        return ['activity_date' => 'date'];
+        return ['activity_date' => 'date', 'duration_minutes' => 'integer', 'urgency' => 'integer'];
     }
 
     public function user(): BelongsTo

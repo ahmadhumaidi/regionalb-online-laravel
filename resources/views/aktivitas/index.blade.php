@@ -6,8 +6,7 @@
                 Laporkan Kendala
             </a>
         @endif
-        <a href="{{ route('aktivitas.create') }}" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Tambah Aktivitas Lain</a>
-        <a href="{{ route('kegiatan.create') }}" class="rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-700">Tambah Kegiatan Marketing</a>
+        <a href="{{ route('aktivitas.create') }}" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Tambah Aktivitas Lainnya</a>
         <a href="{{ route('upload-konten-sosmed') }}" class="rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-700">Upload Konten</a>
     </div>
     <section class="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -58,6 +58,9 @@
                                 >
                                     <x-icon :name="$item['icon']" class="h-5 w-5 shrink-0 text-white/80" />
                                     <span class="truncate">{{ $item['label'] }}</span>
+                                    @if($item['key'] === 'forum')
+                                        <span data-forum-activity data-url="{{ route('forum.activity') }}" data-count="{{ $forumActivity['total'] }}" class="ml-auto grid min-w-5 place-items-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-black text-white" @if($forumActivity['total'] === 0) hidden @endif aria-label="{{ $forumActivity['total'] }} aktivitas forum baru" title="{{ $forumActivity['posts'] }} postingan dan {{ $forumActivity['comments'] }} komentar baru">{{ $forumActivity['total'] > 99 ? '99+' : $forumActivity['total'] }}</span>
+                                    @endif
                                     @if($item['key'] === 'aktivitas' && $pendingReportCount > 0)<span class="ml-auto grid min-w-5 place-items-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-black text-white">{{ $pendingReportCount > 99 ? '99+' : $pendingReportCount }}</span>@endif
                                 </a>
                             @endforeach
@@ -183,9 +186,33 @@
             @endif
 
             <main class="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+                @if(count($allowedAreas ?? []) > 1)
+                    <form method="POST" action="{{ route('area.switch') }}" class="mb-4 flex items-center gap-3">
+                        @csrf
+                        <label for="active-area" class="text-sm text-ink-muted">Filter regional</label>
+                        <select id="active-area" name="area" class="rounded-lg border-border bg-surface-muted" onchange="this.form.submit()">
+                            <option value="all" @selected(($selectedArea ?? 'all') === 'all')>Semua Regional</option>
+                            @foreach($allowedAreas as $availableArea)<option @selected(($selectedArea ?? 'all') === $availableArea)>{{ $availableArea }}</option>@endforeach
+                        </select>
+                        <noscript><button type="submit">Pilih area</button></noscript>
+                    </form>
+                @endif
                 {{ $slot }}
             </main>
         </div>
     </div>
+    <dialog x-data="{ photoSrc: '', photoName: '' }"
+        @profile-photo-preview.window="photoSrc = $event.detail.src; photoName = $event.detail.name; $nextTick(() => { if (!$el.open) $el.showModal() })"
+        @click="if ($event.target === $el) $el.close()"
+        @keydown.escape.stop
+        @close="photoSrc = ''; photoName = ''"
+        aria-label="Preview foto profil"
+        class="fixed inset-0 m-auto max-h-[95vh] w-full max-w-3xl overflow-y-auto rounded-2xl border-0 bg-slate-950 p-4 text-white backdrop:bg-black/80">
+        <div class="mb-3 flex items-center justify-between gap-3">
+            <p class="text-sm font-semibold" x-text="photoName"></p>
+            <button type="button" @click="$el.closest('dialog').close()" class="rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold">Tutup</button>
+        </div>
+        <img :src="photoSrc || undefined" :alt="'Foto profil '+photoName" class="mx-auto max-h-[78vh] max-w-full rounded-xl object-contain">
+    </dialog>
 </body>
 </html>

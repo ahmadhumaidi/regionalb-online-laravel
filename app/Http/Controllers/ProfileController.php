@@ -112,9 +112,11 @@ class ProfileController extends Controller
         'affiliator_non_mahasiswa' => 'user-group',
     ];
 
-    public function show(): View
+    public function show(Request $request): View
     {
+        $validated = $request->validate(['performance_month' => ['nullable', 'date_format:Y-m', 'before_or_equal:'.now()->endOfMonth()->toDateString()]]);
         $user = Auth::user();
+        $journeyPerformance = StaffJourneyService::profilePerformance($user, $validated['performance_month'] ?? now()->format('Y-m'));
         $query = RsmReport::query()->where('area', $user->area);
         if ($user->role === 'staff') {
             $query->where(function ($q) use ($user) { $q->where('user_id', $user->id)->orWhere('staff_name', $user->name); });
@@ -128,7 +130,8 @@ class ProfileController extends Controller
             'active_days' => (clone $query)->distinct('report_date')->count('report_date'),
         ];
         $dailyMissions = $this->dailyMissions($user);
-        $reports = (clone $query)->latest('report_date')->latest('id')->limit(10)->get();
+        $reports = (clone $query)->latest('report_date')->latest('id')
+            ->simplePaginate(5, ['*'], 'activity_page')->withQueryString()->fragment('aktivitas');
         $logs = RsmActivityLog::query()->where('area', $user->area)->where('actor_user_id', $user->id)->latest()->limit(10)->get();
 
         // Badge thresholds still come from the Dashboard's "Arena Performa
@@ -210,7 +213,7 @@ class ProfileController extends Controller
         return view('profile.index', compact(
             'user', 'stats', 'reports', 'logs', 'xp', 'level', 'levelProgress', 'league', 'seasonXp', 'leagueSeason', 'score', 'badges', 'dailyMissions',
             'todayEnergy', 'weekEnergy', 'monthEnergy', 'dailyChestTiers', 'weeklyChestTiers', 'monthlyChestTiers',
-            'missionResetAt', 'weekResetAt', 'monthResetAt'
+            'missionResetAt', 'weekResetAt', 'monthResetAt', 'journeyPerformance'
         ));
     }
 
@@ -218,17 +221,21 @@ class ProfileController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        abort_unless(in_array($user->accessRole(), [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER], true), 403);
+        abort_unless(in_array($user->accessRole(), [RsmUser::ROLE_STAFF, RsmUser::ROLE_KOORDINATOR, RsmUser::ROLE_SUPER_USER, RsmUser::ROLE_DIRECTOR, RsmUser::ROLE_EXECUTIVE_DIRECTOR], true), 403);
 
         $validated = $request->validate([
             'date' => ['nullable', 'date_format:Y-m-d'],
             'leaderboard_from' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
             'leaderboard_to' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:leaderboard_from'],
+            'leaderboard_area' => ['nullable', 'in:own,Regional B'],
+            'journey_area' => ['nullable', 'in:own,Regional B'],
         ]);
-        $journey = StaffJourneyService::build($user, $validated['date'] ?? null);
+        $journeyArea = $user->role === RsmUser::ROLE_KOORDINATOR ? ($validated['journey_area'] ?? 'own') : 'own';
+        $journey = StaffJourneyService::build($user, $validated['date'] ?? null, $journeyArea);
         $leaderboardFrom = $validated['leaderboard_from'] ?? now()->toDateString();
         $leaderboardTo = $validated['leaderboard_to'] ?? now()->toDateString();
-        $journeyLeaderboard = StaffJourneyService::leaderboard($user, $leaderboardFrom, $leaderboardTo);
+        $leaderboardArea = $user->role === RsmUser::ROLE_KOORDINATOR ? ($validated['leaderboard_area'] ?? 'own') : 'own';
+        $journeyLeaderboard = StaffJourneyService::leaderboard($user, $leaderboardFrom, $leaderboardTo, $leaderboardArea);
 
         return view('staff-journey.index', [
             'user' => $user,
@@ -236,9 +243,11 @@ class ProfileController extends Controller
             'activityProgress' => $this->staffJourneyProgress($user),
             'journeyStaff' => $journey['staff'],
             'journeyDate' => $journey['date'],
+            'journeyArea' => $journeyArea,
             'journeyLeaderboard' => $journeyLeaderboard,
             'leaderboardFrom' => $leaderboardFrom,
             'leaderboardTo' => $leaderboardTo,
+            'leaderboardArea' => $leaderboardArea,
             'trackedDaily' => $journey['tracked_daily'],
         ]);
     }
@@ -262,7 +271,9 @@ class ProfileController extends Controller
             'unit_name' => '',
             'staff_name' => (string) $user->name,
         ];
-        $sebarBrosur = CollabMetricsService::personalTotal($filters, $user->area ?: 'Regional B', $user, 'Sebar Brosur');
+        $threeMonthFilters = $filters;
+        $threeMonthFilters['date_from'] = now()->subMonthsNoOverflow(2)->startOfMonth()->toDateString();
+        $sebarBrosur = CollabMetricsService::personalTotal($threeMonthFilters, $user->area ?: 'Regional B', $user, 'Sebar Brosur');
 
         $twoMonthFilters = $filters;
         $twoMonthFilters['date_from'] = now()->subMonth()->startOfMonth()->toDateString();
@@ -271,9 +282,9 @@ class ProfileController extends Controller
         return [
             'sebar_brosur' => [
                 'actual' => $sebarBrosur,
-                'target' => 200,
-                'progress' => min(100, (int) round(($sebarBrosur / 200) * 100)),
-                'done' => $sebarBrosur >= 200,
+                'target' => 1000,
+                'progress' => min(100, (int) round(($sebarBrosur / 1000) * 100)),
+                'done' => $sebarBrosur >= 1000,
                 'claimed' => false,
             ],
             'pasang_spanduk' => [

@@ -14,7 +14,7 @@ class ClosingCampusController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $area = $user->area ?: 'Regional B';
+        $area = $user->viewingArea();
         $filters = DashboardFilters::fromRequest($request, 'closing-kampus');
         // This page (the "Lihat semua" target from Top 5 Pencapaian Kampus)
         // is meant to list every campus in the area, with the wilayah/unit
@@ -24,7 +24,7 @@ class ClosingCampusController extends Controller
         $scopeUser = $user->role === 'staff'
             ? (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior']))
             : $user;
-        $areas = count($user->accessibleAreas()) > 1 ? $user->accessibleAreas() : [$area];
+        $areas = $user->selectedAreas();
         $regionals = [];
         $campusRows = collect();
         $campusOptions = collect();

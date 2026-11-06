@@ -27,6 +27,7 @@
                         <th class="py-2 pr-3 font-medium">Staff</th>
                         <th class="py-2 pr-3 font-medium">Jenis</th>
                         <th class="py-2 pr-3 font-medium">Kategori</th>
+                        <th class="py-2 pr-3 font-medium">Durasi / Urgensi</th>
                         <th class="py-2 pr-3 font-medium">Hasil</th>
                         <th class="py-2 pr-3 font-medium">Status</th>
                         <th class="py-2 font-medium">Aksi</th>
@@ -41,6 +42,13 @@
                             <td class="py-2 pr-3"><span class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">{{ $row['report_type_label'] }}</span></td>
                             <td class="py-2 pr-3 text-ink-muted">{{ $row['category'] ?: '-' }}</td>
                             <td class="py-2 pr-3 text-ink-muted">
+                                <span class="block">{{ ! empty($row['duration_minutes']) ? $row['duration_minutes'].' menit' : '-' }}</span>
+                                <span class="text-xs">{{ ! empty($row['urgency']) ? 'Urgensi '.$row['urgency'].' - '.([1 => 'Rendah', 2 => 'Sedang', 3 => 'Tinggi'][$row['urgency']] ?? '') : '-' }}</span>
+                            </td>
+                            <td class="py-2 pr-3 text-ink-muted">
+                                @if (! empty($row['activity_name']))
+                                    <strong class="block text-ink">{{ $row['activity_name'] }}</strong>
+                                @endif
                                 {{ \Illuminate\Support\Str::limit((string) ($row['title'] ?: $row['result_text']), 60) ?: '-' }}
                                 @if ($row['has_attachment'])
                                     <x-icon name="clipboard" class="ml-1 inline h-3.5 w-3.5 text-ink-muted" />

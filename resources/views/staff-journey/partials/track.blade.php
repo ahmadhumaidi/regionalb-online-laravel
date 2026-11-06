@@ -74,6 +74,7 @@
                 </article>
             @endforeach
         </div>
+        @include('staff-journey.partials.period-tracks')
     </div>
 
     <div class="relative flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-200/80 bg-slate-50/70 px-5 py-3 text-[11px] font-semibold text-slate-500 md:px-7">

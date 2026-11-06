@@ -50,7 +50,7 @@ class ScoringTableService
         $socialPosts = Schema::hasTable('rsm_social_posts')
             ? RsmSocialPost::query()
                 ->with('account:id,unit_name')
-                ->where('area', $area)
+                ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
                 ->when($filters['date_from'] !== '', fn ($query) => $query->whereDate('post_date', '>=', $filters['date_from']))
                 ->when($filters['date_to'] !== '', fn ($query) => $query->whereDate('post_date', '<=', $filters['date_to']))
                 ->where('media_type', '!=', 'no_post')
@@ -117,7 +117,7 @@ class ScoringTableService
     {
         $query = RsmUser::query()
             ->where('role', RsmUser::ROLE_STAFF)
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->where('is_active', true);
 
         if ($user->role === RsmUser::ROLE_KOORDINATOR && trim((string) $user->regional) !== '') {
@@ -137,7 +137,7 @@ class ScoringTableService
         $staffNames = $roster->pluck('name')->filter()->values()->all();
 
         $query = RsmMonthlyTarget::query()
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->where('target_month', $targetMonth)
             ->where('scope_type', 'staff')
             ->whereIn('staff_name', $staffNames);

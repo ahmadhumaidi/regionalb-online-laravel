@@ -100,6 +100,8 @@ class SeniorActivityReportController extends Controller
     {
         return $request->validate([
             'activity_date' => ['required', 'date'],
+            'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:10080'],
+            'urgency' => ['nullable', 'integer', 'between:1,3'],
             'activity_type' => ['required', Rule::in(['Kunjungan', 'Rapat'])],
             'title' => ['required', 'string', 'max:220'],
             'location' => ['nullable', 'string', 'max:220'],
@@ -113,7 +115,7 @@ class SeniorActivityReportController extends Controller
 
     private function authorizeRole(?RsmUser $user): void
     {
-        abort_unless(in_array($user?->accessRole(), [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER], true), 403);
+        abort_unless(in_array($user?->accessRole(), [RsmUser::ROLE_SENIOR, RsmUser::ROLE_SUPER_USER, RsmUser::ROLE_DIRECTOR, RsmUser::ROLE_EXECUTIVE_DIRECTOR], true), 403);
     }
 
     private function authorizeOwner(?RsmUser $user, RsmSeniorActivityReport $report): void

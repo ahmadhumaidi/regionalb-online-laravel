@@ -6,6 +6,7 @@
         </div>
         <form method="POST" enctype="multipart/form-data" action="{{ $editing ? route('laporan-senior.update', $report) : route('laporan-senior.store') }}" class="grid gap-4 md:grid-cols-2">
             @csrf @if($editing) @method('PATCH') @endif
+            @include('reports.activity-metrics', ['report' => $report])
             @if($errors->any())<div class="md:col-span-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"><ul class="list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
             <label class="grid gap-1 text-sm">Tanggal kegiatan<input type="date" name="activity_date" required value="{{ old('activity_date', optional($report->activity_date)->format('Y-m-d') ?: now('Asia/Jakarta')->toDateString()) }}" class="rounded-lg border-border bg-surface-muted"></label>
             <label class="grid gap-1 text-sm">Jenis kegiatan<select name="activity_type" required class="rounded-lg border-border bg-surface-muted"><option value="">Pilih jenis</option>@foreach(['Kunjungan','Rapat'] as $type)<option value="{{ $type }}" @selected(old('activity_type', $report->activity_type) === $type)>{{ $type }}</option>@endforeach</select></label>

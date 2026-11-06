@@ -31,7 +31,7 @@ class ReferenceOptionsService
 
         $regionalsQuery = RsmUser::query()
             ->where('role', 'staff')
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->where('is_active', true)
             ->whereNotNull('regional');
 
@@ -43,7 +43,7 @@ class ReferenceOptionsService
 
         $staffQuery = RsmUser::query()
             ->where('role', 'staff')
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->where('is_active', true);
         if ($regionals !== []) {
             $staffQuery->whereIn('regional', $regionals);

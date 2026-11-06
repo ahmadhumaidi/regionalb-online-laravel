@@ -22,7 +22,14 @@ class SetEffectiveRole
         $user = Auth::user();
         $homeArea = $user->area;
         $allowedAreas = $user->accessibleAreas();
-        $selectedArea = $request->session()->get('selected_area.'.$user->id, $homeArea);
+        $areaChoices = count($allowedAreas) > 1 ? ['all', ...$allowedAreas] : $allowedAreas;
+        $selectedArea = $request->session()->get('selected_area_filter.'.$user->id, count($allowedAreas) > 1 ? 'all' : $allowedAreas[0]);
+        if (! in_array($selectedArea, $areaChoices, true)) {
+            $selectedArea = $areaChoices[0];
+        }
+        $previousSelection = $user->selectedArea;
+        $user->selectedArea = $selectedArea;
+        View::share('selectedArea', $selectedArea);
         if (in_array($selectedArea, $allowedAreas, true)) {
             // Existing services scope queries by user->area. Keep this session
             // selection clean so profile saves cannot overwrite the home area.
@@ -47,6 +54,7 @@ class SetEffectiveRole
         try {
             return $next($request);
         } finally {
+            $user->selectedArea = $previousSelection;
             $user->area = $homeArea;
             $user->syncOriginalAttribute('area');
         }

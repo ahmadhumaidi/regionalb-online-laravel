@@ -17,6 +17,8 @@ class RsmReport extends Model
         'area',
         'report_type',
         'report_date',
+        'duration_minutes',
+        'urgency',
         'user_id',
         'partner_campus_id',
         'wilayah',
@@ -27,6 +29,7 @@ class RsmReport extends Model
         'status',
         'escalated_to_role',
         'title',
+        'activity_name',
         'activity_kind',
         'location_name',
         'target_text',
@@ -58,6 +61,8 @@ class RsmReport extends Model
     {
         return [
             'report_date' => 'date',
+            'duration_minutes' => 'integer',
+            'urgency' => 'integer',
             'budget_requested' => 'decimal:2',
             'budget_approved' => 'decimal:2',
             'realization_amount' => 'decimal:2',

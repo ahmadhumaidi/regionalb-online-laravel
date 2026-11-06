@@ -27,7 +27,7 @@ class ReportFormController extends Controller
         $report = new RsmReport;
         if ($type === RsmReport::TYPE_OTHER) {
             $requestedActivity = trim((string) request()->query('activity'));
-            if (in_array($requestedActivity, ReportFormService::config($type)['options'], true)) {
+            if (in_array($requestedActivity, ReportFormService::activityOptions(), true)) {
                 $report->category = $requestedActivity;
                 $report->title = $requestedActivity;
             }
@@ -40,11 +40,16 @@ class ReportFormController extends Controller
     {
         $user = Auth::user();
         $this->assertType($type);
+        $unifiedActivity = $type === RsmReport::TYPE_OTHER;
+        if ($unifiedActivity && ! $request->boolean('kendala') && ReportFormService::isMarketingActivity($request->input('category'))) {
+            $type = RsmReport::TYPE_MARKETING;
+            $request->merge(['activity_kind' => $request->input('category')]);
+        }
         abort_unless(ReportFormService::canCreate($type, $user), 403);
         $data = $this->validated($request, $type, false, $user);
         ReportFormService::create($type, $data, $request->file('attachment_path'), $user);
 
-        return redirect()->route($this->pageRoute($type))->with('notice', 'Laporan disimpan.');
+        return redirect()->route($unifiedActivity ? 'aktivitas' : $this->pageRoute($type))->with('notice', 'Laporan disimpan.');
     }
 
     public function show(RsmReport $report): View
@@ -155,6 +160,10 @@ class ReportFormController extends Controller
     private function formView(string $type, RsmReport $report, bool $editing, RsmUser $user): View
     {
         $config = ReportFormService::config($type);
+        if ($type === RsmReport::TYPE_OTHER && ! request()->boolean('kendala')) {
+            $config['title'] = 'Aktivitas Lainnya';
+            $config['options'] = ReportFormService::activityOptions();
+        }
         $references = ReferenceOptionsService::build($user->area ?: 'Regional B', $user);
         if ($type === RsmReport::TYPE_ADS && $user->role === RsmUser::ROLE_KOORDINATOR && filled($user->regional)) {
             array_unshift($references['campuses'], [
@@ -181,23 +190,28 @@ class ReportFormController extends Controller
         }
 
         $common = [
+            ...($type !== RsmReport::TYPE_ADS ? [
+                'activity_name' => ['nullable', 'string', 'max:220'],
+                'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:10080'],
+                'urgency' => ['nullable', 'integer', 'between:1,3'],
+            ] : []),
             'report_date' => ['required', 'date'],
             'wilayah' => ['nullable', 'string', 'max:120'],
             'unit_name' => ['nullable', 'string', 'max:180'],
             'staff_name' => ['nullable', 'string', 'max:180'],
             'attachment_path' => [
-                Rule::prohibitedIf(fn () => $type === RsmReport::TYPE_MARKETING && $request->input('activity_kind') === 'Aktivitas digital'),
+                Rule::prohibitedIf(fn () => $type === RsmReport::TYPE_MARKETING && $request->input('activity_kind') === 'Upload Footage'),
                 'nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,pdf',
             ],
         ];
         $rules = match ($type) {
             RsmReport::TYPE_MARKETING => $common + [
                 'activity_kind' => ['nullable', 'string', 'max:120'], 'title' => ['required', 'string', 'max:220'],
-                'location_name' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'string', 'max:220'],
-                'target_text' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'string'],
-                'result_text' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'string'],
-                'leads_count' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'integer', 'min:0'],
-                'campaign_link' => [Rule::requiredIf(fn () => $request->input('activity_kind') === 'Aktivitas digital'), 'nullable', 'url:http,https', 'max:500'],
+                'location_name' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Upload Footage'), 'nullable', 'string', 'max:220'],
+                'target_text' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Upload Footage'), 'nullable', 'string'],
+                'result_text' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Upload Footage'), 'nullable', 'string'],
+                'leads_count' => [Rule::prohibitedIf(fn () => $request->input('activity_kind') === 'Upload Footage'), 'nullable', 'integer', 'min:0'],
+                'campaign_link' => [Rule::requiredIf(fn () => $request->input('activity_kind') === 'Upload Footage'), 'nullable', 'url:http,https', 'max:500'],
                 'notes' => ['nullable', 'string'],
             ],
             RsmReport::TYPE_OTHER => $common + [

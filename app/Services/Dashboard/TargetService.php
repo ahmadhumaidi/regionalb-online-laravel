@@ -68,7 +68,7 @@ class TargetService
     private static function scopedQuery(string $area, string $targetMonth, array $filters, RsmUser $user): Builder
     {
         $query = RsmMonthlyTarget::query()
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->where('target_month', $targetMonth)
             ->where('scope_type', 'staff');
 

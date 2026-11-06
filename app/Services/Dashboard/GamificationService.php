@@ -349,7 +349,7 @@ class GamificationService
     {
         $area = $user->area ?: 'Regional B';
         $reports = RsmReport::query()
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)->orWhere('staff_name', $user->name);
             })
@@ -441,7 +441,7 @@ class GamificationService
         }
 
         $reports = RsmReport::query()
-            ->where('area', $area)
+            ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)->orWhere('staff_name', $user->name);
             })
@@ -509,7 +509,7 @@ class GamificationService
         [, $scoredRows] = self::scoredRows($area, DashboardFilters::allTime(), $user);
         $pooledPoints = (int) $scoredRows->sum('points');
 
-        $staffQuery = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->where('area', $area)->where('is_active', true);
+        $staffQuery = RsmUser::query()->where('role', RsmUser::ROLE_STAFF)->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])->where('is_active', true);
         if ($user->role === RsmUser::ROLE_KOORDINATOR && trim((string) $user->regional) !== '') {
             $staffQuery->where('regional', $user->regional);
         }

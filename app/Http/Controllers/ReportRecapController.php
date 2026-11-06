@@ -23,7 +23,7 @@ class ReportRecapController extends Controller
     public function index(Request $request): View
     {
         $user = Auth::user();
-        $area = $user->area ?: 'Regional B';
+        $area = $user->viewingArea();
         $type = (string) $request->query('rekap_type', 'pencapaian');
         if (! in_array($type, ['all', RsmReport::TYPE_MARKETING, RsmReport::TYPE_ADS, RsmReport::TYPE_OTHER, 'pencapaian'], true)) {
             $type = 'all';
@@ -59,7 +59,7 @@ class ReportRecapController extends Controller
     public function export(Request $request)
     {
         $user = Auth::user();
-        $area = $user->area ?: 'Regional B';
+        $area = $user->viewingArea();
         $type = (string) $request->query('rekap_type', 'all');
         if (! in_array($type, ['all', RsmReport::TYPE_MARKETING, RsmReport::TYPE_ADS, RsmReport::TYPE_OTHER], true)) {
             $type = 'all';

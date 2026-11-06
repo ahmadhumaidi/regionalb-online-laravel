@@ -23,7 +23,7 @@ class AktivitasController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        $area = $user->area ?: 'Regional B';
+        $area = $user->viewingArea();
 
         $filters = [
             'type' => in_array($request->query('type'), ['all', 'kendala', 'other', 'marketing'], true) ? $request->query('type') : 'all',

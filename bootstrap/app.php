@@ -12,6 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withSchedule(function (Schedule $schedule): void {
+        $schedule->command('rsm:generate-coordinator-schedules')
+            ->monthlyOn(1, '09:00')
+            ->timezone('Asia/Jakarta')
+            ->withoutOverlapping(120)
+            ->appendOutputTo(storage_path('logs/coordinator-schedule-generator.log'));
         // Refresh live Collab data every 30 minutes.
         // Only touch the last N days (config: services.collab.sync_window_days) so
         // closed days aren't rewritten every 30 minutes - they're effectively

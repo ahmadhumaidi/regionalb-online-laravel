@@ -22,7 +22,7 @@ class PendingAdReportsService
     {
         $reports = ReportScope::apply(
             RsmReport::query()
-                ->where('area', $area)
+                ->whereIn('area', $area === 'all' ? ['Regional A', 'Regional B'] : [$area])
                 ->where('report_type', RsmReport::TYPE_ADS),
             $user
         )->orderByDesc('report_date')->limit(self::MAX_ROWS)->get();

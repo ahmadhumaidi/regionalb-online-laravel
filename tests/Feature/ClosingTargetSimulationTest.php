@@ -24,6 +24,14 @@ class ClosingTargetSimulationTest extends TestCase
         $this->actingAs($staff)->get('/simulasi-target-closing')->assertForbidden();
     }
 
+    public function test_both_director_roles_can_open_simulation(): void
+    {
+        foreach ([RsmUser::ROLE_DIRECTOR, RsmUser::ROLE_EXECUTIVE_DIRECTOR] as $role) {
+            $user = RsmUser::create(['name' => 'Director', 'username' => 'simulation_'.$role, 'password_hash' => 'x', 'role' => $role, 'jabatan' => 'Director', 'is_active' => true]);
+            $this->actingAs($user)->get('/simulasi-target-closing')->assertOk();
+        }
+    }
+
     public function test_super_user_sees_monthly_achievement_and_exact_target_allocation(): void
     {
         $superUser = RsmUser::create(['name' => 'Super Simulasi', 'username' => 'super_simulasi', 'password_hash' => 'x', 'role' => RsmUser::ROLE_SUPER_USER, 'jabatan' => 'Super User', 'is_active' => true]);

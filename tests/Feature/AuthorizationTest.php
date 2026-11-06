@@ -66,7 +66,7 @@ class AuthorizationTest extends TestCase
 
     public function test_unrelated_management_role_cannot_open_staff_journey(): void
     {
-        $director = new RsmUser(['id' => 900021, 'name' => 'Test Director', 'role' => 'director', 'area' => 'Regional B', 'is_active' => true]);
+        $director = new RsmUser(['id' => 900021, 'name' => 'Test Director', 'role' => 'mentor', 'area' => 'Regional B', 'is_active' => true]);
 
         $this->actingAs($director)->get('/journey-staff-unit')->assertForbidden();
     }
@@ -202,6 +202,39 @@ class AuthorizationTest extends TestCase
         $regionalBStaff->delete();
         $regionalAStaff->delete();
         $superUser->delete();
+    }
+
+    public function test_director_can_be_created_without_area_and_access_both_areas_without_super_permissions(): void
+    {
+        Artisan::call('migrate', ['--path' => 'database/migrations/2026_08_05_105952_create_rsm_users_table.php']);
+        $admin = RsmUser::create([
+            'name' => 'Admin', 'username' => 'global_admin', 'password_hash' => 'x',
+            'role' => 'super_user', 'jabatan' => 'Admin', 'area' => 'Regional B', 'is_active' => true,
+        ]);
+        foreach (['director', 'executive_director'] as $role) {
+            $this->actingAs($admin)->post('/users', [
+                'name' => 'Global Director', 'username' => 'new_'.$role,
+                'user_role' => $role, 'new_user_password' => 'secret123',
+            ])->assertSessionHasNoErrors()->assertRedirect();
+            $director = RsmUser::where('username', 'new_'.$role)->firstOrFail();
+            $this->assertNull($director->area);
+            $this->assertSame(['Regional A', 'Regional B'], $director->accessibleAreas());
+            $this->assertFalse($director->hasSuperUserAccess());
+            $this->actingAs($director)->post('/area', ['area' => 'Regional A'])->assertRedirect();
+            $this->actingAs($director)->post('/area', ['area' => 'Regional B'])->assertRedirect();
+            $this->assertTrue(\App\Support\RsmRole::canViewUsersPage($director));
+            $this->assertNull($director->fresh()->area);
+        }
+        $this->actingAs($admin)->post('/users', [
+            'name' => 'Staff', 'username' => 'missing_area',
+            'user_role' => 'staff', 'new_user_password' => 'secret123',
+        ])->assertSessionHasErrors('area');
+        $senior = new RsmUser(['id' => 900090, 'role' => 'senior', 'area' => 'Regional A', 'is_active' => true]);
+        $this->actingAs($senior)->post('/users', [
+            'name' => 'Forbidden Director', 'username' => 'forbidden_director',
+            'user_role' => 'director', 'new_user_password' => 'secret123', 'area' => 'Regional A',
+        ])->assertSessionHasErrors('user_role');
+        $this->actingAs($senior)->post('/area', ['area' => 'Regional B'])->assertForbidden();
     }
 
     public function test_staff_only_sees_own_rows_in_activity_log(): void

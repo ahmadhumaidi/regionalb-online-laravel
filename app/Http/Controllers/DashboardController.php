@@ -33,7 +33,7 @@ class DashboardController extends Controller
     {
         /** @var RsmUser $user */
         $user = Auth::user();
-        $area = $user->area ?: 'Regional B';
+        $area = $user->viewingArea();
 
         $filters = DashboardFilters::fromRequest($request, 'dashboard');
 
@@ -53,7 +53,7 @@ class DashboardController extends Controller
         $gamificationUser = $user->role === 'staff'
             ? (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior']))
             : $user;
-        $gamification = GamificationService::build($area, $filters, $gamificationUser, count($user->accessibleAreas()) > 1);
+        $gamification = GamificationService::build($area, $filters, $gamificationUser, $area === 'all');
         $referenceOptions = ReferenceOptionsService::build($area, $user);
         $actionItems = ActionCenterService::build($area, $user);
 
@@ -95,7 +95,7 @@ class DashboardController extends Controller
             ? CollabMetricsService::campusTotals($filters, $area, (clone $user)->setRawAttributes(array_merge($user->getAttributes(), ['role' => 'senior'])))
             : $campusClosing;
 
-        if (count($user->accessibleAreas()) > 1) {
+        if ($area === 'all') {
             [$topCampusClosing, $regionalStaffAchievement] = $this->allAreaAchievements($filters, $user);
         }
         [$topStaffAchievement, $topStaffMaxValue] = $this->topStaffAchievement($area, $user, $regionalStaffAchievement);
@@ -130,7 +130,7 @@ class DashboardController extends Controller
             return [$user->regional];
         }
 
-        if (count($user->accessibleAreas()) > 1) {
+        if ($area === 'all') {
             return array_merge(...array_map(AreaRegionals::forArea(...), $user->accessibleAreas()));
         }
 
@@ -210,7 +210,7 @@ class DashboardController extends Controller
     {
         $campusRows = collect();
         $staffRows = collect();
-        foreach ($user->accessibleAreas() as $area) {
+        foreach ($user->selectedAreas() as $area) {
             if ($filters['wilayah'] !== '' && ! in_array($filters['wilayah'], AreaRegionals::forArea($area), true)) {
                 continue;
             }
@@ -226,7 +226,7 @@ class DashboardController extends Controller
 
     private function topStaffAchievement(string $area, RsmUser $user, array $regionalStaffAchievement): array
     {
-        $achievementUsers = RsmUser::query()->whereIn('area', count($user->accessibleAreas()) > 1 ? $user->accessibleAreas() : [$area])
+        $achievementUsers = RsmUser::query()->whereIn('area', $user->selectedAreas())
             ->get()->keyBy(fn (RsmUser $u) => mb_strtolower(trim($u->name)));
 
         $rows = collect($regionalStaffAchievement['rows'])

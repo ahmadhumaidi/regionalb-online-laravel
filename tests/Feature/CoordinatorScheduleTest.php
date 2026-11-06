@@ -76,6 +76,85 @@ class CoordinatorScheduleTest extends TestCase
         $this->assertSame('Unit Lama', $edited->fresh()->unit_name);
     }
 
+    public function test_roles_above_senior_manager_see_schedules_across_selected_areas(): void
+    {
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_110002_create_rsm_coordinator_schedules_table.php',
+        ]]);
+        $schedule = $this->schedule('Unit Regional B');
+        foreach ([['raffandy', 'executive_director'], ['other_ed', 'executive_director'], ['director', 'director'], ['admin', 'super_user']] as [$username, $role]) {
+            $user = new RsmUser(['username' => $username, 'role' => $role, 'area' => 'Regional A']);
+            $controller = new \App\Http\Controllers\CoordinatorScheduleController;
+            $fetch = new \ReflectionMethod($controller, 'fetchSchedules');
+
+            [$rows, , $summary] = $fetch->invoke($controller, $user->viewingArea(), '2026-08', [], $user);
+            $this->assertSame([$schedule->id], $rows->modelKeys());
+            $this->assertSame(1, $summary['Regional 6']['total']);
+
+            $user->selectedArea = 'Regional A';
+            [$rows] = $fetch->invoke($controller, $user->viewingArea(), '2026-08', [], $user);
+            $this->assertCount(0, $rows);
+
+            $user->selectedArea = 'Regional B';
+            [$rows] = $fetch->invoke($controller, $user->viewingArea(), '2026-08', [], $user);
+            $this->assertSame([$schedule->id], $rows->modelKeys());
+            (new \ReflectionMethod($controller, 'scope'))->invoke($controller, $schedule, $user);
+        }
+    }
+
+    public function test_generation_uses_active_coordinators_and_keeps_each_schedule_in_its_area(): void
+    {
+        Artisan::call('migrate', ['--path' => [
+            'database/migrations/2026_08_05_105952_create_rsm_users_table.php',
+            'database/migrations/2026_08_05_110002_create_rsm_coordinator_schedules_table.php',
+            'database/migrations/2026_08_05_105946_create_partner_campuses_table.php',
+        ]]);
+        \Illuminate\Support\Facades\Schema::table('partner_campuses', function ($table) {
+            $table->string('wilayah')->nullable();
+        });
+        $users = [];
+        foreach ([['Regional A', 'Regional 1'], ['Regional B', 'Regional 4']] as [$area, $regional]) {
+            $users[$area] = RsmUser::create([
+                'name' => 'Korwil '.$regional, 'username' => 'korwil_'.$regional,
+                'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Korwil',
+                'area' => $area, 'regional' => $regional, 'is_active' => true,
+            ]);
+            \Illuminate\Support\Facades\DB::table('partner_campuses')->insert([
+                'name' => 'Kampus '.$regional, 'display_name' => 'Kampus '.$regional,
+                'kode_kampus' => $regional, 'address' => '-', 'wilayah' => $regional,
+            ]);
+        }
+        RsmUser::create([
+            'name' => 'Korwil Nonaktif', 'username' => 'inactive_korwil',
+            'password_hash' => 'x', 'role' => 'koordinator', 'jabatan' => 'Korwil',
+            'area' => 'Regional A', 'regional' => 'Regional 2', 'is_active' => false,
+        ]);
+        $senior = RsmUser::create([
+            'name' => 'Senior A', 'username' => 'senior_a', 'password_hash' => 'x',
+            'role' => 'senior', 'jabatan' => 'Senior', 'area' => 'Regional A', 'is_active' => true,
+        ]);
+        $this->actingAs($senior)->from('/jadwal-koordinator')->post('/jadwal-koordinator/generate', ['month' => '2026-10'])
+            ->assertRedirect('/jadwal-koordinator')->assertSessionHasNoErrors();
+        $this->assertSame(31, RsmCoordinatorSchedule::count());
+        $this->assertSame([$users['Regional A']->id], RsmCoordinatorSchedule::distinct()->pluck('koordinator_user_id')->all());
+        $this->assertSame(['Regional A'], RsmCoordinatorSchedule::distinct()->pluck('area')->all());
+        $this->assertSame('Kampus Regional 1', RsmCoordinatorSchedule::whereDate('schedule_date', '2026-10-01')->first()->unit_name);
+
+        // Retrying must not duplicate the existing agendas.
+        $this->post('/jadwal-koordinator/generate', ['month' => '2026-10'])->assertSessionHasNoErrors();
+        $this->assertSame(31, RsmCoordinatorSchedule::count());
+
+        $this->actingAs($users['Regional B'])->post('/jadwal-koordinator/generate', ['month' => '2026-10'])->assertSessionHasNoErrors();
+        $this->assertSame(31, RsmCoordinatorSchedule::where('area', 'Regional B')->where('koordinator_user_id', $users['Regional B']->id)->count());
+
+        $senior->role = 'director';
+        $senior->save();
+        $this->actingAs($senior)->post('/jadwal-koordinator/generate', ['month' => '2026-11'])->assertSessionHasNoErrors();
+        $this->assertSame(30, RsmCoordinatorSchedule::where('area', 'Regional A')->whereMonth('schedule_date', 11)->count());
+        $this->assertSame(30, RsmCoordinatorSchedule::where('area', 'Regional B')->whereMonth('schedule_date', 11)->count());
+    }
+
     private function schedule(string $unitName): RsmCoordinatorSchedule
     {
         return RsmCoordinatorSchedule::create([

@@ -7,6 +7,7 @@ use App\Models\RsmReport;
 use App\Models\RsmUser;
 use App\Services\Reports\ReportListService;
 use App\Support\Menu;
+use App\Services\ForumActivityService;
 use App\Support\RsmRole;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -25,6 +26,7 @@ class App extends Component
 
     public int $unreadNotificationCount;
     public int $pendingReportCount = 0;
+    public array $forumActivity;
 
     /** @var \Illuminate\Support\Collection<int, RsmNotification> */
     public $recentNotifications;
@@ -40,6 +42,7 @@ class App extends Component
         $impersonationActor = $originalId > 0 ? RsmUser::find($originalId) : $user;
 
         $this->user = $user;
+        $this->forumActivity = ForumActivityService::unread($user);
         $this->eyebrow = $eyebrow;
         $this->menuSections = Menu::sections($user);
         if (Schema::hasTable('rsm_reports')) {

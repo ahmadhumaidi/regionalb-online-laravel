@@ -51,14 +51,6 @@ class CollabSourceService
         'Absen Staff',
     ];
 
-    /**
-     * "Canvasing" is intentionally excluded - its table layout differs from
-     * the other "personal regional" reports (leading row-number column,
-     * combined "NIK - Nama" cell, section headers without a regional
-     * number) and ingestDailyMetrics() doesn't parse it correctly yet. It's
-     * still viewable raw on /sumber-collab, just not fed into
-     * rsm_collab_daily_metrics until that's built.
-     */
     private const DAILY_METRIC_REPORTS = [
         'Closing Kampus Regional',
         'Herreg Kampus Regional',
@@ -67,6 +59,7 @@ class CollabSourceService
         'Follow Up BDC',
         'Share FB Group',
         'Live Streaming',
+        'Canvasing',
         'Sebar Brosur',
         'Pasang Spanduk',
         'Affiliator Mahasiswa',
@@ -438,10 +431,14 @@ class CollabSourceService
 
         try {
             $headers = ['Accept' => 'text/html,application/xhtml+xml', 'User-Agent' => 'RegionalB-Dashboard/1.0'];
-            $html = Http::withOptions(['cookies' => $jar])
-                ->timeout(20)->connectTimeout(10)->withHeaders($headers)
-                ->asForm()->post($url, ['filter_dayone' => $dayFrom, 'filter_daytwo' => $dayTo, 'bmonth' => 'View'])
-                ->body();
+            $client = Http::withOptions(['cookies' => $jar])
+                ->timeout(20)->connectTimeout(10)->withHeaders($headers);
+            $html = $client->asForm()->post($url, ['filter_dayone' => $dayFrom, 'filter_daytwo' => $dayTo, 'bmonth' => 'View'])->body();
+            // Collab stores the date filter in the session, then returns a
+            // JavaScript redirect to the same report instead of an HTTP redirect.
+            if (preg_match('/(?:document|window)\\.location(?:\\.href)?\\s*=/', $html) && stripos($html, '<table') === false) {
+                $html = $client->get($url)->body();
+            }
         } catch (\Throwable) {
             return [];
         }
@@ -891,22 +888,14 @@ class CollabSourceService
         }
 
         $isCampus = in_array($reportName, ['Closing Kampus Regional', 'Herreg Kampus Regional'], true);
-        // "Follow Up BDC", "Share FB Group", "Live Streaming", "Affiliator
-        // Mahasiswa" and "Affiliator Non Mahasiswa" all share "Closing/Herreg
-        // Personal Per Regional"'s layout (per-staff rows grouped under
-        // "(Korwil Regional N)" headers, day-of-month columns) - confirmed
-        // 2026-08-10 against real syncs of each source. "Canvasing" does NOT
-        // share this layout (leading row-number column, combined "NIK -
-        // Nama" cell, section headers missing the regional number) and is
-        // deliberately left out of DAILY_METRIC_REPORTS until that's built.
         $isPersonalRegional = in_array($reportName, [
             'Closing Personal Per Regional', 'Herreg Personal Per Regional', 'Follow Up BDC',
             'Share FB Group', 'Live Streaming', 'Affiliator Mahasiswa', 'Affiliator Non Mahasiswa',
         ], true);
-        // Sebar Brosur uses a per-unit activity layout: No, NIK - Nama,
-        // Kode, Kampus, day columns, Total. A staff member can occur once
-        // per campus, so rows must be summed by staff/day before upserting.
-        $isUnitActivity = in_array($reportName, ['Sebar Brosur', 'Pasang Spanduk'], true);
+        // Unit activities use No, NIK - Nama, optional campus columns,
+        // day columns, Total. Canvasing has fewer metadata columns; the
+        // date header supplies their positions. Sum repeated staff/day rows.
+        $isUnitActivity = in_array($reportName, ['Sebar Brosur', 'Pasang Spanduk', 'Canvasing'], true);
         $valueBase = $isCampus ? 4 : 5;
 
         $dayValueIndexes = [];

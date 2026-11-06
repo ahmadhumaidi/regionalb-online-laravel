@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RsmForumComment extends Model
 {
@@ -13,9 +14,15 @@ class RsmForumComment extends Model
 
     protected $fillable = [
         'post_id',
+        'parent_id',
         'user_id',
         'body',
     ];
+
+    public function likes(): HasMany
+    {
+        return $this->hasMany(RsmForumCommentLike::class, 'comment_id');
+    }
 
     public function user(): BelongsTo
     {
